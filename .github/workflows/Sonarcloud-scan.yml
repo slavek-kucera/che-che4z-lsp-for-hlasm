@@ -23,7 +23,7 @@ on:
 jobs:
   sonar:
     name: SonarCloud scan
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
@@ -61,8 +61,6 @@ jobs:
         run: echo "VERSION=$(node -e "console.log(require('./clients/vscode-hlasmplugin/package.json').version)")" >> $GITHUB_ENV
 
       - name: Sonar scan
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >
           export SONAR_SCANNER_VERSION=4.2.0.1873 &&
           export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux &&
@@ -74,8 +72,8 @@ jobs:
           export PATH=$SONAR_SCANNER_HOME/bin:$PATH &&
           export SONAR_SCANNER_OPTS="-server" &&
           sonar-scanner
-          -Dsonar.projectKey=eclipse_che-che4z-lsp-for-hlasm
-          -Dsonar.organization=eclipse
+          -Dsonar.projectKey=slavek-kucera_che4z-lsp-for-hlasm
+          -Dsonar.organization=slavek-kucera
           -Dsonar.sources=benchmark,clients/vscode-hlasmplugin/src/,language_server/src,parser_library/src,parser_library/include,build/generated_parser/
           -Dsonar.tests=parser_library/test,language_server/test,clients/vscode-hlasmplugin/src/test
           -Dsonar.host.url=https://sonarcloud.io
