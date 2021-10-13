@@ -20,6 +20,7 @@ on:
       - master
       - development
       - release**
+      - macos11-multiplatform
   pull_request:
     branches:
       - master
