@@ -107,7 +107,7 @@ jobs:
           -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" 
           -DBUILD_VSIX=Off ../
       - name: Build
-        run: cd build && cmake --build .
+        run: cd build && cmake --build . --config Release
       - name: Server Test
         run: cd build/bin && ./server_test && ./library_test
       - name: Actions artifact
