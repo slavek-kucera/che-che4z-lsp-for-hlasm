@@ -95,19 +95,18 @@ jobs:
 
   macos-server-build:
     name: MacOS language server
-    runs-on: macos-10.15
+    runs-on: macos-11
 
     steps:
       - uses: actions/checkout@v1
-      - name: Requirements install
-        run: brew install ninja
       - name: Configure
         run: >
-          mkdir build && cd build && cmake -G Ninja
-          -DCMAKE_C_COMPILER=$(brew --prefix llvm)/bin/clang -DCMAKE_CXX_COMPILER=$(brew --prefix llvm)/bin/clang++
-          -DLLVM_PATH=$(brew --prefix llvm) -DBUILD_VSIX=Off ../
+          mkdir build && cd build && cmake -G Xcode
+          -DWITH_STATIC_CRT=Off -DWITH_LIBCXX=Off
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" 
+          -DBUILD_VSIX=Off ../
       - name: Build
-        run: cd build && cmake --build . -- -v
+        run: cd build && cmake --build .
       - name: Server Test
         run: cd build/bin && ./server_test && ./library_test
       - name: Actions artifact
