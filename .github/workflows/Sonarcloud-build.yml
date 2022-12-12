@@ -92,5 +92,9 @@ jobs:
             clients/vscode-hlasmplugin/coverage/lcov.info
             pr-info/
             !build/bin/
+            !build/build-wrapper*
             !build/_deps/**/.git/
+            !build/_deps/**/*.jar
+            !build/_deps/**/*.class
+            !build/lib/
             !build/**/CMakeFiles/
