@@ -23,7 +23,6 @@ on:
     branches:
       - development
       - master
-      - ci_enhance_coverage_reporting
 
 jobs:
   sonarcloud-build:
@@ -98,13 +97,3 @@ jobs:
             !build/_deps/**/*.class
             !build/lib/
             !build/**/CMakeFiles/
-            
-      - uses: actions/upload-artifact@v3
-        with:
-          name: raw-data
-          path: |
-            build/bin/language_server
-            build/bin/library_test
-            build/bin/server_test
-            build/bin/hlasm_utils_test
-            build/bin/*.rawprof
