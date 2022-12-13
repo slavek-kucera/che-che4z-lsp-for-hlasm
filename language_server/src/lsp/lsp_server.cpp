@@ -92,8 +92,8 @@ void server::message_received(const json& message)
 
     if (method_found == message.end())
     {
-        LOG_WARNING("Method or params missing from received request or notification");
-        send_telemetry_error("lsp_server/method_or_params_missing");
+        LOG_WARNING("Method missing from received request or notification");
+        send_telemetry_error("lsp_server/method_missing");
         return;
     }
 
