@@ -47,7 +47,7 @@ jobs:
           cmake -DCMAKE_BUILD_TYPE=Debug
           -DCMAKE_C_COMPILER=clang-14
           -DCMAKE_CXX_COMPILER=clang++-14
-          -DCMAKE_CXX_FLAGS="-fprofile-instr-generate -fcoverage-mapping"
+          -DCMAKE_CXX_FLAGS="-fprofile-instr-generate -fcoverage-mapping -mllvm -runtime-counter-relocation"
           -DWITH_LIBCXX=Off
           ../
       - name: Sonar build wrapper download
