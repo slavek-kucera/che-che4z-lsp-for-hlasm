@@ -46,7 +46,7 @@ suite('Completion List Test Suite', () => {
         const movePosition = await helper.insertString(editor, new vscode.Position(7, 1), 'L');
         await diags;
 
-        const completionList: vscode.CompletionList = await vscode.commands.executeCommand('vscode.executeCompletionItemProvider', document.uri, movePosition);
+        const completionList: vscode.CompletionList = await vscode.commands.executeCommand('vscode.executeCompletionItemProvider', editor.document.uri, movePosition);
 
         const result = completionList.items.filter(complItem => complItem.label.toString().startsWith('L'));
         assert.strictEqual(result.length, 343, 'Wrong number of suggestion result.');
@@ -59,7 +59,7 @@ suite('Completion List Test Suite', () => {
         const movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
         await diags;
 
-        const completionList: vscode.CompletionList = await vscode.commands.executeCommand('vscode.executeCompletionItemProvider', document.uri, movePosition);
+        const completionList: vscode.CompletionList = await vscode.commands.executeCommand('vscode.executeCompletionItemProvider', editor.document.uri, movePosition);
 
         const labels = completionList.items.map(x => x.label.toString());
         assert.deepStrictEqual(labels, ['&VAR', '&VAR2'], 'Wrong suggestion result.');
