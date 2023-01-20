@@ -20,6 +20,7 @@ on:
       - master
       - development
       - release-next
+      - fix_strange_edit_issues
   pull_request:
     branches:
       - master

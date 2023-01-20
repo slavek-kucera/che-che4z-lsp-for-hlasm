@@ -46,7 +46,14 @@ suite('Completion List Test Suite', () => {
     test('Completion List Variable symbols test', async () => {
         // add '&' to simulate start of a variable symbol
         const diags = helper.waitForDiagnostics(workspace_file);
-        const movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
+        try {
+            const movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
+        } catch (e) {
+            console.log(e);
+            console.log(vscode.window.visibleTextEditors);
+            console.log(vscode.window.activeTextEditor);
+            throw e;
+        }
         await diags;
 
         const completionList: vscode.CompletionList = await vscode.commands.executeCommand('vscode.executeCompletionItemProvider', editor.document.uri, movePosition);
