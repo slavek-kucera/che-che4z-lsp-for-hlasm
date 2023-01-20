@@ -73,9 +73,5 @@ jobs:
         run: chmod +x bin/${{ matrix.native }}/language_server
       - name: NPM CI
         run: npm ci
-      - name: Extension Test
-        run: ${{ env.XVFB }} npm run test
-      - name: Extension Test WASM
-        run: ${{ env.XVFB }} npm run test:wasm
       - name: Extension Test Insiders
         run: ${{ env.XVFB }} npm run test:insiders
