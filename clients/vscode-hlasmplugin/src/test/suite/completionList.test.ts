@@ -18,13 +18,14 @@ import * as helper from './testHelper';
 
 suite('Completion List Test Suite', () => {
     const workspace_file = 'open';
+    let editor: vscode.TextEditor;
     let toDispose: vscode.Disposable[] = [];
 
     suiteSetup(async function () {
         this.timeout(10000);
 
         console.log("suiteSetup");
-        const { editor, document } = await helper.showDocument(workspace_file);
+        editor = (await helper.showDocument(workspace_file)).editor;
 
         toDispose.push(vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e); }));
         toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
@@ -42,7 +43,6 @@ suite('Completion List Test Suite', () => {
     // test completion list for instructions
     test('Completion List Instructions test', async () => {
         const diags = helper.waitForDiagnostics(workspace_file);
-        const { editor, document } = await helper.showDocument(workspace_file, undefined, false);
         const movePosition = await helper.insertString(editor, new vscode.Position(7, 1), 'L');
         await diags;
 
@@ -55,17 +55,8 @@ suite('Completion List Test Suite', () => {
     // test completion list for variable symbols
     test('Completion List Variable symbols test', async () => {
         // add '&' to simulate start of a variable symbol
-        let movePosition: vscode.Position;
         const diags = helper.waitForDiagnostics(workspace_file);
-        const { editor, document } = await helper.showDocument(workspace_file, undefined, false);
-        try {
-            movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
-        } catch (e) {
-            console.log('excp', e);
-            console.log('visibleTextEditors', vscode.window.visibleTextEditors);
-            console.log('activeTextEditor', vscode.window.activeTextEditor);
-            throw e;
-        }
+        const movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
         await diags;
 
         const completionList: vscode.CompletionList = await vscode.commands.executeCommand('vscode.executeCompletionItemProvider', document.uri, movePosition);

@@ -53,21 +53,16 @@ export async function getWorkspaceFile(workspace_file: string) {
     return files[0];
 }
 
-export async function showDocument(workspace_file: string, language_id: string | undefined = undefined, wait: boolean = true) {
+export async function showDocument(workspace_file: string, language_id: string | undefined = undefined) {
     // open and show the file
     let document = await vscode.workspace.openTextDocument(await getWorkspaceFile(workspace_file));
     if (language_id)
         document = await vscode.languages.setTextDocumentLanguage(document, language_id);
 
-    if (!wait) {
-        return { editor: await vscode.window.showTextDocument(document, { preview: false }), document };
-    }
-    else {
-        const visible = activeEditorChanged();
-        const result = { editor: await vscode.window.showTextDocument(document, { preview: false }), document };
-        assert.strictEqual(await visible, result.editor);
-        return result;
-    }
+    const visible = activeEditorChanged();
+    const result = { editor: await vscode.window.showTextDocument(document, { preview: false, pinned: true }), document };
+    assert.strictEqual(await visible, result.editor);
+    return result;
 }
 
 export async function closeAllEditors() {
