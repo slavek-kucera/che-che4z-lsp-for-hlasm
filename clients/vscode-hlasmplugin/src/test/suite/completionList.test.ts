@@ -24,6 +24,8 @@ suite('Completion List Test Suite', () => {
         this.timeout(10000);
 
         editor = (await helper.showDocument(workspace_file)).editor;
+        vscode.window.onDidChangeVisibleTextEditors(e => console.log(e));
+        vscode.window.onDidChangeActiveTextEditor(e => console.log(e));
     });
 
     suiteTeardown(async function () {
