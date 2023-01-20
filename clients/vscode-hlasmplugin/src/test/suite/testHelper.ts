@@ -66,7 +66,7 @@ export async function showDocument(workspace_file: string, language_id: string |
         const visible = activeEditorChanged();
         const result = { editor: await vscode.window.showTextDocument(document, { preview: false }), document };
         assert.strictEqual(await visible, result.editor);
-        r
+        return result;
     }
 }
 
