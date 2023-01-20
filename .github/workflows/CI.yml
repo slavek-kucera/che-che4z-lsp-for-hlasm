@@ -37,21 +37,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-20.04
-            native: linux
-            chmod: true
-          - os: windows-2019
-            native: win32
-            chmod: false
           - os: macos-11
             native: darwin
             chmod: true
-          - os: ubuntu-22.04
-            native: linux
-            chmod: true
-          - os: windows-2022
-            native: win32
-            chmod: false
           - os: macos-12
             native: darwin
             chmod: true
@@ -74,4 +62,17 @@ jobs:
       - name: NPM CI
         run: npm ci
       - name: Extension Test Insiders
-        run: ${{ env.XVFB }} npm run test:insiders
+        run: |
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
+          ${{ env.XVFB }} npm run test:insiders
