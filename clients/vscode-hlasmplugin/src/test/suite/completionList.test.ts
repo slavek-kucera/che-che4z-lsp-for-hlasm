@@ -24,19 +24,19 @@ suite('Completion List Test Suite', () => {
         this.timeout(10000);
 
         console.log("suiteSetup");
+        await helper.showDocument(workspace_file);
 
         toDispose.push(vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', e); console.trace(); }));
         toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', e); console.trace(); }));
 
-        await helper.showDocument(workspace_file);
     });
 
     suiteTeardown(async function () {
         console.log("suiteTeardown");
-        await helper.closeAllEditors();
         toDispose.forEach(d => {
             d.dispose();
         });
+        await helper.closeAllEditors();
     });
 
     // test completion list for instructions
