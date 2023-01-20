@@ -22,12 +22,15 @@ suite('Completion List Test Suite', () => {
     suiteSetup(async function () {
         this.timeout(10000);
 
+        console.log("suiteSetup");
+        
         await helper.showDocument(workspace_file);
         vscode.window.onDidChangeVisibleTextEditors(e => console.log('onDidChangeVisibleTextEditors', e));
         vscode.window.onDidChangeActiveTextEditor(e => console.log('onDidChangeActiveTextEditor', e));
     });
 
     suiteTeardown(async function () {
+        console.log("suiteTeardown");
         await helper.closeAllEditors();
     });
 
