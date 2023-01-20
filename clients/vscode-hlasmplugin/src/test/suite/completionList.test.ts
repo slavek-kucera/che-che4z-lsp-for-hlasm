@@ -24,8 +24,8 @@ suite('Completion List Test Suite', () => {
         this.timeout(10000);
 
         editor = (await helper.showDocument(workspace_file)).editor;
-        vscode.window.onDidChangeVisibleTextEditors(e => console.log(e));
-        vscode.window.onDidChangeActiveTextEditor(e => console.log(e));
+        vscode.window.onDidChangeVisibleTextEditors(e => console.log('onDidChangeVisibleTextEditors', e));
+        vscode.window.onDidChangeActiveTextEditor(e => console.log('onDidChangeActiveTextEditor', e));
     });
 
     suiteTeardown(async function () {
@@ -52,9 +52,9 @@ suite('Completion List Test Suite', () => {
         try {
             movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
         } catch (e) {
-            console.log(e);
-            console.log(vscode.window.visibleTextEditors);
-            console.log(vscode.window.activeTextEditor);
+            console.log('excp', e);
+            console.log('visibleTextEditors', vscode.window.visibleTextEditors);
+            console.log('activeTextEditor', vscode.window.activeTextEditor);
             throw e;
         }
         await diags;
