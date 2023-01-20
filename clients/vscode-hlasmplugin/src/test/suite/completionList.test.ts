@@ -24,9 +24,10 @@ suite('Completion List Test Suite', () => {
 
         console.log("suiteSetup");
 
-        await helper.showDocument(workspace_file);
         vscode.window.onDidChangeVisibleTextEditors(e => console.log('onDidChangeVisibleTextEditors', e));
         vscode.window.onDidChangeActiveTextEditor(e => console.log('onDidChangeActiveTextEditor', e));
+        
+        await helper.showDocument(workspace_file);
     });
 
     suiteTeardown(async function () {
