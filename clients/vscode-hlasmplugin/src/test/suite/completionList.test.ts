@@ -18,19 +18,23 @@ import * as helper from './testHelper';
 
 suite('Completion List Test Suite', () => {
     const workspace_file = 'open';
+    let toDispose = [];
 
     suiteSetup(async function () {
         this.timeout(10000);
 
         console.log("suiteSetup");
 
-        vscode.window.onDidChangeVisibleTextEditors(e => console.log('onDidChangeVisibleTextEditors', e));
-        vscode.window.onDidChangeActiveTextEditor(e => console.log('onDidChangeActiveTextEditor', e));
-        
+        toDispose.push(vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', e); console.trace(); }));
+        toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', e); console.trace(); }));
+
         await helper.showDocument(workspace_file);
     });
 
     suiteTeardown(async function () {
+        toDispose.forEach(d => {
+            d.dispose();
+        });
         console.log("suiteTeardown");
         await helper.closeAllEditors();
     });
