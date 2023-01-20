@@ -23,7 +23,7 @@ suite('Completion List Test Suite', () => {
         this.timeout(10000);
 
         console.log("suiteSetup");
-        
+
         await helper.showDocument(workspace_file);
         vscode.window.onDidChangeVisibleTextEditors(e => console.log('onDidChangeVisibleTextEditors', e));
         vscode.window.onDidChangeActiveTextEditor(e => console.log('onDidChangeActiveTextEditor', e));
@@ -37,7 +37,7 @@ suite('Completion List Test Suite', () => {
     // test completion list for instructions
     test('Completion List Instructions test', async () => {
         const diags = helper.waitForDiagnostics(workspace_file);
-        const { editor, document } = await helper.showDocument(workspace_file, false);
+        const { editor, document } = await helper.showDocument(workspace_file, undefined, false);
         const movePosition = await helper.insertString(editor, new vscode.Position(7, 1), 'L');
         await diags;
 
@@ -52,7 +52,7 @@ suite('Completion List Test Suite', () => {
         // add '&' to simulate start of a variable symbol
         let movePosition: vscode.Position;
         const diags = helper.waitForDiagnostics(workspace_file);
-        const { editor, document } = await helper.showDocument(workspace_file, false);
+        const { editor, document } = await helper.showDocument(workspace_file, undefined, false);
         try {
             movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
         } catch (e) {
