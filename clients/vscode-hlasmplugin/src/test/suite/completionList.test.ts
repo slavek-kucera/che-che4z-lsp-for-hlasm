@@ -18,7 +18,7 @@ import * as helper from './testHelper';
 
 suite('Completion List Test Suite', () => {
     const workspace_file = 'open';
-    let toDispose = [];
+    let toDispose: vscode.Disposable[] = [];
 
     suiteSetup(async function () {
         this.timeout(10000);
