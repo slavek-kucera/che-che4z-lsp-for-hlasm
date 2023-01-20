@@ -47,9 +47,10 @@ suite('Completion List Test Suite', () => {
     // test completion list for variable symbols
     test('Completion List Variable symbols test', async () => {
         // add '&' to simulate start of a variable symbol
+        let movePosition: Promise<vscode.Position>;
         const diags = helper.waitForDiagnostics(workspace_file);
         try {
-            const movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
+            movePosition = await helper.insertString(editor, new vscode.Position(8, 0), '&');
         } catch (e) {
             console.log(e);
             console.log(vscode.window.visibleTextEditors);
