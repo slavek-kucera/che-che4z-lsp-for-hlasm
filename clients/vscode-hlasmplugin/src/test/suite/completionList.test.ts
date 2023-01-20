@@ -32,11 +32,11 @@ suite('Completion List Test Suite', () => {
     });
 
     suiteTeardown(async function () {
+        console.log("suiteTeardown");
+        await helper.closeAllEditors();
         toDispose.forEach(d => {
             d.dispose();
         });
-        console.log("suiteTeardown");
-        await helper.closeAllEditors();
     });
 
     // test completion list for instructions
