@@ -65,7 +65,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Download language servers
         run: |
-          curl -o hlasm-language-support-1.6.0.vsix "https://github.com/eclipse/che-che4z-lsp-for-hlasm/releases/download/1.6.0/hlasm-language-support-1.6.0.vsix"
+          curl -k -o hlasm-language-support-1.6.0.vsix "https://github.com/eclipse/che-che4z-lsp-for-hlasm/releases/download/1.6.0/hlasm-language-support-1.6.0.vsix"
           unzip -o hlasm-language-support-1.6.0.vsix 'extension/bin/*'
           cp -r extension/bin ./
       - name: Set executable flag
