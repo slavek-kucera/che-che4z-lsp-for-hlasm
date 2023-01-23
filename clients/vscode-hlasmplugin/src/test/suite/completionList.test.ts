@@ -25,7 +25,9 @@ suite('Completion List Test Suite', () => {
         this.timeout(10000);
 
         console.log("suiteSetup");
-        editor = (await helper.showDocument(workspace_file)).editor;
+        const { editor_, document_ } = await helper.showDocument(workspace_file);
+        console.log('Initial languageId', document_.languageId);
+        editor = editor_;
 
         toDispose.push(vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e); }));
         toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
