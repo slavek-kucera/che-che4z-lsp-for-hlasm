@@ -31,6 +31,8 @@ suite('Completion List Test Suite', () => {
 
         toDispose.push(vscode.window.onDidChangeVisibleTextEditors(e => { toDispose = []; console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); }));
         //toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
+        for (let i = 0; i < 10; ++i)
+            await helper.sleep(100);
 
     });
 
