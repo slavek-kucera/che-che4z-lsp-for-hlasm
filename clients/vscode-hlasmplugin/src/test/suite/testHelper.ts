@@ -100,8 +100,10 @@ export async function debugStartSession(waitForStopped = true): Promise<vscode.D
         });
     });
     // start debugging
-    if (!await vscode.debug.startDebugging(vscode.workspace.workspaceFolders[0], 'Macro tracer: current program'))
+    if (!await vscode.debug.startDebugging(vscode.workspace.workspaceFolders[0], 'Macro tracer: current program')){
+        console.log('debug start failed', vscode.window.visibleTextEditors);
         throw new Error("Failed to start a debugging session");
+    }
 
     const session = await session_started_event;
 

@@ -20,22 +20,15 @@ import * as helper from './testHelper';
 suite('Debugging Test Suite', () => {
     let editor: vscode.TextEditor;
     const workspace_file = 'open';
-    let toDispose: vscode.Disposable[] = [];
 
     suiteSetup(async function () {
         this.timeout(10000);
 
         editor = (await helper.showDocument(workspace_file)).editor;
-        toDispose.push(vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e); }));
-        toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
     });
 
     suiteTeardown(async function () {
         this.timeout(10000);
-        
-        toDispose.forEach(d => {
-            d.dispose();
-        });
 
         await helper.removeAllBreakpoints();
         await helper.closeAllEditors();
