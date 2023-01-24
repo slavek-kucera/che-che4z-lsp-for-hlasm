@@ -43,9 +43,8 @@ suite('Completion List Test Suite', () => {
         });
         editor = await vscode.window.showTextDocument(document, { preview: false });
         console.log('Lang Id 2', document.languageId);
-        assert.strictEqual(await visible, result.editor);
+        assert.strictEqual(await visible, editor);
         console.log('Lang Id 3', document.languageId);
-        editor = result.editor;
 
         toDispose.push(vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); }));
         //toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
