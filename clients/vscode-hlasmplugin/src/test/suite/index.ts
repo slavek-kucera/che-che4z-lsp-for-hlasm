@@ -69,7 +69,7 @@ export async function run(): Promise<void> {
 		const closeAllEditors = new Promise<vscode.TextEditor[]>((resolve) => {
 			const dispose = vscode.window.onDidChangeVisibleTextEditors(e => { dispose.dispose(); resolve(e); });
 		});
-		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		await vscode.commands.executeCommand('workbench.action.closeAllGroups');
 		console.log("closeAllEditors", await closeAllEditors);
 	}
 }
