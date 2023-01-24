@@ -25,8 +25,17 @@ suite('Completion List Test Suite', () => {
         this.timeout(10000);
 
         console.log("suiteSetup");
-        const result = await helper.showDocument(workspace_file);
-        console.log('Initial languageId', result.document.languageId);
+        // open and show the file
+        let document = await vscode.workspace.openTextDocument(await getWorkspaceFile(workspace_file));
+        console.log('Lang Id', document.languageId);
+        //if (language_id)
+        //    document = await vscode.languages.setTextDocumentLanguage(document, language_id);
+
+        const visible = activeEditorChanged();
+        editor = await vscode.window.showTextDocument(document, { preview: false });
+        console.log('Lang Id 2', document.languageId);
+        assert.strictEqual(await visible, result.editor);
+        console.log('Lang Id 3', document.languageId);
         editor = result.editor;
 
         toDispose.push(vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); }));
