@@ -17,6 +17,7 @@ import * as vscode from 'vscode';
 
 export async function run(): Promise<void> {
 	let stop = false;
+	vscode.workspace.onDidOpenTextDocument(e => console.log("onDidOpenTextDocument", e));
 	for (let repeat = 0; !stop && repeat < 1000; ++repeat) {
 		console.log('Round', repeat);
 		const files = await vscode.workspace.findFiles('plain.txt');
