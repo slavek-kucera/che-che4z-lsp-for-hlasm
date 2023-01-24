@@ -26,12 +26,21 @@ suite('Completion List Test Suite', () => {
 
         console.log("suiteSetup");
         // open and show the file
-        let document = await vscode.workspace.openTextDocument(await getWorkspaceFile(workspace_file));
+        const file = await helper.getWorkspaceFile(workspace_file);
+        console.log('File', file);
+        let document = await vscode.workspace.openTextDocument(file);
         console.log('Lang Id', document.languageId);
         //if (language_id)
         //    document = await vscode.languages.setTextDocumentLanguage(document, language_id);
 
-        const visible = activeEditorChanged();
+        const visible = new Promise<vscode.TextEditor>((resolve) => {
+            const listener = vscode.window.onDidChangeActiveTextEditor((e) => {
+                if (e) {
+                    listener.dispose();
+                    resolve(e);
+                }
+            })
+        });
         editor = await vscode.window.showTextDocument(document, { preview: false });
         console.log('Lang Id 2', document.languageId);
         assert.strictEqual(await visible, result.editor);
