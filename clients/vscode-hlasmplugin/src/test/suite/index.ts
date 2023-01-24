@@ -12,11 +12,8 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
-import * as path from 'path';
-import * as Mocha from 'mocha';
-import * as glob from 'glob';
+import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as process from 'process';
 
 export async function run(): Promise<void> {
 
@@ -51,7 +48,7 @@ export async function run(): Promise<void> {
 		const toDispose = vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); });
 		//toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
 		for (let i = 0; i < 10; ++i)
-			await helper.sleep(100);
+			await new Promise<void>((resolve) => { setTimeout(resolve, ms); });
 
 		toDispose.dispose();
 
