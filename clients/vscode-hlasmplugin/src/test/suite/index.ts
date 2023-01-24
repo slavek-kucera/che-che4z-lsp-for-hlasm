@@ -16,8 +16,8 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 
 export async function run(): Promise<void> {
-
-	for (let repeat = 0; repeat < 1000; ++repeat) {
+	let stop = false;
+	for (let repeat = 0; !stop && repeat < 1000; ++repeat) {
 		console.log('Round', repeat);
 		const files = await vscode.workspace.findFiles('open');
 		const file = files[0]!;
@@ -27,8 +27,7 @@ export async function run(): Promise<void> {
 		let document = await vscode.workspace.openTextDocument(file);
 
 		console.log('Lang Id', document.languageId);
-		//if (language_id)
-		//    document = await vscode.languages.setTextDocumentLanguage(document, language_id);
+		document = await vscode.languages.setTextDocumentLanguage(document, 'hlasm');
 
 		const visible = new Promise<vscode.TextEditor>((resolve) => {
 			const listener = vscode.window.onDidChangeActiveTextEditor((e) => {
@@ -46,7 +45,7 @@ export async function run(): Promise<void> {
 
 		console.log('Lang Id 3', document.languageId);
 
-		const toDispose = vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); });
+		const toDispose = vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); stop = true; });
 		//toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
 
 		await editor.edit(edit => {
