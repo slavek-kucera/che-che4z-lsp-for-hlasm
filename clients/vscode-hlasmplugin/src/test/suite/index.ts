@@ -18,6 +18,7 @@ import * as vscode from 'vscode';
 export async function run(): Promise<void> {
 
 	for (let repeat = 0; repeat < 1000; ++repeat) {
+		console.log('Round', repeat);
 		const files = await vscode.workspace.findFiles('open');
 		const file = files[0]!;
 
@@ -47,11 +48,17 @@ export async function run(): Promise<void> {
 
 		const toDispose = vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); });
 		//toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
+
+		await editor.edit(edit => {
+			edit.insert(new vscode.Position(7, 1), 'L');
+		});
+
 		for (let i = 0; i < 10; ++i)
 			await new Promise<void>((resolve) => { setTimeout(resolve, 100); });
 
 		toDispose.dispose();
 
+		await vscode.commands.executeCommand('workbench.action.files.revert');
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
 	}
 }
