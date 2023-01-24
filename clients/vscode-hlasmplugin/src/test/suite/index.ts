@@ -49,7 +49,12 @@ export async function run(): Promise<void> {
 		const toDispose = vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); stop = true; });
 		//toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
 
+		console.log('Lang Id 4', document.languageId);
+
+		console.log("Editor", editor);
+
 		await editor.edit(edit => {
+			console.log("Editor2", editor);
 			edit.insert(new vscode.Position(7, 1), 'L');
 		});
 
