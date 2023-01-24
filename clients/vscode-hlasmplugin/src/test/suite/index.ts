@@ -17,69 +17,44 @@ import * as Mocha from 'mocha';
 import * as glob from 'glob';
 import * as vscode from 'vscode';
 import * as process from 'process';
-import { popWaitRequestResolver, timeout } from './testHelper';
-import { EXTENSION_ID } from '../../extension';
-
-async function primeExtension(): Promise<vscode.Disposable[]> {
-	const ext = await vscode.extensions.getExtension(EXTENSION_ID).activate();
-	const lang: {
-		onReady(): Promise<void>;
-		sendRequest<R>(method: string, param: any, token?: vscode.CancellationToken): Promise<R>;
-	} = ext!.getExtension()!;
-	// wait for the language server initialization
-	await Promise.race([lang.onReady(), timeout(30000, 'Language server initialization failed')]);
-	// prime opcode suggestions to avoid timeouts
-	await Promise.race([lang.sendRequest<object>('textDocument/$/opcode_suggestion', { opcodes: ['OPCODE'] }), timeout(30000, 'Opcode suggestion request failed')]);
-
-	return [vscode.debug.registerDebugAdapterTrackerFactory('hlasm', {
-		createDebugAdapterTracker: function (session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterTracker> {
-			return {
-				onDidSendMessage: (message: any) => {
-					if (message.type !== 'response')
-						return;
-					const resolver = popWaitRequestResolver(message.command, session.id);
-					if (resolver)
-						resolver();
-				}
-			};
-		}
-	})];
-}
 
 export async function run(): Promise<void> {
-	const is_vscode = process.execPath.includes('Code');
 
-	// Create the mocha test
-	const mocha = new Mocha({ ui: 'tdd', color: true });
-	const testsPath = path.join(__dirname, '..');
+	for (let repeat = 0; repeat < 1000; ++repeat) {
+		const files = await vscode.workspace.findFiles('open');
+		const file = file[0]!;
 
-	const files = await new Promise<string[]>((resolve, reject) => {
-		glob((is_vscode) ? '**/**.test.js' : '**/integration.test.js', { cwd: testsPath }, (err, files) => {
-			if (err)
-				reject(err);
-			else
-				resolve(files);
+		console.log('File', file);
+
+		let document = await vscode.workspace.openTextDocument(file);
+
+		console.log('Lang Id', document.languageId);
+		//if (language_id)
+		//    document = await vscode.languages.setTextDocumentLanguage(document, language_id);
+
+		const visible = new Promise<vscode.TextEditor>((resolve) => {
+			const listener = vscode.window.onDidChangeActiveTextEditor((e) => {
+				if (e) {
+					listener.dispose();
+					resolve(e);
+				}
+			})
 		});
-	});
+		const editor = await vscode.window.showTextDocument(document, { preview: false });
 
-	// Add files to the test suite
-	files.forEach(file => mocha.addFile(path.resolve(testsPath, file)));
+		console.log('Lang Id 2', document.languageId);
 
-	const toDispose = await primeExtension();
+		assert.strictEqual(await visible, editor);
 
-	await new Promise((resolve, reject) => {
-		// Run the mocha test
-		mocha.run(failures => {
-			if (failures > 0) {
-				if (!is_vscode)
-					console.error('>>>THEIA TESTS FAILED<<<');
-				reject(new Error(`${failures} tests failed.`));
-			} else {
-				resolve(undefined);
-			}
-		});
-	}).finally(() => { toDispose.forEach(d => d.dispose()) });
+		console.log('Lang Id 3', document.languageId);
 
-	if (!is_vscode)
-		console.log('>>>THEIA TESTS PASSED<<<');
+		const toDispose = vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); });
+		//toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
+		for (let i = 0; i < 10; ++i)
+			await helper.sleep(100);
+
+		toDispose.dispose();
+
+		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+	}
 }
