@@ -22,7 +22,7 @@ export async function run(): Promise<void> {
 
 	for (let repeat = 0; repeat < 1000; ++repeat) {
 		const files = await vscode.workspace.findFiles('open');
-		const file = file[0]!;
+		const file = files[0]!;
 
 		console.log('File', file);
 
