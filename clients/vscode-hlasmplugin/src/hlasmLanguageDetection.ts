@@ -40,6 +40,7 @@ export class HLASMLanguageDetection {
         // check only plain text files
         if (document.languageId == 'plaintext' && !this.EndsWithExtension(document)) {
             if (this.checkHlasmLanguage(document)) {
+                console.log("setHlasmLanguage");
                 vscode.languages.setTextDocumentLanguage(document, 'hlasm');
                 return true;
             }
