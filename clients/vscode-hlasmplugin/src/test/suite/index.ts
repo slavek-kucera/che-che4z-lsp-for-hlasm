@@ -64,7 +64,12 @@ export async function run(): Promise<void> {
 
 		toDispose.dispose();
 
+		const revert = new Promise<vscode.TextEditor[]>((resolve) => {
+			setTimeout(resolve, 5000);
+			const dispose = vscode.window.onDidChangeVisibleTextEditors(e => { dispose.dispose(); resolve(e); });
+		});
 		await vscode.commands.executeCommand('workbench.action.files.revert');
+		console.log("revert", await revert);
 
 		const closeAllEditors = new Promise<vscode.TextEditor[]>((resolve) => {
 			const dispose = vscode.window.onDidChangeVisibleTextEditors(e => { dispose.dispose(); resolve(e); });
