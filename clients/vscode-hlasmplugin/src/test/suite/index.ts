@@ -19,7 +19,7 @@ export async function run(): Promise<void> {
 	let stop = false;
 	for (let repeat = 0; !stop && repeat < 1000; ++repeat) {
 		console.log('Round', repeat);
-		const files = await vscode.workspace.findFiles('open');
+		const files = await vscode.workspace.findFiles('plain.txt');
 		const file = files[0]!;
 
 		console.log('File', file);
@@ -27,7 +27,7 @@ export async function run(): Promise<void> {
 		let document = await vscode.workspace.openTextDocument(file);
 
 		console.log('Lang Id', document.languageId);
-		document = await vscode.languages.setTextDocumentLanguage(document, 'hlasm');
+		//document = await vscode.languages.setTextDocumentLanguage(document, 'hlasm');
 
 		const visible = new Promise<vscode.TextEditor>((resolve) => {
 			const listener = vscode.window.onDidChangeActiveTextEditor((e) => {
