@@ -57,6 +57,7 @@ export async function run(): Promise<void> {
 			console.log("Editor2", editor);
 			edit.insert(new vscode.Position(7, 1), 'L');
 		});
+		console.log("Editor3", editor);
 
 		for (let i = 0; i < 10; ++i)
 			await new Promise<void>((resolve) => { setTimeout(resolve, 100); });
