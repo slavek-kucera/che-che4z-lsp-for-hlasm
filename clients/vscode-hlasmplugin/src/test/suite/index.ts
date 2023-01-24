@@ -48,7 +48,7 @@ export async function run(): Promise<void> {
 		const toDispose = vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); });
 		//toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
 		for (let i = 0; i < 10; ++i)
-			await new Promise<void>((resolve) => { setTimeout(resolve, ms); });
+			await new Promise<void>((resolve) => { setTimeout(resolve, 100); });
 
 		toDispose.dispose();
 
