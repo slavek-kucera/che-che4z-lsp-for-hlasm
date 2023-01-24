@@ -16,7 +16,7 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 
 export async function run(): Promise<void> {
-	(process as any).parentPort.on('message', e => e.ports[0].on('message', e => console.log("message", e.data)));
+	(process as any).parentPort.on('message', (e: any) => { e.ports[0].on('message', (e: any) => { console.log("message", e.data); }); });
 	let stop = false;
 	vscode.workspace.onDidOpenTextDocument(e => console.log("onDidOpenTextDocument", e));
 	for (let repeat = 0; !stop && repeat < 10; ++repeat) {
