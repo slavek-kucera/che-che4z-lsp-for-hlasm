@@ -65,6 +65,11 @@ export async function run(): Promise<void> {
 		toDispose.dispose();
 
 		await vscode.commands.executeCommand('workbench.action.files.revert');
+
+		const closeAllEditors = new Promise<vscode.TextEditor[]>((resolve) => {
+			const dispose = vscode.window.onDidChangeVisibleTextEditors(e => { dispose.dispose(); resolve(e); });
+		});
 		await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+		console.log("closeAllEditors", await closeAllEditors);
 	}
 }
