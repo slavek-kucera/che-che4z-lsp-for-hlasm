@@ -37,9 +37,12 @@ export async function run(): Promise<void> {
 				}
 			})
 		});
-		
+
 		comment = 'pre-show';
 		const editor = await vscode.window.showTextDocument(document, { preview: false });
+		const d = editor.dispose;
+		const changeit: any = editor;
+		changeit.dispose = () => { console.trace(); d(); };
 		comment = 'post-show';
 
 		assert.strictEqual(await visible, editor);
@@ -59,7 +62,7 @@ export async function run(): Promise<void> {
 		comment = 'post-revert';
 
 		comment = 'pre-close';
-		await vscode.commands.executeCommand('workbench.action.closeAllGroups');		
+		await vscode.commands.executeCommand('workbench.action.closeAllGroups');
 		comment = 'post-close';
 	}
 }
