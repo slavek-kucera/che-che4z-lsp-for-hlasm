@@ -40,8 +40,8 @@ export async function run(): Promise<void> {
 
 		comment = 'pre-show';
 		const editor = await vscode.window.showTextDocument(document, { preview: false });
-		const d = editor.dispose;
 		const changeit: any = editor;
+		const d = changeit.dispose;
 		changeit.dispose = () => { console.trace(); d(); };
 		comment = 'post-show';
 
