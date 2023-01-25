@@ -34,7 +34,7 @@ async function main() {
 			if (err) {
 			  return console.log(err);
 			}
-			var result = data.replace(/tryHideEditor\(.+?\)\}\}\)\}dispose\(\)\{/g, '$0console.trace();');
+			var result = data.replace(/tryHideEditor\(.+?\)\}\}\)\}dispose\(\)\{/g, '$&console.trace();');
 		
 			fs.writeFile(filename, result, 'utf8', function (err: any) {
 			  if (err) return console.log(err);
