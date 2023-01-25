@@ -51,8 +51,15 @@ export async function run(): Promise<void> {
 		});
 		comment = 'post-edit';
 
-		for (let i = 0; i < 10; ++i)
+		for (let i = 0; i < 50; ++i)
 			await new Promise<void>((resolve) => { setTimeout(resolve, 100); });
+
+		comment = 'pre-edit2';
+		await editor.edit(edit => {
+			comment = 'in-edit';
+			edit.insert(new vscode.Position(7, 1), 'L');
+		});
+		comment = 'post-edit2';
 
 		comment = 'pre-revert';
 		await vscode.commands.executeCommand('workbench.action.files.revert');
