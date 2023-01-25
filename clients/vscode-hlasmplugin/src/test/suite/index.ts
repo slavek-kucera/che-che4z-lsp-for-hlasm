@@ -25,14 +25,9 @@ export async function run(): Promise<void> {
 		const files = await vscode.workspace.findFiles('plain.txt');
 		const file = files[0]!;
 
-		console.log('File', file);
-
 		comment = 'pre-open';
 		let document = await vscode.workspace.openTextDocument(file);
 		comment = 'post-open';
-
-		console.log('Lang Id', document.languageId);
-		//document = await vscode.languages.setTextDocumentLanguage(document, 'hlasm');
 
 		const visible = new Promise<vscode.TextEditor>((resolve) => {
 			const listener = vscode.window.onDidChangeActiveTextEditor((e) => {
@@ -47,19 +42,12 @@ export async function run(): Promise<void> {
 		const editor = await vscode.window.showTextDocument(document, { preview: false });
 		comment = 'post-show';
 
-		console.log('Lang Id 2', document.languageId);
-
 		assert.strictEqual(await visible, editor);
-
-		console.log('Lang Id 3', document.languageId);
-
-		console.log("Editor", editor);
 
 		await editor.edit(edit => {
 			console.log("Editor2", editor);
 			edit.insert(new vscode.Position(7, 1), 'L');
 		});
-		console.log("Editor3", editor);
 
 		for (let i = 0; i < 10; ++i)
 			await new Promise<void>((resolve) => { setTimeout(resolve, 100); });
