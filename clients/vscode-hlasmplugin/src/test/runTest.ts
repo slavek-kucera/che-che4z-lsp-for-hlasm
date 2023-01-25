@@ -25,19 +25,22 @@ async function main() {
 		const launchArgs = [path.join(__dirname, './workspace/'), '--disable-extensions', '--disable-workspace-trust'];
 		const vscodeExecutablePath = process.argv.length > 2 && process.argv[2] == 'insiders' && await downloadAndUnzipVSCode('insiders') || undefined;
 
-		const fs = require('fs')
-		const filename = '/Users/runner/work/che-che4z-lsp-for-hlasm/che-che4z-lsp-for-hlasm/clients/vscode-hlasmplugin/.vscode-test/vscode-darwin-insiders/Visual Studio Code - Insiders.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js';
-		fs.readFile(filename, 'utf8', function (err: any, data: string) {
+		const filenames = [
+			'/Users/runner/work/che-che4z-lsp-for-hlasm/che-che4z-lsp-for-hlasm/clients/vscode-hlasmplugin/.vscode-test/vscode-darwin-insiders/Visual Studio Code - Insiders.app/Contents/Resources/app/out/vs/workbench/api/node/extensionHostProcess.js',
+			'/Users/runner/work/che-che4z-lsp-for-hlasm/che-che4z-lsp-for-hlasm/clients/vscode-hlasmplugin/.vscode-test/vscode-darwin-insiders/Visual Studio Code - Insiders.app/Contents/Resources/app/out/vs/workbench/api/worker/extensionHostWorker.js',
+		  ];
+		  const fs = require('fs')
+		  filenames.forEach(filename => fs.readFile(filename, 'utf8', function (err: any, data: string) {
 			if (err) {
-				return console.log(err);
+			  return console.log(err);
 			}
-			var result = data.replace('tryHideEditor(v)}})}dispose(){', 'tryHideEditor(v)}})}dispose(){console.trace()');
-	
-			fs.writeFile(filename, result, 'utf8', function (err: any) {
-				if (err) return console.log(err);
-			});
-		});
+			var result = data.replace(/tryHideEditor\(.+?\)\}\}\)\}dispose\(\)\{/g, '$0console.trace();');
 		
+			fs.writeFile(filename, result, 'utf8', function (err: any) {
+			  if (err) return console.log(err);
+			});
+		  }));
+
 		// run tests
 		await runTests({
 			vscodeExecutablePath,
