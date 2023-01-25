@@ -44,10 +44,12 @@ export async function run(): Promise<void> {
 
 		assert.strictEqual(await visible, editor);
 
+		comment = 'pre-edit';
 		await editor.edit(edit => {
-			console.log("Editor2", editor);
+			comment = 'in-edit';
 			edit.insert(new vscode.Position(7, 1), 'L');
 		});
+		comment = 'post-edit';
 
 		for (let i = 0; i < 10; ++i)
 			await new Promise<void>((resolve) => { setTimeout(resolve, 100); });
