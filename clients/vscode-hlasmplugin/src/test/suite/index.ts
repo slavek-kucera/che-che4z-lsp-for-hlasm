@@ -16,6 +16,8 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 
 export async function run(): Promise<void> {
+	let comment = '';
+	vscode.window.onDidChangeVisibleTextEditors(e => { console.log(`visible text editors (${comment})`, e); });
 	let stop = false;
 	vscode.workspace.onDidOpenTextDocument(e => console.log("onDidOpenTextDocument", e));
 	for (let repeat = 0; !stop && repeat < 10; ++repeat) {
@@ -25,7 +27,9 @@ export async function run(): Promise<void> {
 
 		console.log('File', file);
 
+		comment = 'pre-open';
 		let document = await vscode.workspace.openTextDocument(file);
+		comment = 'post-open';
 
 		console.log('Lang Id', document.languageId);
 		//document = await vscode.languages.setTextDocumentLanguage(document, 'hlasm');
@@ -38,18 +42,16 @@ export async function run(): Promise<void> {
 				}
 			})
 		});
+		
+		comment = 'pre-show';
 		const editor = await vscode.window.showTextDocument(document, { preview: false });
+		comment = 'post-show';
 
 		console.log('Lang Id 2', document.languageId);
 
 		assert.strictEqual(await visible, editor);
 
 		console.log('Lang Id 3', document.languageId);
-
-		const toDispose = vscode.window.onDidChangeVisibleTextEditors(e => { console.log('onDidChangeVisibleTextEditors', editor, e, new Error().stack); stop = true; });
-		//toDispose.push(vscode.window.onDidChangeActiveTextEditor(e => { console.log('onDidChangeActiveTextEditor', editor === e, e); }));
-
-		console.log('Lang Id 4', document.languageId);
 
 		console.log("Editor", editor);
 
@@ -62,20 +64,12 @@ export async function run(): Promise<void> {
 		for (let i = 0; i < 10; ++i)
 			await new Promise<void>((resolve) => { setTimeout(resolve, 100); });
 
-		toDispose.dispose();
-
-		const revert = new Promise<vscode.TextEditor[]>((resolve) => {
-			setTimeout(resolve, 5000);
-			const dispose = vscode.window.onDidChangeVisibleTextEditors(e => { dispose.dispose(); resolve(e); });
-		});
+		comment = 'pre-revert';
 		await vscode.commands.executeCommand('workbench.action.files.revert');
-		console.log("revert", await revert);
+		comment = 'post-revert';
 
-		const closeAllEditors = new Promise<vscode.TextEditor[]>((resolve) => {
-			setTimeout(resolve, 5000);
-			const dispose = vscode.window.onDidChangeVisibleTextEditors(e => { dispose.dispose(); resolve(e); });
-		});
-		await vscode.commands.executeCommand('workbench.action.closeAllGroups');
-		console.log("closeAllEditors", await closeAllEditors);
+		comment = 'pre-close';
+		await vscode.commands.executeCommand('workbench.action.closeAllGroups');		
+		comment = 'post-close';
 	}
 }
