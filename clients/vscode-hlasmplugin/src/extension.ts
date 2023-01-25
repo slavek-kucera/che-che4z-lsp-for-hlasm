@@ -57,68 +57,68 @@ function objectToString(o: any) {
  */
 export async function activate(context: vscode.ExtensionContext) {
     return;
-    const serverVariant = getConfig<ServerVariant>('serverVariant', 'native');
-
-    const telemetry = new Telemetry();
-    context.subscriptions.push(telemetry);
-
-    // setTimeout is needed, because telemetry initialization is asynchronous
-    // and AFAIK no event in the API is exposed to send the activation telemetry event
-    setTimeout(() => { telemetry.reportEvent("hlasm.activated", { server_variant: serverVariant.toString() }); }, 1000);
-
-    // patterns for files and configs
-    const filePattern: string = '**/*';
-
-    const clientErrorHandler = new LanguageClientErrorHandler(telemetry);
-
-    // create client options
-    const syncFileEvents = getConfig<boolean>('syncFileEvents', true);
-    const clientOptions: vscodelc.LanguageClientOptions = {
-        documentSelector: [{ language: 'hlasm' }],
-        synchronize: !syncFileEvents ? undefined : {
-            fileEvents: [
-                vscode.workspace.createFileSystemWatcher(filePattern),
-                vscode.workspace.createFileSystemWatcher(hlasmplugin_folder + '/*.json'),
-            ]
-        },
-        errorHandler: clientErrorHandler
-    };
-
-
-    // create server options
-    const factory = new ServerFactory();
-
-    const serverOptions = await factory.create(serverVariant);
-
-    //client init
-    const hlasmpluginClient = new vscodelc.LanguageClient('Hlasmplugin Language Server', serverOptions, clientOptions);
-
-    clientErrorHandler.defaultHandler = hlasmpluginClient.createDefaultErrorHandler();
-    // The objectToString is necessary, because telemetry reporter only takes objects with
-    // string properties and there are some boolean that we receive from the language server
-    hlasmpluginClient.onTelemetry((object) => { telemetry.reportEvent(object.method_name, objectToString(object.properties), object.measurements) });
-
-    // register all commands and objects to context
-    await registerToContext(context, hlasmpluginClient, telemetry);
-
-    //give the server some time to start listening when using TCP
-    if (serverVariant === 'tcp')
-        await sleep(2000);
-
-    context.subscriptions.push(hlasmpluginClient.start());
-
-    if (serverVariant === 'native')
-        startCheckingNativeClient(hlasmpluginClient);
-
-    let api = {
-        getExtension(): vscodelc.LanguageClient {
-            return hlasmpluginClient;
-        },
-        getTelemetry(): Telemetry {
-            return telemetry;
-        }
-    };
-    return api;
+//    const serverVariant = getConfig<ServerVariant>('serverVariant', 'native');
+//
+//    const telemetry = new Telemetry();
+//    context.subscriptions.push(telemetry);
+//
+//    // setTimeout is needed, because telemetry initialization is asynchronous
+//    // and AFAIK no event in the API is exposed to send the activation telemetry event
+//    setTimeout(() => { telemetry.reportEvent("hlasm.activated", { server_variant: serverVariant.toString() }); }, 1000);
+//
+//    // patterns for files and configs
+//    const filePattern: string = '**/*';
+//
+//    const clientErrorHandler = new LanguageClientErrorHandler(telemetry);
+//
+//    // create client options
+//    const syncFileEvents = getConfig<boolean>('syncFileEvents', true);
+//    const clientOptions: vscodelc.LanguageClientOptions = {
+//        documentSelector: [{ language: 'hlasm' }],
+//        synchronize: !syncFileEvents ? undefined : {
+//            fileEvents: [
+//                vscode.workspace.createFileSystemWatcher(filePattern),
+//                vscode.workspace.createFileSystemWatcher(hlasmplugin_folder + '/*.json'),
+//            ]
+//        },
+//        errorHandler: clientErrorHandler
+//    };
+//
+//
+//    // create server options
+//    const factory = new ServerFactory();
+//
+//    const serverOptions = await factory.create(serverVariant);
+//
+//    //client init
+//    const hlasmpluginClient = new vscodelc.LanguageClient('Hlasmplugin Language Server', serverOptions, clientOptions);
+//
+//    clientErrorHandler.defaultHandler = hlasmpluginClient.createDefaultErrorHandler();
+//    // The objectToString is necessary, because telemetry reporter only takes objects with
+//    // string properties and there are some boolean that we receive from the language server
+//    hlasmpluginClient.onTelemetry((object) => { telemetry.reportEvent(object.method_name, objectToString(object.properties), object.measurements) });
+//
+//    // register all commands and objects to context
+//    await registerToContext(context, hlasmpluginClient, telemetry);
+//
+//    //give the server some time to start listening when using TCP
+//    if (serverVariant === 'tcp')
+//        await sleep(2000);
+//
+//    context.subscriptions.push(hlasmpluginClient.start());
+//
+//    if (serverVariant === 'native')
+//        startCheckingNativeClient(hlasmpluginClient);
+//
+//    let api = {
+//        getExtension(): vscodelc.LanguageClient {
+//            return hlasmpluginClient;
+//        },
+//        getTelemetry(): Telemetry {
+//            return telemetry;
+//        }
+//    };
+//    return api;
 }
 
 function startCheckingNativeClient(hlasmpluginClient: vscodelc.LanguageClient) {
