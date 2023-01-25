@@ -56,6 +56,7 @@ function objectToString(o: any) {
  * activates the extension
  */
 export async function activate(context: vscode.ExtensionContext) {
+    return;
     const serverVariant = getConfig<ServerVariant>('serverVariant', 'native');
 
     const telemetry = new Telemetry();
