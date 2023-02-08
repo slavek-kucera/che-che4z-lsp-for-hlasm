@@ -15,6 +15,7 @@
 #ifndef HLASMPLUGIN_PARSERLIBRARY_MACRO_CACHE_H
 #define HLASMPLUGIN_PARSERLIBRARY_MACRO_CACHE_H
 
+#include <algorithm>
 #include <compare>
 #include <memory>
 
@@ -99,7 +100,9 @@ struct macro_cache_key
             return c;
         if (auto c = opsyn_state.size() <=> o.opsyn_state.size(); c != 0)
             return c;
-        return opsyn_state <=> o.opsyn_state;
+        // libc++ still does not support <=> for vector
+        return std::lexicographical_compare_three_way(
+            opsyn_state.begin(), opsyn_state.end(), o.opsyn_state.begin(), o.opsyn_state.end());
     }
 };
 
