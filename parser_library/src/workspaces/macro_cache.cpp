@@ -60,7 +60,7 @@ std::vector<cached_opsyn_mnemo> macro_cache_key::get_opsyn_state(context::hlasm_
 
 macro_cache_key macro_cache_key::create_from_context(context::hlasm_context& hlasm_ctx, library_data data)
 {
-    return { hlasm_ctx.ids_ptr(), data, get_opsyn_state(hlasm_ctx) };
+    return { comparable_weak_ptr(hlasm_ctx.ids_ptr()), data, get_opsyn_state(hlasm_ctx) };
 }
 
 void macro_cache_key::sort_opsyn_state(std::vector<cached_opsyn_mnemo>& opsyn_state)

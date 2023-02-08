@@ -33,7 +33,7 @@ class file_manager;
 // Implementation of the processor_file interface. Uses analyzer to parse the file
 // Then stores it until the next parsing so it is possible to retrieve parsing
 // information from it.
-class processor_file_impl final : public virtual processor_file, public diagnosable_impl
+class processor_file_impl final : public processor_file, public diagnosable_impl
 {
 public:
     processor_file_impl(std::shared_ptr<file> file, file_manager& file_mngr, std::atomic<bool>* cancel = nullptr);

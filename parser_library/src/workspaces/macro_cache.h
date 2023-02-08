@@ -55,7 +55,7 @@ class comparable_weak_ptr
     T* direct_ptr;
 
 public:
-    comparable_weak_ptr(const std::shared_ptr<T>& s)
+    explicit comparable_weak_ptr(const std::shared_ptr<T>& s)
         : ptr(s)
         , direct_ptr(s.get())
     {}
