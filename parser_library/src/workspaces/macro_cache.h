@@ -15,11 +15,24 @@
 #ifndef HLASMPLUGIN_PARSERLIBRARY_MACRO_CACHE_H
 #define HLASMPLUGIN_PARSERLIBRARY_MACRO_CACHE_H
 
-#include <algorithm>
 #include <compare>
+#include <map>
 #include <memory>
+#include <variant>
+#include <vector>
 
-#include "analyzer.h"
+#include "context/copy_member.h"
+#include "context/id_storage.h"
+#include "lsp/macro_info.h"
+#include "parse_lib_provider.h"
+#include "protocol.h"
+
+namespace hlasm_plugin::parser_library {
+class analyzer;
+} // namespace hlasm_plugin::parser_library
+namespace hlasm_plugin::parser_library::context {
+class hlasm_context;
+} // namespace hlasm_plugin::parser_library::context
 
 namespace hlasm_plugin::parser_library::workspaces {
 
@@ -100,9 +113,11 @@ struct macro_cache_key
             return c;
         if (auto c = opsyn_state.size() <=> o.opsyn_state.size(); c != 0)
             return c;
-        // libc++ still does not support <=> for vector
-        return std::lexicographical_compare_three_way(
-            opsyn_state.begin(), opsyn_state.end(), o.opsyn_state.begin(), o.opsyn_state.end());
+        // libc++ still does not support <=> for vector or lexicographical_compare_three_way
+        for (auto l = opsyn_state.begin(), r = o.opsyn_state.begin(); l != opsyn_state.end(); ++l, ++r)
+            if (auto c = *l <=> *r; c != 0)
+                return c;
+        return std::strong_ordering::equal;
     }
 };
 
@@ -118,7 +133,7 @@ struct macro_cache_data
     std::variant<lsp::macro_info_ptr, context::copy_member_ptr> cached_member;
 };
 
-class macro_cache final : public diagnosable_impl
+class macro_cache final
 {
     std::map<macro_cache_key, macro_cache_data> cache_;
     const file_manager* file_mngr_;
@@ -135,8 +150,6 @@ public:
 private:
     [[nodiscard]] const macro_cache_data* find_cached_data(const macro_cache_key& key) const;
     [[nodiscard]] version_stamp get_copy_member_versions(context::macro_def_ptr ctx) const;
-
-    void collect_diags() const override;
 };
 
 } // namespace hlasm_plugin::parser_library::workspaces

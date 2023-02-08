@@ -16,16 +16,13 @@
 
 #include <array>
 
+#include "analyzer.h"
+#include "context/hlasm_context.h"
 #include "context/special_instructions.h"
 #include "file_manager.h"
 #include "lsp/lsp_context.h"
 
 namespace hlasm_plugin::parser_library::workspaces {
-
-void macro_cache::collect_diags() const
-{
-    // No collectible children
-}
 
 macro_cache::macro_cache(const file_manager& file_mngr, std::shared_ptr<file> macro_file)
     : file_mngr_(&file_mngr)
