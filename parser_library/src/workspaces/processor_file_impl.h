@@ -53,7 +53,7 @@ public:
     const std::set<utils::resource::resource_location>& files_to_close() override;
     const performance_metrics& get_metrics() override;
 
-    void erase_cache_of_opencode(const utils::resource::resource_location& opencode_file_location) override;
+    void erase_unused_cache_entries() override;
 
     bool has_lsp_info() const override;
 

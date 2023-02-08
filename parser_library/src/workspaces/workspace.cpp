@@ -358,7 +358,7 @@ void workspace::did_close_file(const utils::resource::resource_location& file_lo
         {
             auto proc_file = find_processor_file(dep);
             if (proc_file)
-                proc_file->erase_cache_of_opencode(file_location);
+                proc_file->erase_unused_cache_entries();
         }
         // remove it from dependants
         dependants_.erase(fname);

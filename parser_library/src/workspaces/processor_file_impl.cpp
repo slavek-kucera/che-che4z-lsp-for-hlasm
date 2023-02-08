@@ -157,10 +157,7 @@ const performance_metrics& processor_file_impl::get_metrics()
     return metrics;
 }
 
-void processor_file_impl::erase_cache_of_opencode(const utils::resource::resource_location& opencode_file_location)
-{
-    macro_cache_.erase_cache_of_opencode(opencode_file_location);
-}
+void processor_file_impl::erase_unused_cache_entries() { macro_cache_.erase_unused(); }
 
 bool processor_file_impl::should_collect_hl(context::hlasm_context* ctx) const
 {
