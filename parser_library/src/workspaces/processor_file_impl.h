@@ -71,10 +71,11 @@ public:
 private:
     file_manager& file_mngr_;
     std::shared_ptr<file> file_;
-    std::unique_ptr<analyzer> last_analyzer_ = nullptr;
+    std::unique_ptr<analyzer> last_analyzer_;
     std::shared_ptr<context::id_storage> last_opencode_id_storage_;
-    bool last_analyzer_opencode_ = false;
     bool last_analyzer_with_lsp = false;
+
+    semantics::lines_info last_hl_info_;
 
     std::atomic<bool>* cancel_;
 
