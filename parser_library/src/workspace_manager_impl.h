@@ -881,10 +881,12 @@ private:
         auto [channel, data] = make_workspace_manager_response(std::in_place_type<content_t>);
         m_external_file_requests->read_external_file(document_loc.get_uri().c_str(), channel);
 
-        while (!channel.resolved())
-            co_await utils::task::suspend();
+        return [](auto channel, auto data) -> utils::value_task<std::optional<std::string>> {
+            while (!channel.resolved())
+                co_await utils::task::suspend();
 
-        co_return std::move(data->result);
+            co_return std::move(data->result);
+        }(std::move(channel), std::move(data));
     }
 
     [[nodiscard]] utils::value_task<std::optional<std::string>> load_text(
@@ -944,10 +946,15 @@ private:
         auto [channel, data] = make_workspace_manager_response(std::in_place_type<content_t>, std::move(directory));
         m_external_file_requests->read_external_directory(data->dir.get_uri().c_str(), channel);
 
-        while (!channel.resolved())
-            co_await utils::task::suspend();
+        return
+            [](auto channel, auto data)
+                -> utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
+                    utils::path::list_directory_rc>> {
+                while (!channel.resolved())
+                    co_await utils::task::suspend();
 
-        co_return std::move(data->result);
+                co_return std::move(data->result);
+            }(std::move(channel), std::move(data));
     }
 
     [[nodiscard]] utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
