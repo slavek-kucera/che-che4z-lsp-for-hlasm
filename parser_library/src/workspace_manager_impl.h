@@ -32,7 +32,9 @@
 #include "nlohmann/json.hpp"
 #include "protocol.h"
 #include "utils/content_loader.h"
+#include "utils/encoding.h"
 #include "utils/error_codes.h"
+#include "utils/path_conversions.h"
 #include "utils/scope_exit.h"
 #include "utils/task.h"
 #include "workspace_manager.h"
@@ -88,6 +90,18 @@ public:
                 for (auto& [_, ows] : self.m_workspaces)
                     if (ows.ws.uri() == related_ws.get_uri())
                         return ows;
+        }
+
+        std::string replacement_uri;
+        if (document_uri.starts_with(hlasm_external_scheme))
+        {
+            utils::path::dissected_uri uri_components = utils::path::dissect_uri(document_uri);
+            if (uri_components.contains_host())
+            {
+                replacement_uri = utils::encoding::uri_friendly_base16_decode(uri_components.auth->host);
+                if (!replacement_uri.empty())
+                    document_uri = replacement_uri;
+            }
         }
 
         size_t max = 0;
@@ -900,13 +914,17 @@ private:
                 utils::path::list_directory_rc>
                 result;
 
-            void provide(sequence<sequence<char>> c)
+            void provide(workspace_manager_external_directory_result c)
             {
                 try
                 {
+                    std::string ext(c.suggested_extension);
                     auto& dirs = result.first;
-                    for (auto s : c)
-                        dirs.emplace_back(std::string(s), dir.join(std::string_view(s)));
+                    for (auto s : c.members)
+                    {
+                        std::string file(s);
+                        dirs.emplace_back(std::move(file), utils::resource::resource_location::join(dir, file + ext));
+                    }
                 }
                 catch (...)
                 {

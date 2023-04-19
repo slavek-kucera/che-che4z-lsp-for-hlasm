@@ -41,7 +41,7 @@ TEST(proc_grps, library_read)
 
 TEST(proc_grps, library_write)
 {
-    const library l = { "lib", {}, true };
+    const library l = library { "lib", {}, true };
     const auto expected = R"({"path":"lib","optional":true})"_json;
 
     EXPECT_EQ(nlohmann::json(l), expected);
@@ -59,9 +59,11 @@ static void compare_proc_grps(const proc_grps& pg, const proc_grps& expected)
         ASSERT_EQ(pg.pgroups[i].libs.size(), expected.pgroups[i].libs.size());
         for (size_t j = 0; j < pg.pgroups[i].libs.size(); ++j)
         {
-            EXPECT_EQ(pg.pgroups[i].libs[j].optional, expected.pgroups[i].libs[j].optional);
-            EXPECT_EQ(pg.pgroups[i].libs[j].path, expected.pgroups[i].libs[j].path);
-            EXPECT_EQ(pg.pgroups[i].libs[j].macro_extensions, expected.pgroups[i].libs[j].macro_extensions);
+            const auto& lib = std::get<library>(pg.pgroups[i].libs[j]);
+            const auto& elib = std::get<library>(expected.pgroups[i].libs[j]);
+            EXPECT_EQ(lib.optional, elib.optional);
+            EXPECT_EQ(lib.path, elib.path);
+            EXPECT_EQ(lib.macro_extensions, elib.macro_extensions);
         }
     }
 }
@@ -71,19 +73,22 @@ TEST(proc_grps, full_content_read)
     const auto cases = {
         std::make_pair(R"({"pgroups":[]})"_json, proc_grps {}),
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":["lib1", {"path": "lib2", "optional":true}]}]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false }, { "lib2", {}, true } } } } }),
+            proc_grps { { { "P1", { library { "lib1", {}, false }, library { "lib2", {}, true } } } } }),
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":["lib1", {"path": "lib2", "optional":true}]},{"name":"P2", "libs":["lib2_1", {"path": "lib2_2", "optional":true}]}]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false }, { "lib2", {}, true } } },
-                { "P2", { { "lib2_1", {}, false }, { "lib2_2", {}, true } } } } }),
+            proc_grps { { { "P1", { library { "lib1", {}, false }, library { "lib2", {}, true } } },
+                { "P2", { library { "lib2_1", {}, false }, library { "lib2_2", {}, true } } } } }),
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":["lib1", {"path": "lib2", "optional":true}],"asm_options":{"SYSPARM":"PARAM","PROFILE":"PROFMAC"}},{"name":"P2", "libs":["lib2_1", {"path": "lib2_2", "optional":true}]}]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false }, { "lib2", {}, true } }, { "PARAM", "PROFMAC" } },
-                { "P2", { { "lib2_1", {}, false }, { "lib2_2", {}, true } } } } }),
+            proc_grps {
+                { { "P1", { library { "lib1", {}, false }, library { "lib2", {}, true } }, { "PARAM", "PROFMAC" } },
+                    { "P2", { library { "lib2_1", {}, false }, library { "lib2_2", {}, true } } } } }),
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":["lib1", {"path": "lib2", "optional":true,"macro_extensions":["mac"]}],"asm_options":{"SYSPARM":"PARAM","PROFILE":"PROFMAC"}},{"name":"P2", "libs":["lib2_1", {"path": "lib2_2", "optional":true}]}],"macro_extensions":["asmmac"]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false }, { "lib2", { "mac" }, true } }, { "PARAM", "PROFMAC" } },
-                            { "P2", { { "lib2_1", {}, false }, { "lib2_2", {}, true } } } },
+            proc_grps { { { "P1",
+                              { library { "lib1", {}, false }, library { "lib2", { "mac" }, true } },
+                              { "PARAM", "PROFMAC" } },
+                            { "P2", { library { "lib2_1", {}, false }, library { "lib2_2", {}, true } } } },
                 { "asmmac" } }),
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[]}]})"_json, proc_grps { { { "P1", {}, {}, {} } } }),
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[], "preprocessor":"DB2"}]})"_json,
@@ -113,9 +118,9 @@ TEST(proc_grps, full_content_read)
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[], "preprocessor":{"name":"ENDEVOR"}}]})"_json,
             proc_grps { { { "P1", {}, {}, { { endevor_preprocessor {} } } } } }),
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[{"path": "lib2", "prefer_alternate_root":true}]}]})"_json,
-            proc_grps { { { "P1", { { "lib2", {}, false, processor_group_root_folder::alternate_root } } } } }),
+            proc_grps { { { "P1", { library { "lib2", {}, false, processor_group_root_folder::alternate_root } } } } }),
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[{"path": "lib2", "prefer_alternate_root":false}]}]})"_json,
-            proc_grps { { { "P1", { { "lib2", {}, false, processor_group_root_folder::workspace } } } } }),
+            proc_grps { { { "P1", { library { "lib2", {}, false, processor_group_root_folder::workspace } } } } }),
     };
 
     for (const auto& [input, expected] : cases)
@@ -128,19 +133,22 @@ TEST(proc_grps, full_content_write)
         std::make_pair(R"({"pgroups":[]})"_json, proc_grps {}),
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":[{"path":"lib1","optional":false}, {"path": "lib2", "optional":true}]}]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false }, { "lib2", {}, true } } } } }),
+            proc_grps { { { "P1", { library { "lib1", {}, false }, library { "lib2", {}, true } } } } }),
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":[{"path":"lib1","optional":false}, {"path": "lib2", "optional":true}]},{"name":"P2", "libs":[{"path":"lib2_1","optional":false}, {"path": "lib2_2", "optional":true}]}]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false }, { "lib2", {}, true } } },
-                { "P2", { { "lib2_1", {}, false }, { "lib2_2", {}, true } } } } }),
+            proc_grps { { { "P1", { library { "lib1", {}, false }, library { "lib2", {}, true } } },
+                { "P2", { library { "lib2_1", {}, false }, library { "lib2_2", {}, true } } } } }),
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":[{"path":"lib1","optional":false}, {"path": "lib2", "optional":true}],"asm_options":{"SYSPARM":"PARAM","PROFILE":"PROFMAC"}},{"name":"P2", "libs":[{"path":"lib2_1","optional":false}, {"path": "lib2_2", "optional":true}]}]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false }, { "lib2", {}, true } }, { "PARAM", "PROFMAC" } },
-                { "P2", { { "lib2_1", {}, false }, { "lib2_2", {}, true } } } } }),
+            proc_grps {
+                { { "P1", { library { "lib1", {}, false }, library { "lib2", {}, true } }, { "PARAM", "PROFMAC" } },
+                    { "P2", { library { "lib2_1", {}, false }, library { "lib2_2", {}, true } } } } }),
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":[{"path":"lib1","optional":false}, {"path": "lib2", "optional":true,"macro_extensions":["mac"]}],"asm_options":{"SYSPARM":"PARAM","PROFILE":"PROFMAC"}},{"name":"P2", "libs":[{"path":"lib2_1","optional":false}, {"path": "lib2_2", "optional":true}]}],"macro_extensions":["asmmac"]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false }, { "lib2", { "mac" }, true } }, { "PARAM", "PROFMAC" } },
-                            { "P2", { { "lib2_1", {}, false }, { "lib2_2", {}, true } } } },
+            proc_grps { { { "P1",
+                              { library { "lib1", {}, false }, library { "lib2", { "mac" }, true } },
+                              { "PARAM", "PROFMAC" } },
+                            { "P2", { library { "lib2_1", {}, false }, library { "lib2_2", {}, true } } } },
                 { "asmmac" } }),
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[]}]})"_json, proc_grps { { { "P1", {}, {}, {} } } }),
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[], "preprocessor":"DB2"}]})"_json,
@@ -162,10 +170,10 @@ TEST(proc_grps, full_content_write)
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[], "preprocessor":"ENDEVOR"}]})"_json,
             proc_grps { { { "P1", {}, {}, { { endevor_preprocessor {} } } } } }),
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[{"path":"lib1","optional":false}]}]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false, processor_group_root_folder::workspace } } } } }),
+            proc_grps { { { "P1", { library { "lib1", {}, false, processor_group_root_folder::workspace } } } } }),
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":[{"path":"lib1","optional":false,"prefer_alternate_root":true}]}]})"_json,
-            proc_grps { { { "P1", { { "lib1", {}, false, processor_group_root_folder::alternate_root } } } } }),
+            proc_grps { { { "P1", { library { "lib1", {}, false, processor_group_root_folder::alternate_root } } } } }),
     };
 
     for (const auto& [expected, input] : cases)

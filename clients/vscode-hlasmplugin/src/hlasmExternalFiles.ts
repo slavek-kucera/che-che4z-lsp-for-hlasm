@@ -34,7 +34,10 @@ interface ExternalReadFileResponse {
 }
 interface ExternalReadDirectoryResponse {
     id: number,
-    data: string[],
+    data: {
+        members: string[],
+        suggested_extension: string | undefined,
+    },
 }
 interface ExternalErrorResponse {
     id: number,
@@ -44,16 +47,52 @@ interface ExternalErrorResponse {
     },
 }
 
-function generateFileContent(uriPath: string) {
-    return `.*
-         MACRO
-         ${uriPath.substring(uriPath.length - 4)}
-         MEND`
+export interface ExternalFilesClient {
+    listMembers(dataset: string): Promise<string[] | null | Error>;
+    readMember(dataset: string, member: string): Promise<string | null | Error>;
 }
 
 const magicScheme = 'hlasm-external';
+
+function extractUriDetails(uri: string | vscode.Uri) {
+    if (typeof uri === 'string')
+        uri = vscode.Uri.parse(uri, true);
+
+    if (uri.scheme !== magicScheme) return null;
+
+    const [dataset, member] = uri.path.split('/').slice(1).map(x => x.toUpperCase());
+
+    if (!dataset || !/^(?:[A-Z$#@][A-Z$#@0-9]{1,7})(?:\.(?:[A-Z$#@][A-Z$#@0-9]{1,7}))*$/.test(dataset)) return null;
+    if (member && !/^[A-Z$#@][A-Z$#@0-9]{1,7}(?:\..*)?$/.test(member)) return null; // ignore extension
+
+    return {
+        dataset: dataset,
+        member: member ? member.split('.')[0] : null,
+
+        uniqueName() {
+            if (member)
+                return `${this.dataset}/${this.member}`;
+            else
+                return this.dataset;
+        }
+    }
+}
+
+function invalidResponse(msg: ExternalRequest) {
+    return Promise.resolve({ id: msg.id, error: { code: -5, msg: 'Invalid request' } });
+}
+
 export class HLASMExternalFiles {
     private toDispose: vscode.Disposable[] = [];
+
+    private memberLists = new Map<string, string[] | null>();
+    private memberContent = new Map<string, string | null>();
+
+    private pendingRequests = new Set();
+
+    private client: ExternalFilesClient = null;
+
+    setClient(client: ExternalFilesClient) { this.client = client; }
 
     constructor(client: vscodelc.BaseLanguageClient) {
         this.toDispose.push(client.onNotification('external_file_request', params => this.handleRawMessage(params).then(
@@ -65,44 +104,141 @@ export class HLASMExternalFiles {
                 this.reset();
         }, this, this.toDispose);
 
+        const me = this;
         this.toDispose.push(vscode.workspace.registerTextDocumentContentProvider(magicScheme, {
             provideTextDocumentContent(uri: vscode.Uri, token: vscode.CancellationToken): vscode.ProviderResult<string> {
-                if (uri.scheme === magicScheme && /\/MAC[A-C]$/.test(uri.path))
-                    return generateFileContent(uri.path);
-                return null;
+                if (uri.scheme !== magicScheme)
+                    return null;
+                const details = extractUriDetails(uri);
+                if (!details || !details.member) return null;
+                const content = me.memberContent.get(details.uniqueName());
+                return content || null;
             }
         }));
     }
 
-    reset() { /* drop all pending requests in the future*/ }
+    reset() {
+        this.pendingRequests.clear();
+    }
 
     dispose() {
         this.toDispose.forEach(x => x.dispose());
     }
 
-    private handleFileMessage(msg: ExternalRequest): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse> {
-        if (msg.url.startsWith(magicScheme) && /\/MAC[A-C]$/.test(msg.url))
+    private async handleFileMessage(msg: ExternalRequest): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
+        const details = extractUriDetails(msg.url);
+        if (!details || !details.member)
+            return invalidResponse(msg);
+
+        const content = this.memberContent.get(details.uniqueName());
+        if (content)
             return Promise.resolve({
                 id: msg.id,
-                data: generateFileContent(msg.url)
+                data: content
             });
-        else
+        else if (content === null)
             return Promise.resolve({
                 id: msg.id,
                 error: { code: 0, msg: 'Not found' }
             });
+        if (!this.client)
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: 0, msg: 'Not found' }
+            });
+
+        const token = {};
+        this.pendingRequests.add(token);
+
+        const result = await this.client.readMember(details.dataset, details.member);
+
+        if (!this.pendingRequests.delete(token)) return Promise.resolve(null);
+
+        if (!result) {
+            this.memberContent.set(details.uniqueName(), null);
+
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: 0, msg: 'Not found' }
+            });
+        }
+        else if (result instanceof Error) {
+            vscode.window.showErrorMessage(result.message);
+
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: -1000, msg: result.message }
+            });
+        }
+        else {
+            this.memberContent.set(details.uniqueName(), result);
+
+            return Promise.resolve({
+                id: msg.id,
+                data: result
+            });
+        }
     }
-    private handleDirMessage(msg: ExternalRequest): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse> {
-        if (msg.url.startsWith(magicScheme))
+    private async handleDirMessage(msg: ExternalRequest): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
+        const details = extractUriDetails(msg.url);
+        if (!details || details.member)
+            return invalidResponse(msg);
+
+        const content = this.memberLists.get(details.uniqueName());
+        if (content)
             return Promise.resolve({
                 id: msg.id,
-                data: ['MACA', 'MACB', 'MACC', 'MACD']
+                data: {
+                    members: content,
+                    suggested_extension: '.hlasm',
+                }
             });
-        else
+        else if (content === null)
             return Promise.resolve({
                 id: msg.id,
                 error: { code: 0, msg: 'Not found' }
             });
+
+        if (!this.client)
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: 0, msg: 'Not found' }
+            });
+
+        const token = {};
+        this.pendingRequests.add(token);
+
+        const result = await this.client.listMembers(details.dataset);
+
+        if (!this.pendingRequests.delete(token)) return Promise.resolve(null);
+
+        if (!result) {
+            this.memberLists.set(details.uniqueName(), null);
+
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: 0, msg: 'Not found' }
+            });
+        }
+        else if (result instanceof Error) {
+            vscode.window.showErrorMessage(result.message);
+
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: -1000, msg: result.message }
+            });
+        }
+        else {
+            this.memberLists.set(details.uniqueName(), result);
+
+            return Promise.resolve({
+                id: msg.id,
+                data: {
+                    members: result,
+                    suggested_extension: '.hlasm',
+                }
+            });
+        }
     }
 
     public handleRawMessage(msg: any): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
@@ -114,7 +250,7 @@ export class HLASMExternalFiles {
         if (msg.op === ExternalRequestType.read_directory && typeof msg.url === 'string')
             return this.handleDirMessage(msg);
 
-        return Promise.resolve({ id: msg.id, error: { code: -5, msg: 'Invalid request' } });
+        return invalidResponse(msg);
     }
 
 }

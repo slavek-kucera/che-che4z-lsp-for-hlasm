@@ -43,6 +43,14 @@ struct library
 void to_json(nlohmann::json& j, const library& p);
 void from_json(const nlohmann::json& j, library& p);
 
+struct dataset
+{
+    std::string dsn;
+    bool optional = false;
+};
+void to_json(nlohmann::json& j, const dataset& p);
+void from_json(const nlohmann::json& j, dataset& p);
+
 struct db2_preprocessor
 {
     std::string version;
@@ -100,7 +108,7 @@ struct preprocessor_options
 struct processor_group
 {
     std::string name;
-    std::vector<library> libs;
+    std::vector<std::variant<library, dataset>> libs;
     assembler_options asm_options;
     std::vector<preprocessor_options> preprocessors;
 };

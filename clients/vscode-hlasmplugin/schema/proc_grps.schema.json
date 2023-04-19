@@ -46,6 +46,22 @@
                                     "required": [
                                         "path"
                                     ]
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "dataset": {
+                                            "type": "string",
+                                            "description": "Name of a data set located on the mainframe."
+                                        },
+                                        "optional": {
+                                            "type": "boolean",
+                                            "description": "Specifies whether it is acceptable to not locate the folder."
+                                        }
+                                    },
+                                    "required": [
+                                        "dataset"
+                                    ]
                                 }
                             ]
                         }

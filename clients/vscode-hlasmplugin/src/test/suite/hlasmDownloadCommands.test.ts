@@ -15,7 +15,8 @@ import * as assert from 'assert';
 import { PassThrough, Writable } from 'stream';
 import { Uri } from 'vscode';
 
-import { convertBuffer, downloadDependenciesWithClient, extractDsn, gatherDownloadList, JobDescription, replaceVariables, adjustJobHeader } from '../../hlasmDownloadCommands';
+import { downloadDependenciesWithClient, extractDsn, gatherDownloadList, JobDescription, replaceVariables, adjustJobHeader } from '../../hlasmDownloadCommands';
+import { convertBuffer } from '../../conversions';
 
 suite('HLASM Download data sets', () => {
     const getClient = (listResponses: JobDescription[][]) => {
