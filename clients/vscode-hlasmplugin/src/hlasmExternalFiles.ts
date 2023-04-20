@@ -80,7 +80,7 @@ function extractUriDetails(uri: string | vscode.Uri) {
 
         uniqueName() {
             if (member)
-                return `${this.dataset}/${this.member}`;
+                return `${this.dataset}(${this.member})`;
             else
                 return this.dataset;
         }
@@ -124,13 +124,25 @@ function uriFriendlyBase16Decode(s: string) {
     }
 }
 
+function take<T>(it: IterableIterator<T>, n: number): T[] {
+    const result: T[] = [];
+    while (n) {
+        const val = it.next();
+        if (val.done)
+            break;
+        result.push(val.value);
+        --n;
+    }
+    return result;
+}
+
 export class HLASMExternalFiles {
     private toDispose: vscode.Disposable[] = [];
 
     private memberLists = new Map<string, string[] | null>();
     private memberContent = new Map<string, string | null>();
 
-    private pendingRequests = new Set();
+    private pendingRequests = new Set<{ topic: string }>();
 
     private client: ExternalFilesClient = null;
     private clientDisposables: vscode.Disposable[] = [];
@@ -143,8 +155,14 @@ export class HLASMExternalFiles {
 
         this.client = client;
         this.clientDisposables.push(client.onStateChange((suspended) => {
-            if (suspended)
+            if (suspended) {
+                if (this.activeProgress) {
+                    clearTimeout(this.pendingActiveProgressCancellation);
+                    this.activeProgress.done();
+                    this.activeProgress = null;
+                }
                 vscode.window.showInformationMessage("Retrieval of remote files has been suspended.");
+            }
             else
                 this.notifyAllWorkspaces()
         }));
@@ -161,6 +179,40 @@ export class HLASMExternalFiles {
                 }]
             });
         });
+    }
+
+    activeProgress: { progressUpdater: vscode.Progress<{ message?: string; increment?: number }>, done: () => void } = null;
+    pendingActiveProgressCancellation: ReturnType<typeof setTimeout> = null;
+    addWIP(topic: string) {
+        clearTimeout(this.pendingActiveProgressCancellation);
+        if (!this.activeProgress) {
+            vscode.window.withProgress({ title: 'Retrieving remote files', location: vscode.ProgressLocation.Notification }, (progress, c) => {
+                return new Promise<void>((resolve) => {
+                    this.activeProgress = { progressUpdater: progress, done: resolve };
+                });
+            });
+        }
+        const wip = { topic: topic };
+        this.pendingRequests.add(wip);
+
+        this.activeProgress.progressUpdater.report({
+            message: take(this.pendingRequests.values(), 3)
+                .map((v, n) => { return n < 2 ? v.topic : '...' })
+                .join(', ')
+        });
+
+        return () => {
+            const result = this.pendingRequests.delete(wip);
+
+            if (this.pendingRequests.size === 0) {
+                this.pendingActiveProgressCancellation = setTimeout(() => {
+                    this.activeProgress.done();
+                    this.activeProgress = null;
+                }, 5000);
+            }
+
+            return result;
+        };
     }
 
     public suspend() {
@@ -222,13 +274,12 @@ export class HLASMExternalFiles {
                 error: { code: 0, msg: 'Not found' }
             });
 
-        const token = {};
-        this.pendingRequests.add(token);
+        const interest = this.addWIP(details.uniqueName());
 
         try {
             const result = await this.client.readMember(details.dataset, details.member);
 
-            if (!this.pendingRequests.delete(token)) return Promise.resolve(null);
+            if (!interest()) return Promise.resolve(null);
 
             if (!result) {
                 this.memberContent.set(details.uniqueName(), null);
@@ -250,7 +301,7 @@ export class HLASMExternalFiles {
             if (!isCancellationError(e))
                 vscode.window.showErrorMessage(e.message);
 
-            if (!this.pendingRequests.delete(token)) return Promise.resolve(null);
+            if (!interest()) return Promise.resolve(null);
 
             return Promise.resolve({
                 id: msg.id,
@@ -278,13 +329,12 @@ export class HLASMExternalFiles {
                 error: { code: 0, msg: 'Not found' }
             });
 
-        const token = {};
-        this.pendingRequests.add(token);
+        const interest = this.addWIP(details.uniqueName());
 
         try {
             const result = await this.client.listMembers(details.dataset);
 
-            if (!this.pendingRequests.delete(token)) return Promise.resolve(null);
+            if (!interest()) return Promise.resolve(null);
 
             if (!result) {
                 this.memberLists.set(details.uniqueName(), null);
@@ -309,7 +359,7 @@ export class HLASMExternalFiles {
             if (!isCancellationError(e))
                 vscode.window.showErrorMessage(e.message);
 
-            if (!this.pendingRequests.delete(token)) return Promise.resolve(null);
+            if (!interest()) return Promise.resolve(null);
 
             return Promise.resolve({
                 id: msg.id,
