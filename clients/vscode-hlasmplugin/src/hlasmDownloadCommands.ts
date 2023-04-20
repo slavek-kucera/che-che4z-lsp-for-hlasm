@@ -21,7 +21,7 @@ import path = require('node:path');
 import { promises as fsp } from "fs";
 import { hlasmplugin_folder, proc_grps_file } from './constants';
 import { Telemetry } from './telemetry';
-import { cancelMessage, askUser } from './uiUtils';
+import { askUser } from './uiUtils';
 import { connectionSecurityLevel, gatherConnectionInfo, getLastRunConfig, updateLastRunConfig } from './ftpCreds';
 import { convertBuffer } from './conversions';
 
@@ -375,7 +375,7 @@ export async function downloadDependenciesWithClient(client: JobClient,
 
     const checkCancel = () => {
         if (cancelled())
-            throw Error(cancelMessage);
+            throw new vscode.CancellationError();
     };
 
     try {
@@ -523,7 +523,7 @@ async function filterDownloadList(downloadCandidates: JobDetail[], newOnly: bool
         input.items = downloadCandidates.map(x => { return { label: x.dsn }; });
         input.canSelectMany = true;
         input.selectedItems = newOnly ? input.items.filter(x => interestingDsn.has(x.label)) : input.items;
-        input.onDidHide(() => reject(Error(cancelMessage)));
+        input.onDidHide(() => reject(new vscode.CancellationError()));
         input.onDidAccept(() => {
             const selected = new Set(input.selectedItems.map(x => x.label));
             resolve(downloadCandidates.filter(x => selected.has(x.dsn)));
@@ -639,7 +639,8 @@ export async function downloadDependencies(context: vscode.ExtensionContext, tel
         telemetry.reportEvent("downloadDependencies/finished", { zowe: zowe ? 'yes' : 'no' }, { failed: result.failed.length, total: result.total, elapsedTime: (endTime - startTime) / 1000 });
     }
     catch (e) {
-        if (e.message !== cancelMessage)
-            vscode.window.showErrorMessage("Error occured while downloading dependencies: " + (e.message || e));
+        if (e instanceof vscode.CancellationError || e instanceof Error && e.message == new vscode.CancellationError().message)
+            return;
+        vscode.window.showErrorMessage("Error occured while downloading dependencies: " + (e.message || e));
     }
 }

@@ -14,8 +14,6 @@
 
 import * as vscode from 'vscode';
 
-export const cancelMessage = "Action was cancelled";
-
 export function askUser(prompt: string, password: boolean, defaultValue: string = ''): Promise<string> {
     const input = vscode.window.createInputBox();
     return new Promise<string>((resolve, reject) => {
@@ -23,7 +21,7 @@ export function askUser(prompt: string, password: boolean, defaultValue: string 
         input.prompt = prompt;
         input.password = password;
         input.value = defaultValue || '';
-        input.onDidHide(() => reject(Error(cancelMessage)));
+        input.onDidHide(() => reject(new vscode.CancellationError()));
         input.onDidAccept(() => resolve(input.value));
         input.show();
     }).finally(() => { input.dispose(); });
@@ -36,7 +34,7 @@ export function pickUser<T>(title: string, options: { label: string, value: T }[
         input.title = title;
         input.items = options.map(x => { return { label: x.label }; });
         input.canSelectMany = false;
-        input.onDidHide(() => reject(Error(cancelMessage)));
+        input.onDidHide(() => reject(new vscode.CancellationError()));
         input.onDidAccept(() => resolve(options.find(x => x.label === input.selectedItems[0].label)!.value));
         input.show();
     }).finally(() => { input.dispose(); });
