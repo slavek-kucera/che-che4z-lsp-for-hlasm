@@ -170,6 +170,9 @@ async function registerToContext(context: vscode.ExtensionContext, client: vscod
     context.subscriptions.push(extFiles);
     extFiles.setClient(new HLASMExternalFilesFtp(context));
 
+    context.subscriptions.push(vscode.commands.registerCommand('extension.hlasm-plugin.resumeRemoteActivity', () => extFiles.resume()));
+    context.subscriptions.push(vscode.commands.registerCommand('extension.hlasm-plugin.suspendRemoteActivity', () => extFiles.suspend()));
+
     // overrides should happen only if the user wishes
     if (getConfig<boolean>('continuationHandling', false)) {
         try {
