@@ -18,6 +18,7 @@ import { ExternalFilesClient } from './hlasmExternalFiles';
 import { ConnectionInfo, connectionSecurityLevel, gatherConnectionInfo, getLastRunConfig, updateLastRunConfig } from './ftpCreds';
 import { AsyncMutex } from './asyncMutex';
 import { FBWritable } from './FBWritable';
+import { isCancellationError } from './helpers';
 
 const checkResponse = (resp: ftp.FTPResponse) => {
     if (resp.code < 200 || resp.code > 299)
@@ -30,8 +31,8 @@ const checkedCommand = async (client: ftp.Client, command: string): Promise<stri
 }
 
 export class HLASMExternalFilesFtp implements ExternalFilesClient {
-    private connInfo_: ConnectionInfo = null;
-    private suspended = false;
+    private activeConnectionInfo: ConnectionInfo = null;
+    private clientSuspended = false;
 
     private pooledClient: ftp.Client = null;
     private pooledClientTimeout: ReturnType<typeof setTimeout> = null;
@@ -47,16 +48,19 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
     }
 
     suspend() {
-        if (this.suspended) return;
+        if (this.clientSuspended) return;
 
-        this.suspended = true;
+        this.clientSuspended = true;
         this.stateChanged.fire(true);
     }
     resume() {
-        if (!this.suspended) return;
+        if (!this.clientSuspended) return;
 
-        this.suspended = false;
+        this.clientSuspended = false;
         this.stateChanged.fire(false);
+    }
+    suspended() {
+        return this.clientSuspended;
     }
 
     dispose(): void {
@@ -72,20 +76,20 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
     private getConnInfo() {
         return this.mutex.locked(async () => {
             try {
-                if (this.suspended)
+                if (this.clientSuspended)
                     throw new vscode.CancellationError();
 
-                if (this.connInfo_)
-                    return this.connInfo_;
+                if (this.activeConnectionInfo)
+                    return this.activeConnectionInfo;
 
                 const last = getLastRunConfig(this.context);
-                this.connInfo_ = await gatherConnectionInfo(last);
-                await updateLastRunConfig(this.context, { host: this.connInfo_.host, user: this.connInfo_.user, jobcard: last.jobcard });
+                this.activeConnectionInfo = await gatherConnectionInfo(last);
+                await updateLastRunConfig(this.context, { host: this.activeConnectionInfo.host, user: this.activeConnectionInfo.user, jobcard: last.jobcard });
 
-                return this.connInfo_;
+                return this.activeConnectionInfo;
             }
             catch (e) {
-                if (e instanceof vscode.CancellationError || e instanceof Error && e.message == new vscode.CancellationError().message) {
+                if (isCancellationError(e)) {
                     this.suspend();
                     throw new vscode.CancellationError();
                 }
@@ -137,9 +141,14 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
                 return client;
             }
             catch (e) {
-                this.connInfo_ = null;
-                client.close();
+                this.activeConnectionInfo = null;
 
+                if (e instanceof ftp.FTPError) {
+                    vscode.window.showErrorMessage(e.message);
+                    continue;
+                }
+
+                client.close();
                 throw e;
             }
         }

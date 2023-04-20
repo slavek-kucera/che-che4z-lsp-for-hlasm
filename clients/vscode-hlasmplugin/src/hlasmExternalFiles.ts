@@ -15,6 +15,7 @@
 import { TextDecoder, TextEncoder } from "util";
 import * as vscode from "vscode";
 import * as vscodelc from "vscode-languageclient";
+import { isCancellationError } from "./helpers";
 
 // This is a temporary demo implementation
 
@@ -56,6 +57,8 @@ export interface ExternalFilesClient extends vscode.Disposable {
 
     suspend(): void;
     resume(): void;
+
+    suspended(): boolean;
 }
 
 const magicScheme = 'hlasm-external';
@@ -140,20 +143,24 @@ export class HLASMExternalFiles {
 
         this.client = client;
         this.clientDisposables.push(client.onStateChange((suspended) => {
-            if (suspended) {
+            if (suspended)
                 vscode.window.showInformationMessage("Retrieval of remote files has been suspended.");
-            }
-            else {
-                (vscode.workspace.workspaceFolders || []).forEach(w => {
-                    this.lspClient.sendNotification(vscodelc.DidChangeWatchedFilesNotification.type, {
-                        changes: [{
-                            uri: `${magicScheme}://${uriFriendlyBase16Encode(w.uri.toString())}`,
-                            type: vscodelc.FileChangeType.Changed
-                        }]
-                    });
-                });
-            }
+            else
+                this.notifyAllWorkspaces()
         }));
+        if (!client.suspended())
+            this.notifyAllWorkspaces();
+    }
+
+    private notifyAllWorkspaces() {
+        (vscode.workspace.workspaceFolders || []).forEach(w => {
+            this.lspClient.sendNotification(vscodelc.DidChangeWatchedFilesNotification.type, {
+                changes: [{
+                    uri: `${magicScheme}://${uriFriendlyBase16Encode(w.uri.toString())}`,
+                    type: vscodelc.FileChangeType.Changed
+                }]
+            });
+        });
     }
 
     public suspend() {
@@ -209,12 +216,7 @@ export class HLASMExternalFiles {
                 id: msg.id,
                 data: content
             });
-        else if (content === null)
-            return Promise.resolve({
-                id: msg.id,
-                error: { code: 0, msg: 'Not found' }
-            });
-        if (!this.client)
+        if (content === null || !this.client)
             return Promise.resolve({
                 id: msg.id,
                 error: { code: 0, msg: 'Not found' }
@@ -236,16 +238,16 @@ export class HLASMExternalFiles {
                     error: { code: 0, msg: 'Not found' }
                 });
             }
-            else {
-                this.memberContent.set(details.uniqueName(), result);
 
-                return Promise.resolve({
-                    id: msg.id,
-                    data: result
-                });
-            }
+            this.memberContent.set(details.uniqueName(), result);
+
+            return Promise.resolve({
+                id: msg.id,
+                data: result
+            });
+
         } catch (e) {
-            if (!(e instanceof vscode.CancellationError || e instanceof Error && e.message == new vscode.CancellationError().message))
+            if (!isCancellationError(e))
                 vscode.window.showErrorMessage(e.message);
 
             if (!this.pendingRequests.delete(token)) return Promise.resolve(null);
@@ -270,12 +272,7 @@ export class HLASMExternalFiles {
                     suggested_extension: '.hlasm',
                 }
             });
-        else if (content === null)
-            return Promise.resolve({
-                id: msg.id,
-                error: { code: 0, msg: 'Not found' }
-            });
-        if (!this.client)
+        if (content === null || !this.client)
             return Promise.resolve({
                 id: msg.id,
                 error: { code: 0, msg: 'Not found' }
@@ -297,19 +294,19 @@ export class HLASMExternalFiles {
                     error: { code: 0, msg: 'Not found' }
                 });
             }
-            else {
-                this.memberLists.set(details.uniqueName(), result);
 
-                return Promise.resolve({
-                    id: msg.id,
-                    data: {
-                        members: result,
-                        suggested_extension: '.hlasm',
-                    }
-                });
-            }
-        } catch (e) {
-            if (!(e instanceof vscode.CancellationError || e instanceof Error && e.message == new vscode.CancellationError().message))
+            this.memberLists.set(details.uniqueName(), result);
+
+            return Promise.resolve({
+                id: msg.id,
+                data: {
+                    members: result,
+                    suggested_extension: '.hlasm',
+                }
+            });
+        }
+        catch (e) {
+            if (!isCancellationError(e))
                 vscode.window.showErrorMessage(e.message);
 
             if (!this.pendingRequests.delete(token)) return Promise.resolve(null);
