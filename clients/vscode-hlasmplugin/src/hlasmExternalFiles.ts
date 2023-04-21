@@ -75,6 +75,7 @@ function extractUriDetails(uri: string | vscode.Uri) {
     if (member && !/^[A-Z$#@][A-Z$#@0-9]{1,7}(?:\..*)?$/.test(member)) return null; // ignore extension
 
     return {
+        associatedWorkspace: uriFriendlyBase16Decode(uri.authority),
         dataset: dataset,
         member: member ? member.split('.')[0] : null,
 
@@ -86,6 +87,7 @@ function extractUriDetails(uri: string | vscode.Uri) {
         }
     }
 }
+type UriDetails = ReturnType<typeof extractUriDetails>;
 
 function invalidResponse(msg: ExternalRequest) {
     return Promise.resolve({ id: msg.id, error: { code: -5, msg: 'Invalid request' } });
@@ -136,11 +138,15 @@ function take<T>(it: IterableIterator<T>, n: number): T[] {
     return result;
 }
 
+const not_exists = {};
+const no_client = {};
+interface in_error { message: string };
+
 export class HLASMExternalFiles {
     private toDispose: vscode.Disposable[] = [];
 
-    private memberLists = new Map<string, string[] | null>();
-    private memberContent = new Map<string, string | null>();
+    private memberLists = new Map<string, string[] | in_error | typeof not_exists | typeof no_client>();
+    private memberContent = new Map<string, string | in_error | typeof not_exists | typeof no_client>();
 
     private pendingRequests = new Set<{ topic: string }>();
 
@@ -170,14 +176,54 @@ export class HLASMExternalFiles {
             this.notifyAllWorkspaces();
     }
 
+    private prepareFileChangeNotification() {
+        const reissue = [...this.memberContent].filter(v => typeof v[1] === 'object' && (v[1] === no_client || 'message' in v[1]));
+
+        const changes = reissue.map(([d]) => d.replace(')', '').replace('(', '/'));
+
+        reissue.forEach(x => this.memberContent.delete(x[0]));
+
+        // NxM...
+        return (vscode.workspace.workspaceFolders || []).map(w => {
+            const base = `${magicScheme}://${uriFriendlyBase16Encode(w.uri.toString())}`;
+            return changes.map(x => {
+                return {
+                    uri: `${base}/${x}.hlasm`,
+                    type: vscodelc.FileChangeType.Changed
+                }
+            })
+        }).flat();
+    }
+
+    private prepareDirChangeNotification() {
+        const reissue = [...this.memberLists].filter(v => typeof v[1] === 'object' && (v[1] === no_client || 'message' in v[1]));
+
+        const changes = reissue.map(([d]) => d.replace(')', '').replace('(', '/'));
+
+        reissue.forEach(x => this.memberLists.delete(x[0]));
+
+        // NxM...
+        return (vscode.workspace.workspaceFolders || []).map(w => {
+            const base = `${magicScheme}://${uriFriendlyBase16Encode(w.uri.toString())}`;
+            return changes.map(x => {
+                return {
+                    uri: `${base}/${x}`,
+                    type: vscodelc.FileChangeType.Changed
+                }
+            })
+        }).flat();
+    }
+
     private notifyAllWorkspaces() {
-        (vscode.workspace.workspaceFolders || []).forEach(w => {
-            this.lspClient.sendNotification(vscodelc.DidChangeWatchedFilesNotification.type, {
-                changes: [{
+        this.lspClient.sendNotification(vscodelc.DidChangeWatchedFilesNotification.type, {
+            changes: (vscode.workspace.workspaceFolders || []).map(w => {
+                return {
                     uri: `${magicScheme}://${uriFriendlyBase16Encode(w.uri.toString())}`,
                     type: vscodelc.FileChangeType.Changed
-                }]
-            });
+                };
+            })
+                .concat(this.prepareFileChangeNotification())
+                .concat(this.prepareDirChangeNotification())
         });
     }
 
@@ -243,7 +289,10 @@ export class HLASMExternalFiles {
                 const details = extractUriDetails(uri);
                 if (!details || !details.member) return null;
                 const content = me.memberContent.get(details.uniqueName());
-                return content || null;
+                if (typeof content === 'string')
+                    return content;
+                else
+                    return null;
             }
         }));
     }
@@ -257,45 +306,21 @@ export class HLASMExternalFiles {
         this.setClient(null);
     }
 
-    private async handleFileMessage(msg: ExternalRequest): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
-        const details = extractUriDetails(msg.url);
-        if (!details || !details.member)
-            return invalidResponse(msg);
-
-        const content = this.memberContent.get(details.uniqueName());
-        if (content)
-            return Promise.resolve({
-                id: msg.id,
-                data: content
-            });
-        if (content === null || !this.client)
-            return Promise.resolve({
-                id: msg.id,
-                error: { code: 0, msg: 'Not found' }
-            });
+    private async getFile(details: UriDetails): Promise<string | in_error | typeof not_exists | typeof no_client | null> {
+        if (!this.client)
+            return no_client;
 
         const interest = this.addWIP(details.uniqueName());
 
         try {
             const result = await this.client.readMember(details.dataset, details.member);
 
-            if (!interest()) return Promise.resolve(null);
+            if (!interest()) return null;
 
-            if (!result) {
-                this.memberContent.set(details.uniqueName(), null);
+            if (!result)
+                return not_exists;
 
-                return Promise.resolve({
-                    id: msg.id,
-                    error: { code: 0, msg: 'Not found' }
-                });
-            }
-
-            this.memberContent.set(details.uniqueName(), result);
-
-            return Promise.resolve({
-                id: msg.id,
-                data: result
-            });
+            return result;
 
         } catch (e) {
             if (!isCancellationError(e)) {
@@ -303,59 +328,65 @@ export class HLASMExternalFiles {
                 vscode.window.showErrorMessage(e.message);
             }
 
-            if (!interest()) return Promise.resolve(null);
+            if (!interest()) return null;
 
-            return Promise.resolve({
-                id: msg.id,
-                error: { code: -1000, msg: e.message }
-            });
+            return { message: e.message };
         }
     }
-    private async handleDirMessage(msg: ExternalRequest): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
+
+    private async handleFileMessage(msg: ExternalRequest): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
         const details = extractUriDetails(msg.url);
-        if (!details || details.member)
+        if (!details || !details.member)
             return invalidResponse(msg);
 
-        const content = this.memberLists.get(details.uniqueName());
-        if (content)
-            return Promise.resolve({
-                id: msg.id,
-                data: {
-                    members: content,
-                    suggested_extension: '.hlasm',
-                }
-            });
-        if (content === null || !this.client)
+        let content = this.memberContent.get(details.uniqueName());
+        if (content === undefined) {
+            content = await this.getFile(details);
+            if (content !== null)
+                this.memberContent.set(details.uniqueName(), content);
+        }
+
+        if (content === null)
+            return Promise.resolve(null);
+        else if (content === not_exists)
             return Promise.resolve({
                 id: msg.id,
                 error: { code: 0, msg: 'Not found' }
             });
+        else if (content === no_client)
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: -1000, msg: 'No client' }
+            });
+        else if (typeof content === 'object' && 'message' in content)
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: -1000, msg: content.message }
+            });
+        else if (typeof content === 'string')
+            return Promise.resolve({
+                id: msg.id,
+                data: content
+            });
+        else // should never happen
+            return Promise.resolve(null);
+    }
+
+    private async getDir(details: UriDetails): Promise<string[] | in_error | typeof not_exists | typeof no_client | null> {
+        if (!this.client)
+            return no_client;
 
         const interest = this.addWIP(details.uniqueName());
 
         try {
             const result = await this.client.listMembers(details.dataset);
 
-            if (!interest()) return Promise.resolve(null);
+            if (!interest()) return null;
 
-            if (!result) {
-                this.memberLists.set(details.uniqueName(), null);
+            if (!result)
+                return not_exists;
 
-                return Promise.resolve({
-                    id: msg.id,
-                    error: { code: 0, msg: 'Not found' }
-                });
-            }
-
-            this.memberLists.set(details.uniqueName(), result);
-
-            return Promise.resolve({
-                id: msg.id,
-                data: {
-                    members: result,
-                    suggested_extension: '.hlasm',
-                }
-            });
+            return result;
         }
         catch (e) {
             if (!isCancellationError(e)) {
@@ -363,13 +394,52 @@ export class HLASMExternalFiles {
                 vscode.window.showErrorMessage(e.message);
             }
 
-            if (!interest()) return Promise.resolve(null);
+            if (!interest()) return null;
 
+            return { message: e.message };
+        }
+    }
+
+    private async handleDirMessage(msg: ExternalRequest): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
+        const details = extractUriDetails(msg.url);
+        if (!details || details.member)
+            return invalidResponse(msg);
+
+        let content = this.memberLists.get(details.uniqueName());
+
+        if (content === undefined) {
+            content = await this.getDir(details);
+            if (content !== null)
+                this.memberLists.set(details.uniqueName(), content);
+        }
+
+        if (content === null)
+            return Promise.resolve(null);
+        else if (content === not_exists)
             return Promise.resolve({
                 id: msg.id,
-                error: { code: -1000, msg: e.message }
+                error: { code: 0, msg: 'Not found' }
             });
-        }
+        else if (content === no_client)
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: 0, msg: 'No client' }
+            });
+        else if ('message' in content)
+            return Promise.resolve({
+                id: msg.id,
+                error: { code: -1000, msg: content.message }
+            });
+        else if (Array.isArray(content))
+            return Promise.resolve({
+                id: msg.id,
+                data: {
+                    members: content,
+                    suggested_extension: '.hlasm',
+                }
+            });
+        else // should never happen
+            return Promise.resolve(null);
     }
 
     public handleRawMessage(msg: any): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
