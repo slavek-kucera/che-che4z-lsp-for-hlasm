@@ -298,8 +298,10 @@ export class HLASMExternalFiles {
             });
 
         } catch (e) {
-            if (!isCancellationError(e))
+            if (!isCancellationError(e)) {
+                this.suspend();
                 vscode.window.showErrorMessage(e.message);
+            }
 
             if (!interest()) return Promise.resolve(null);
 
@@ -356,8 +358,10 @@ export class HLASMExternalFiles {
             });
         }
         catch (e) {
-            if (!isCancellationError(e))
+            if (!isCancellationError(e)) {
+                this.suspend();
                 vscode.window.showErrorMessage(e.message);
+            }
 
             if (!interest()) return Promise.resolve(null);
 

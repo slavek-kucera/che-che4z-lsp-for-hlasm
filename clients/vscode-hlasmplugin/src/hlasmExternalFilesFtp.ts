@@ -66,8 +66,9 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
     dispose(): void {
         clearTimeout(this.pooledClientTimeout);
         if (this.pooledClient) {
-            this.pooledClient.close();
+            const client = this.pooledClient;
             this.pooledClient = null;
+            client.close();
         }
     }
 
@@ -97,14 +98,18 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
     }
 
     private requestEndHandle(client: ftp.Client) {
+        if (client.closed)
+            return;
+
         if (this.pooledClient) {
             client.close();
             return;
         }
 
         this.pooledClientTimeout = setTimeout(() => {
-            this.pooledClient.close();
+            const client = this.pooledClient;
             this.pooledClient = null;
+            client.close();
         }, HLASMExternalFilesFtp.pooledClientReleaseTimeout);
 
         this.pooledClient = client;
@@ -134,7 +139,7 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
                     });
 
                     client.parseList = (rawList: string): ftp.FileInfo[] => {
-                        return rawList.split(/\r?\n/).slice(1).filter(x => !/^\s*$/.test(x)).map(value => new ftp.FileInfo(value.trim()));
+                        return rawList.split(/\r?\n/).slice(1).filter(x => !/^\s*$/.test(x)).map(value => new ftp.FileInfo(value.split(/\s/, 1)[0]));
                     };
 
                     this.activeConnectionInfo = connection;
@@ -149,8 +154,6 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
                     vscode.window.showErrorMessage(e.message);
                     continue;
                 }
-
-                this.suspend();
 
                 client.close();
 
