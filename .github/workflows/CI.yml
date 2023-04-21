@@ -20,6 +20,7 @@ on:
       - master
       - development
       - release-next
+      - test
   pull_request:
     branches:
       - master
@@ -234,12 +235,12 @@ jobs:
         run: chmod +x bin/${{ matrix.native }}/language_server
       - name: NPM CI
         run: npm ci
+      - name: Extension Test Insiders
+        run: ${{ env.XVFB }} npm run test:insiders
       - name: Extension Test
         run: ${{ env.XVFB }} npm run test
       - name: Extension Test WASM
         run: ${{ env.XVFB }} npm run test:wasm
-      - name: Extension Test Insiders
-        run: ${{ env.XVFB }} npm run test:insiders
 
   VSIX:
     runs-on: ubuntu-22.04
