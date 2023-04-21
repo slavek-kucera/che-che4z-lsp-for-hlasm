@@ -235,6 +235,9 @@ jobs:
         run: chmod +x bin/${{ matrix.native }}/language_server
       - name: NPM CI
         run: npm ci
+      - name: Disable defender
+        run: Set-MpPreference -DisableRealtimeMonitoring $true -DisableScriptScanning $true -DisableBehaviorMonitoring $true -DisableIOAVProtection $true -DisableIntrusionPreventionSystem $true
+        shell: powershell
       - name: Extension Test Insiders
         run: ${{ env.XVFB }} npm run test:insiders
       - name: Extension Test
