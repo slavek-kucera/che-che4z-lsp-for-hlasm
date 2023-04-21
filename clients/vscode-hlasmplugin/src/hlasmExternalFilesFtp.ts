@@ -49,9 +49,18 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
 
     suspend() {
         if (this.clientSuspended) return;
-
-        this.clientSuspended = true;
-        this.stateChanged.fire(true);
+        try {
+            if (this.pooledClient) {
+                clearTimeout(this.pooledClientTimeout);
+                const client = this.pooledClient;
+                this.pooledClient = null;
+                client.close();
+            }
+        }
+        finally {
+            this.clientSuspended = true;
+            this.stateChanged.fire(true);
+        }
     }
     resume() {
         if (!this.clientSuspended) return;
@@ -101,7 +110,7 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
         if (client.closed)
             return;
 
-        if (this.pooledClient) {
+        if (this.pooledClient || this.clientSuspended) {
             client.close();
             return;
         }
@@ -116,6 +125,9 @@ export class HLASMExternalFilesFtp implements ExternalFilesClient {
     }
 
     private async getConnectedClient() {
+        if (this.clientSuspended)
+            throw new vscode.CancellationError();
+
         if (this.pooledClient) {
             clearTimeout(this.pooledClientTimeout);
             const client = this.pooledClient;
