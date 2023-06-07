@@ -16,8 +16,10 @@ import * as vscode from 'vscode';
 import { ExternalRequestType, HlasmExtension } from './extension.interface';
 
 function performRegistration(ext: HlasmExtension, e4e: unknown) {
+    const invalidationEventEmmiter = new vscode.EventEmitter<void>();
+    
     ext.registerExternalFileClient('ENDEVOR', {
-        getConnInfo: () => Promise.resolve({ info: '', uniqueId: undefined }),
+        getConnInfo: () => Promise.resolve({ info: '', uniqueId: '' }),
         parseArgs(p: string, purpose: ExternalRequestType) {
             const args = p.split('/').slice(1);
             if (args.length !== 7 + +(purpose === ExternalRequestType.read_file)) return null;
@@ -72,6 +74,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                 reusable: () => true,
             };
         },
+        invalidate: invalidationEventEmmiter.event,
     });
 }
 

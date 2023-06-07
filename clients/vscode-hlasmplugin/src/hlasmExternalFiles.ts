@@ -70,7 +70,8 @@ export interface ClientUriDetails {
 export interface ClientInterface<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
     getConnInfo: () => Promise<{ info: ConnectArgs, uniqueId?: string }>,
     parseArgs: (path: string, purpose: ExternalRequestType) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
-    createClient: () => ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>
+    createClient: () => ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>,
+    invalidate?: vscode.Event<void>,
 };
 
 export interface ExternalFilesClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
@@ -110,7 +111,7 @@ interface CacheEntry<T> {
     cached: boolean;
 };
 
-const cacheVersion = 'v1';
+const cacheVersion = 'v2';
 
 const connectionPoolSize = 4;
 const connectionPoolTimeout = 30000;
@@ -121,6 +122,7 @@ interface ClientInstance<ConnectArgs, ReadArgs extends ClientUriDetails, ListArg
     suspended: boolean,
     parseArgs: (path: string, purpose: ExternalRequestType) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
     ensureConnectionInfo: () => Promise<string | undefined>,
+    dispose: () => void,
 };
 
 export class HLASMExternalFiles {
@@ -187,10 +189,11 @@ export class HLASMExternalFiles {
         const oldClient = this.clients.get(service);
         if (oldClient) {
             this.clients.delete(service);
-            oldClient.pool.dispose();
+            oldClient.dispose();
         }
 
         if (!client) return;
+
 
         const newClient: ClientInstance<ConnectArgs, ReadArgs, ListArgs> = {
             activeConnectionInfo: null,
@@ -213,6 +216,15 @@ export class HLASMExternalFiles {
                     throw e;
                 }
             }),
+            dispose: (() => {
+                const toDispose = client.invalidate?.(() => {
+                    this.clearCache(service);
+                });
+                return () => {
+                    toDispose?.dispose();
+                    newClient.pool.dispose();
+                };
+            })(),
         };
         this.clients.set(service, newClient);
 
@@ -417,9 +429,8 @@ export class HLASMExternalFiles {
     }
 
     private deriveCacheEntryName(clientId: string, service: string, normalizedPath: string) {
-        return cacheVersion + '.' + crypto.createHash('sha256').update(JSON.stringify([
+        return cacheVersion + '.' + service + '.' + crypto.createHash('sha256').update(JSON.stringify([
             clientId,
-            service,
             normalizedPath
         ])).digest().toString('hex');
     }
@@ -454,7 +465,7 @@ export class HLASMExternalFiles {
     private async storeCachedResult<T, ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, value: T | typeof not_exists) {
         if (!this.cache) return false;
         const clientId = client.activeConnectionInfo?.uniqueId;
-        if (!clientId) return false;
+        if (clientId === undefined) return false;
 
         const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(clientId, service, normalizedPath));
 
@@ -583,8 +594,9 @@ export class HLASMExternalFiles {
         return Promise.resolve(this.generateError(msg.id, -5, 'Invalid request'));
     }
 
-    public async clearCache() {
+    public async clearCache(service?: string) {
         if (this.cache) {
+            const prefix = service ? cacheVersion + '.' + service + '.' : undefined;
             const { uri, fs } = this.cache;
 
             const files = await fs.readDirectory(uri);
@@ -593,6 +605,9 @@ export class HLASMExternalFiles {
             const pending = new Set<Promise<void>>();
 
             for (const [filename] of files) {
+                if (prefix && !filename.startsWith(prefix))
+                    continue;
+
                 const p = Promise.resolve(fs.delete(vscode.Uri.joinPath(uri, filename)));
                 pending.add(p);
                 p.catch(() => ++errors).finally(() => pending.delete(p));
@@ -605,7 +620,13 @@ export class HLASMExternalFiles {
             if (errors > 0)
                 vscode.window.showErrorMessage(`Errors (${errors}) occurred while clearing out the cache`);
         }
-        for (const [service] of this.clients)
+        if (service)
             this.notifyAllWorkspaces(service, true);
+        else
+            this.clients.forEach((_, key) => this.notifyAllWorkspaces(key, true));
+    }
+
+    public currentlyAvailableServices() {
+        return [...this.clients.keys()];
     }
 }

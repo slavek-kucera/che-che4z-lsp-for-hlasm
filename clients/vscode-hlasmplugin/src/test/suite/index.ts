@@ -24,7 +24,6 @@ import { ClientUriDetails, ExternalRequestType } from '../../hlasmExternalFiles'
 async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 	const ext = await vscode.extensions.getExtension<ReturnType<typeof activate>>(EXTENSION_ID)!.activate();
 
-
 	ext.registerExternalFileClient('TEST', {
 		getConnInfo: () => Promise.resolve({ info: '', uniqueId: undefined }),
 		parseArgs(p: string, _purpose) {
