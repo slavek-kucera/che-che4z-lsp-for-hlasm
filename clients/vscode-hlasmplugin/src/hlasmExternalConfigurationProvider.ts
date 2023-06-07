@@ -144,10 +144,20 @@ type Library = string
         optional?: boolean;
         macro_extensions?: string[];
         prefer_alternate_root?: boolean;
-    }
-    | {
+    } | {
         dataset: string;
         optional?: boolean;
+        profile?: string;
+    } | {
+
+        environment: string;
+        stage: string;
+        system: string;
+        subsystem: string;
+        type: string;
+        use_map?: boolean;
+        optional?: boolean;
+        profile?: string;
     };
 
 /**
