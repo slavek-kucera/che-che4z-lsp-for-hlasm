@@ -305,6 +305,24 @@ void workspace_configuration::process_processor_group_library(const config::data
     prc_grp.add_library(get_local_library(new_uri, { .optional_library = dsn.optional }));
 }
 
+void workspace_configuration::process_processor_group_library(const config::endevor& end,
+    const utils::resource::resource_location&,
+    std::vector<diagnostic_s>&,
+    std::span<const std::string>,
+    processor_group& prc_grp)
+{
+    utils::path::dissected_uri new_uri_components;
+    new_uri_components.scheme = external_uri_scheme;
+    new_uri_components.auth.emplace().host = utils::encoding::uri_friendly_base16_encode(m_location.get_uri());
+    new_uri_components.path = "/ENDEVOR/" + utils::encoding::percent_encode(end.profile) + "/"
+        + std::string(end.use_map ? "map" : "nomap") + "/" + utils::encoding::percent_encode(end.environment) + "/"
+        + utils::encoding::percent_encode(end.stage) + "/" + utils::encoding::percent_encode(end.system) + "/"
+        + utils::encoding::percent_encode(end.subsystem) + "/" + utils::encoding::percent_encode(end.type);
+    utils::resource::resource_location new_uri(utils::path::reconstruct_uri(new_uri_components));
+
+    prc_grp.add_library(get_local_library(new_uri, { .optional_library = end.optional }));
+}
+
 namespace {
 void modify_hlasm_external_uri(
     utils::resource::resource_location& rl, const utils::resource::resource_location& workspace)

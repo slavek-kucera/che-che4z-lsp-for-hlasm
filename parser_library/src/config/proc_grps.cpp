@@ -86,6 +86,44 @@ void from_json(const nlohmann::json& j, dataset& p)
         throw nlohmann::json::other_error::create(501, "Unexpected JSON type.", j);
 }
 
+void to_json(nlohmann::json& j, const endevor& p)
+{
+    j = nlohmann::json {
+        { "profile", p.profile },
+        { "environment", p.environment },
+        { "stage", p.stage },
+        { "system", p.system },
+        { "subsystem", p.subsystem },
+        { "type", p.type },
+        { "use_map", p.use_map },
+        { "optional", p.optional },
+    };
+}
+void from_json(const nlohmann::json& j, endevor& p)
+{
+    if (!j.is_object())
+        throw nlohmann::json::other_error::create(501, "Unexpected JSON type.", j);
+
+    if (auto it = j.find("profile"); it != j.end())
+        it->get_to(p.profile);
+    else
+        p.profile.clear();
+
+    j.at("environment").get_to(p.environment);
+    j.at("stage").get_to(p.stage);
+    j.at("system").get_to(p.system);
+    j.at("subsystem").get_to(p.subsystem);
+    j.at("type").get_to(p.type);
+
+    if (auto it = j.find("use_map"); it != j.end())
+        it->get_to(p.use_map);
+    else
+        p.use_map = true;
+
+    if (auto it = j.find("optional"); it != j.end())
+        it->get_to(p.optional);
+}
+
 template<typename T>
 bool to_json_preprocessor_defaults(nlohmann::json& j, const T& v)
 {
@@ -202,14 +240,16 @@ struct preprocessor_visitor
 };
 } // namespace
 
-void to_json(nlohmann::json& j, const std::variant<library, dataset>& v)
+void to_json(nlohmann::json& j, const std::variant<library, dataset, endevor>& v)
 {
     std::visit([&j](const auto& x) { j = x; }, v);
 }
-void from_json(const nlohmann::json& j, std::variant<library, dataset>& v)
+void from_json(const nlohmann::json& j, std::variant<library, dataset, endevor>& v)
 {
     if (j.contains("dataset"))
         v = j.get<dataset>();
+    else if (j.contains("subsystem"))
+        v = j.get<endevor>();
     else
         v = j.get<library>();
 }
