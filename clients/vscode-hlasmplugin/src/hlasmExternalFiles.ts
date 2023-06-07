@@ -25,7 +25,7 @@ import { AsyncMutex } from "./asyncMutex";
 
 // This is a temporary demo implementation
 
-export enum ExternalRequestType {
+export const enum ExternalRequestType {
     read_file = 'read_file',
     read_directory = 'read_directory',
 }
@@ -283,7 +283,7 @@ export class HLASMExternalFiles {
 
     private prepareChangeNotification<T>(service: string, cache: Map<string, CacheEntry<T>>, all: boolean) {
         const changes = [...cache]
-            .filter(([, v]) => v.service === service && (
+            .filter(([, v]) => (v.service === null || v.service === service) && (
                 all ||
                 v.result instanceof Object && (v.result === no_client || 'message' in v.result)
             ))

@@ -17,22 +17,23 @@ import * as Mocha from 'mocha';
 import * as glob from 'glob';
 import * as vscode from 'vscode';
 import * as process from 'process';
-import { popWaitRequestResolver, timeout } from './testHelper';
+import { popWaitRequestResolver } from './testHelper';
 import { EXTENSION_ID, activate } from '../../extension';
 import { ClientUriDetails, ExternalRequestType } from '../../hlasmExternalFiles';
 
 async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 	const ext = await vscode.extensions.getExtension<ReturnType<typeof activate>>(EXTENSION_ID)!.activate();
 
-	const fileClientMock = {
+
+	ext.registerExternalFileClient('TEST', {
 		getConnInfo: () => Promise.resolve({ info: '', uniqueId: undefined }),
-		parseArgs(p: string, _purpose: ExternalRequestType) {
+		parseArgs(p: string, _purpose) {
 			const [path, file] = p.split('/').slice(1).map(x => x.toUpperCase());
 			return {
 				path: path || '',
 				file: (file || '').split('.')[0],
-				toDisplayString() { return `${this.path}/${this.file}`; },
-				normalizedPath() { return `/${this.path}/${this.file}`; },
+				toDisplayString() { return `${path}/${file}`; },
+				normalizedPath() { return `/${path}/${file}`; },
 			}
 		},
 		createClient: () => {
@@ -56,9 +57,7 @@ async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 				reusable: () => true,
 			};
 		},
-	};
-
-	ext.registerExternalFileClient('TEST', fileClientMock);
+	});
 	ext.registerExternalConfigurationProvider((uri: vscode.Uri) => {
 		const uriString = uri.toString();
 		if (uriString.includes("AAAAA"))

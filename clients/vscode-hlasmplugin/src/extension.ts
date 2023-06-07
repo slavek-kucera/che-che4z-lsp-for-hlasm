@@ -31,10 +31,11 @@ import { HLASMCodeActionsProvider } from './hlasmCodeActionsProvider';
 import { hlasmplugin_folder } from './constants';
 import { ConfigurationsHandler } from './configurationsHandler';
 import { getLanguageClientMiddleware } from './languageClientMiddleware';
-import { ClientInterface, ClientUriDetails, HLASMExternalFiles } from './hlasmExternalFiles';
+import { HLASMExternalFiles } from './hlasmExternalFiles';
 import { HLASMExternalFilesFtp } from './hlasmExternalFilesFtp';
 import { HLASMExternalConfigurationProvider, HLASMExternalConfigurationProviderHandler } from './hlasmExternalConfigurationProvider';
 import { HlasmExtension } from './extension.interface';
+import { handleE4EIntegration } from './hlasmExtenalFilesEndevor';
 
 export const EXTENSION_ID = "broadcommfd.hlasm-language-support";
 
@@ -142,14 +143,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<HlasmE
     // register all commands and objects to context
     await registerToContext(context, hlasmpluginClient, telemetry, extFiles);
 
-    let api = {
-        registerExternalFileClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(service: string, client: ClientInterface<ConnectArgs, ReadArgs, ListArgs>) {
+    let api: HlasmExtension = {
+        registerExternalFileClient(service, client) {
             extFiles.setClient(service, client);
         },
         registerExternalConfigurationProvider(h: HLASMExternalConfigurationProviderHandler) {
             return extConfProvider.addHandler(h);
         },
     };
+
+    handleE4EIntegration(api);
+
     return api;
 }
 
