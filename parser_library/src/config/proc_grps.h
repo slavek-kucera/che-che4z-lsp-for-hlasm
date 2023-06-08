@@ -60,7 +60,6 @@ struct endevor
 {
     std::string profile;
 
-    std::string instance;
     std::string environment;
     std::string stage;
     std::string system;

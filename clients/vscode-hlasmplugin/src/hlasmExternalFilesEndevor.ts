@@ -16,26 +16,25 @@ import * as vscode from 'vscode';
 import { ExternalRequestType, HlasmExtension } from './extension.interface';
 
 function performRegistration(ext: HlasmExtension, e4e: unknown) {
-    const invalidationEventEmmiter = new vscode.EventEmitter<void>();
+    const invalidationEventEmmiter = new vscode.EventEmitter<string[] | undefined>();
 
     ext.registerExternalFileClient('ENDEVOR', {
         getConnInfo: () => Promise.resolve({ info: '', uniqueId: '' }),
         parseArgs(p: string, purpose: ExternalRequestType, query?: string) {
             const args = p.split('/').slice(1);
-            if (args.length !== 8 + +(purpose === ExternalRequestType.read_file)) return null;
+            if (args.length !== 7 + +(purpose === ExternalRequestType.read_file)) return null;
 
-            const [profile, use_map, instance, environment, stage, system, subsystem, type, element_hlasm] = args;
+            const [profile, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
             if (purpose === ExternalRequestType.list_directory) {
                 return {
                     profile,
                     use_map,
-                    instance,
                     environment,
                     stage,
                     system,
                     subsystem,
                     type,
-                    normalizedPath() { return `/${profile}/${use_map}/${instance}/${environment}/${stage}/${system}/${subsystem}/${type}`; },
+                    normalizedPath() { return `/${profile}/${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`; },
                 };
             } else {
                 const [element] = element_hlasm.split('.');
@@ -44,7 +43,6 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                 return {
                     profile,
                     use_map,
-                    instance,
                     environment,
                     stage,
                     system,
@@ -52,7 +50,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                     type,
                     element,
                     fingerprint,
-                    normalizedPath() { return `/${profile}/${use_map}/${instance}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}.hlasm${q}`; },
+                    normalizedPath() { return `/${profile}/${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}.hlasm${q}`; },
                 };
 
             }

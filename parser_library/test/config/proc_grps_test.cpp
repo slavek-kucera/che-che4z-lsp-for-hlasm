@@ -72,21 +72,20 @@ TEST(proc_grps, dataset_write)
 TEST(proc_grps, endevor_read)
 {
     const auto cases = {
+        std::make_pair(R"({"environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC"})"_json,
+            endevor { "", "E", "1", "SYS", "SUB", "MAC", true, false }),
         std::make_pair(
-            R"({"instance":"I","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC"})"_json,
-            endevor { "", "I", "E", "1", "SYS", "SUB", "MAC", true, false }),
+            R"({"environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","use_map":true})"_json,
+            endevor { "", "E", "1", "SYS", "SUB", "MAC", true, false }),
         std::make_pair(
-            R"({"instance":"I","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","use_map":true})"_json,
-            endevor { "", "I", "E", "1", "SYS", "SUB", "MAC", true, false }),
+            R"({"environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","use_map":false})"_json,
+            endevor { "", "E", "1", "SYS", "SUB", "MAC", false, false }),
         std::make_pair(
-            R"({"instance":"I","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","use_map":false})"_json,
-            endevor { "", "I", "E", "1", "SYS", "SUB", "MAC", false, false }),
+            R"({"environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","use_map":false,"optional":true})"_json,
+            endevor { "", "E", "1", "SYS", "SUB", "MAC", false, true }),
         std::make_pair(
-            R"({"instance":"I","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","use_map":false,"optional":true})"_json,
-            endevor { "", "I", "E", "1", "SYS", "SUB", "MAC", false, true }),
-        std::make_pair(
-            R"({"instance":"I","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","profile":"P"})"_json,
-            endevor { "P", "I", "E", "1", "SYS", "SUB", "MAC", true, false }),
+            R"({"environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","profile":"P"})"_json,
+            endevor { "P", "E", "1", "SYS", "SUB", "MAC", true, false }),
     };
 
     for (const auto& [input, expected] : cases)
@@ -97,9 +96,9 @@ TEST(proc_grps, endevor_read)
 
 TEST(proc_grps, endevor_write)
 {
-    const auto l = endevor { "P", "I", "E", "1", "SYS", "SUB", "MAC", false, true };
+    const auto l = endevor { "P", "E", "1", "SYS", "SUB", "MAC", false, true };
     const auto expected =
-        R"({"profile":"P","instance":"I","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","use_map":false,"optional":true})"_json;
+        R"({"profile":"P","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","use_map":false,"optional":true})"_json;
 
     EXPECT_EQ(nlohmann::json(l), expected);
 }
@@ -173,8 +172,8 @@ TEST(proc_grps, full_content_read)
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[{"dataset": "ds.name", "optional":true}]}]})"_json,
             proc_grps { { { "P1", { dataset { "ds.name", true } } } } }),
         std::make_pair(
-            R"({"pgroups":[{"name":"P1", "libs":[{"instance":"I","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC"}]}]})"_json,
-            proc_grps { { { "P1", { endevor { "", "I", "E", "1", "SYS", "SUB", "MAC", true, false } } } } }),
+            R"({"pgroups":[{"name":"P1", "libs":[{"environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC"}]}]})"_json,
+            proc_grps { { { "P1", { endevor { "", "E", "1", "SYS", "SUB", "MAC", true, false } } } } }),
     };
 
     for (const auto& [input, expected] : cases)
@@ -231,8 +230,8 @@ TEST(proc_grps, full_content_write)
         std::make_pair(R"({"pgroups":[{"name":"P1", "libs":[{"dataset": "ds.name", "optional":true}]}]})"_json,
             proc_grps { { { "P1", { dataset { "ds.name", true } } } } }),
         std::make_pair(
-            R"({"pgroups":[{"name":"P1", "libs":[{"profile":"","instance":"I","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","optional":false,"use_map":true}]}]})"_json,
-            proc_grps { { { "P1", { endevor { "", "I", "E", "1", "SYS", "SUB", "MAC", true, false } } } } }),
+            R"({"pgroups":[{"name":"P1", "libs":[{"profile":"","environment":"E","stage":"1","system":"SYS","subsystem":"SUB","type":"MAC","optional":false,"use_map":true}]}]})"_json,
+            proc_grps { { { "P1", { endevor { "", "E", "1", "SYS", "SUB", "MAC", true, false } } } } }),
     };
 
     for (const auto& [expected, input] : cases)

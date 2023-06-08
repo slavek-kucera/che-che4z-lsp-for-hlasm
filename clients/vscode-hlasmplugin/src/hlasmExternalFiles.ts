@@ -70,7 +70,7 @@ export interface ClientInterface<ConnectArgs, ReadArgs extends ClientUriDetails,
     getConnInfo: () => Promise<{ info: ConnectArgs, uniqueId?: string }>,
     parseArgs: (path: string, purpose: ExternalRequestType, query?: string) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
     createClient: () => ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>,
-    invalidate?: vscode.Event<void>,
+    invalidate?: vscode.Event<string[] | undefined>,
 };
 
 export interface ExternalFilesClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
@@ -96,8 +96,8 @@ function take<T>(it: IterableIterator<T>, n: number): T[] {
     return result;
 }
 
-const not_exists = Object.freeze(new class { __supid_typescript_workaround: undefined; });
-const no_client = Object.freeze(new class { __supid_typescript_workaround: undefined; });
+const not_exists = Object.freeze(new class { __stupid_typescript_workaround: undefined; });
+const no_client = Object.freeze(new class { __stupid_typescript_workaround: undefined; });
 interface InError { message: string };
 
 const not_exists_json = new TextEncoder().encode(JSON.stringify("not_exists"));
@@ -230,8 +230,8 @@ export class HLASMExternalFiles {
                 }
             }),
             dispose: (() => {
-                const toDispose = client.invalidate?.(() => {
-                    this.clearCache(service);
+                const toDispose = client.invalidate?.((list) => {
+                    this.clearCache(service, list);
                 });
                 return () => {
                     toDispose?.dispose();
@@ -609,9 +609,11 @@ export class HLASMExternalFiles {
         return Promise.resolve(this.generateError(msg.id, -5, 'Invalid request'));
     }
 
-    public async clearCache(service?: string) {
+    public async clearCache(service?: string, paths?: string[]) {
         if (this.cache) {
-            const prefix = service ? cacheVersion + '.' + service + '.' : undefined;
+            const prefix = service && cacheVersion + '.' + service + '.';
+            const clientId = service && this.clients.get(service)?.activeConnectionInfo?.uniqueId;
+            const cacheKeys = paths && prefix && clientId && new Set(...paths.map(x => prefix + this.deriveCacheEntryName(clientId, service, x)));
             const { uri, fs } = this.cache;
 
             const files = await fs.readDirectory(uri);
@@ -621,6 +623,8 @@ export class HLASMExternalFiles {
 
             for (const [filename] of files) {
                 if (prefix && !filename.startsWith(prefix))
+                    continue;
+                if (cacheKeys && !cacheKeys.has(filename))
                     continue;
 
                 const p = Promise.resolve(fs.delete(vscode.Uri.joinPath(uri, filename)));

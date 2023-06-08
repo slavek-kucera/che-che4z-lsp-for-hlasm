@@ -90,7 +90,6 @@ void to_json(nlohmann::json& j, const endevor& p)
 {
     j = nlohmann::json {
         { "profile", p.profile },
-        { "instance", p.instance },
         { "environment", p.environment },
         { "stage", p.stage },
         { "system", p.system },
@@ -110,7 +109,6 @@ void from_json(const nlohmann::json& j, endevor& p)
     else
         p.profile.clear();
 
-    j.at("instance").get_to(p.instance);
     j.at("environment").get_to(p.environment);
     j.at("stage").get_to(p.stage);
     j.at("system").get_to(p.system);

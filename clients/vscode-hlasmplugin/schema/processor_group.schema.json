@@ -64,10 +64,6 @@
                                 "type": "string",
                                 "description": "Endevor profile name to be used by the E4E extension"
                             },
-                            "instance": {
-                                "type": "string",
-                                "description": "Endevor instance"
-                            },
                             "environment": {
                                 "type": "string",
                                 "description": "Endevor environment"
@@ -99,7 +95,6 @@
                             }
                         },
                         "required": [
-                            "instance",
                             "environment",
                             "stage",
                             "system",
