@@ -13,10 +13,10 @@
  */
 
 import * as vscode from 'vscode';
-import { ExternalRequestType, HlasmExtension } from './extension.interface';
+import { ExternalRequestType, HlasmExtension, ExternalFilesInvalidationdata } from './extension.interface';
 
 function performRegistration(ext: HlasmExtension, e4e: unknown) {
-    const invalidationEventEmmiter = new vscode.EventEmitter<string[] | undefined>();
+    const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
 
     ext.registerExternalFileClient('ENDEVOR', {
         getConnInfo: () => Promise.resolve({ info: '', uniqueId: '' }),

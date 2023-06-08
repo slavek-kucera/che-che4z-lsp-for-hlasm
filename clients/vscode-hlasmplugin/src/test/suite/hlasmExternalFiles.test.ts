@@ -15,8 +15,8 @@
 
 import * as assert from 'assert';
 import * as crypto from "crypto";
-import { ClientInterface, ClientUriDetails, ExternalRequestType, HLASMExternalFiles } from '../../hlasmExternalFiles';
-import { FileSystem, Uri } from 'vscode';
+import { ClientInterface, ClientUriDetails, ExternalFilesInvalidationdata, ExternalRequestType, HLASMExternalFiles } from '../../hlasmExternalFiles';
+import { EventEmitter, FileSystem, Uri } from 'vscode';
 import { FileType } from 'vscode';
 import { TextEncoder } from 'util';
 import { deflateSync } from 'zlib';
@@ -75,8 +75,8 @@ suite('External files', () => {
         assert.strictEqual(deleteCounter, 1);
 
     });
-    const nameGenerator = (components: string[]) => {
-        return 'v2.TEST.' + crypto.createHash('sha256').update(JSON.stringify(components)).digest().toString('hex');
+    const nameGenerator = (components: string[], service: string = 'TEST') => {
+        return 'v2.' + service + '.' + crypto.createHash('sha256').update(JSON.stringify(components)).digest().toString('hex');
     };
     test('Access cached content', async () => {
         const cacheUri = Uri.parse('test:cache/');
@@ -223,5 +223,54 @@ suite('External files', () => {
         assert.strictEqual(dir.id, 4);
         assert.ok('error' in dir);
         assert.strictEqual(dir?.error?.code, 0);
+    });
+
+    test('Selective cache clear', async () => {
+        const cacheUri = Uri.parse('test:cache/');
+
+        let resolve: () => void;
+        const deletePromise = new Promise<void>((r) => { resolve = r; });
+
+        const ext = new HLASMExternalFiles('test', {
+            onNotification: (_, __) => { return { dispose: () => { } }; },
+            sendNotification: (_: any, __: any) => Promise.resolve(),
+        }, {
+            uri: cacheUri,
+            fs: {
+                readDirectory: async (uri: Uri) => {
+                    assert.strictEqual(cacheUri.toString(), uri.toString());
+                    return [[nameGenerator(['SERVER', 'B'], 'TEST2'), FileType.File], [nameGenerator(['SERVER', 'A']), FileType.File]];
+                },
+                delete: async (uri: Uri, options?: { recursive?: boolean; useTrash?: boolean }) => {
+                    assert.strictEqual(uri.toString(), Uri.joinPath(cacheUri, nameGenerator(['SERVER', 'A'])).toString())
+                    resolve();
+                },
+            } as any as FileSystem
+        });
+
+        const emmiter = new EventEmitter<ExternalFilesInvalidationdata | undefined>();
+        ext.setClient('TEST', {
+            getConnInfo: () => Promise.resolve({ info: '', uniqueId: 'SERVER' }),
+            parseArgs: (path: string, purpose: ExternalRequestType): ClientUriDetails | null => null,
+            createClient: () => {
+                return {
+                    dispose: () => { },
+
+                    connect: (_: string) => Promise.resolve(),
+
+                    listMembers: (_: ClientUriDetails) => Promise.resolve(null),
+                    readMember: (_: ClientUriDetails) => Promise.resolve(null),
+
+                    reusable: () => false,
+                };
+            },
+            invalidate: emmiter.event,
+
+        } as any as ClientInterface<string, ClientUriDetails, ClientUriDetails>);
+
+        emmiter.fire({ paths: ['A'], clientId: 'SERVER' });
+
+        await deletePromise;
+
     });
 });

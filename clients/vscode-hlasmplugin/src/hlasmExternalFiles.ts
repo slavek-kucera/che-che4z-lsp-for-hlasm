@@ -66,11 +66,16 @@ export interface ClientUriDetails {
     toDisplayString?(): string;
 }
 
+export interface ExternalFilesInvalidationdata {
+    paths: string[];
+    clientId?: string;
+}
+
 export interface ClientInterface<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
     getConnInfo: () => Promise<{ info: ConnectArgs, uniqueId?: string }>,
     parseArgs: (path: string, purpose: ExternalRequestType, query?: string) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
     createClient: () => ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>,
-    invalidate?: vscode.Event<string[] | undefined>,
+    invalidate?: vscode.Event<ExternalFilesInvalidationdata | undefined>,
 };
 
 export interface ExternalFilesClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
@@ -231,7 +236,10 @@ export class HLASMExternalFiles {
             }),
             dispose: (() => {
                 const toDispose = client.invalidate?.((list) => {
-                    this.clearCache(service, list);
+                    if (!list)
+                        this.clearCache(service);
+                    else
+                        this.clearCache(service, list.paths, list.clientId);
                 });
                 return () => {
                     toDispose?.dispose();
@@ -453,7 +461,7 @@ export class HLASMExternalFiles {
     private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: CachedResultType): Promise<unknown> {
         if (!this.cache) return undefined;
         const clientId = await client.ensureConnectionInfo();
-        if (!clientId) return undefined;
+        if (clientId === undefined) return undefined;
 
         const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(clientId, service, normalizedPath));
 
@@ -609,11 +617,11 @@ export class HLASMExternalFiles {
         return Promise.resolve(this.generateError(msg.id, -5, 'Invalid request'));
     }
 
-    public async clearCache(service?: string, paths?: string[]) {
+    public async clearCache(service?: string, paths?: string[], clientId?: string) {
         if (this.cache) {
             const prefix = service && cacheVersion + '.' + service + '.';
-            const clientId = service && this.clients.get(service)?.activeConnectionInfo?.uniqueId;
-            const cacheKeys = paths && prefix && clientId && new Set(...paths.map(x => prefix + this.deriveCacheEntryName(clientId, service, x)));
+            const useClientId = clientId !== undefined ? clientId : service && this.clients.get(service)?.activeConnectionInfo?.uniqueId;
+            const cacheKeys = paths && service && (useClientId !== undefined) && new Set(paths.map(x => this.deriveCacheEntryName(useClientId, service, x)));
             const { uri, fs } = this.cache;
 
             const files = await fs.readDirectory(uri);

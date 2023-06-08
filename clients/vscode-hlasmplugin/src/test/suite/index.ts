@@ -19,7 +19,6 @@ import * as vscode from 'vscode';
 import * as process from 'process';
 import { popWaitRequestResolver } from './testHelper';
 import { EXTENSION_ID, activate } from '../../extension';
-import { ClientUriDetails, ExternalRequestType } from '../../hlasmExternalFiles';
 
 async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 	const ext = await vscode.extensions.getExtension<ReturnType<typeof activate>>(EXTENSION_ID)!.activate();
@@ -38,10 +37,11 @@ async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 		createClient: () => {
 			return {
 				connect: (_: string) => Promise.resolve(),
-				listMembers: (_: { path: string, file: string } & ClientUriDetails) => {
+				listMembers: (arg) => {
+					const { path } = arg;
 					return Promise.resolve(['MACA', 'MACB', 'MACC'].map(x => `/${path}/${x}`));
 				},
-				readMember: (args: { path: string, file: string } & ClientUriDetails) => {
+				readMember: (args) => {
 					if (/^MAC[A-C]$/.test(args.file))
 						return Promise.resolve(`.*
           MACRO
