@@ -20,36 +20,39 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
 
     ext.registerExternalFileClient('ENDEVOR', {
         getConnInfo: () => Promise.resolve({ info: '', uniqueId: '' }),
-        parseArgs(p: string, purpose: ExternalRequestType) {
+        parseArgs(p: string, purpose: ExternalRequestType, query?: string) {
             const args = p.split('/').slice(1);
-            if (args.length !== 7 + +(purpose === ExternalRequestType.read_file)) return null;
+            if (args.length !== 8 + +(purpose === ExternalRequestType.read_file)) return null;
 
-
+            const [profile, use_map, instance, environment, stage, system, subsystem, type, element_hlasm] = args;
             if (purpose === ExternalRequestType.list_directory) {
-                const [profile, use_map, environment, stage, system, subsystem, type] = args;
                 return {
                     profile,
                     use_map,
+                    instance,
                     environment,
                     stage,
                     system,
                     subsystem,
                     type,
-                    normalizedPath() { return `/${profile}/${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`; },
+                    normalizedPath() { return `/${profile}/${use_map}/${instance}/${environment}/${stage}/${system}/${subsystem}/${type}`; },
                 };
             } else {
-                const [profile, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
                 const [element] = element_hlasm.split('.');
+                const fingerprint = query?.match(/^fingerprint=([a-zA-Z0-9]+)$/)?.[1];
+                const q = fingerprint ? '?' + query : '';
                 return {
                     profile,
                     use_map,
+                    instance,
                     environment,
                     stage,
                     system,
                     subsystem,
                     type,
                     element,
-                    normalizedPath() { return `/${profile}/${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`; },
+                    fingerprint,
+                    normalizedPath() { return `/${profile}/${use_map}/${instance}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}.hlasm${q}`; },
                 };
 
             }
@@ -58,13 +61,14 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
             return {
                 connect: (_: string) => Promise.resolve(),
                 listMembers: (type_spec) => {
-                    return Promise.resolve(['MACA', 'MACB', 'MACC']);
+                    return Promise.resolve(['MACA', 'MACB', 'MACC'].map((x, i) => `${type_spec.normalizedPath()}/${x}.hlasm?fingerprint=${i.toString()}`));
                 },
                 readMember: (file_spec) => {
                     return `.*
         MACRO
         ${file_spec.element!}
-        MNOTE 4,'${file_spec.normalizedPath()}'
+ MNOTE 4,'${file_spec.normalizedPath()}'
+ MNOTE 4,'${file_spec.fingerprint ?? ' '}'
         MEND
 `;
                 },
@@ -79,18 +83,13 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
 }
 
 function findE4EAndRegister(ext: HlasmExtension) {
-    const e4eExt = vscode.extensions.getExtension('broadcommfd.explorer-for-endevor');
-    if (!e4eExt) return false;
-    e4eExt.activate().then(e4e => performRegistration(ext, e4e));
-    return true;
+    return !!vscode.extensions.getExtension('broadcommfd.explorer-for-endevor')?.activate().then(e4e => performRegistration(ext, e4e));
 }
 
 export function handleE4EIntegration(ext: HlasmExtension) {
-    if (findE4EAndRegister(ext))
-        return;
+    if (findE4EAndRegister(ext)) return;
     const listener = vscode.extensions.onDidChange(() => {
-        if (!findE4EAndRegister(ext))
-            return;
+        if (!findE4EAndRegister(ext)) return;
         listener.dispose();
     });
 }

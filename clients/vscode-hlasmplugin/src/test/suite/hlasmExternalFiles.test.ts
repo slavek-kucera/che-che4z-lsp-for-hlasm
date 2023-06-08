@@ -76,12 +76,12 @@ suite('External files', () => {
 
     });
     const nameGenerator = (components: string[]) => {
-        return 'v1.' + crypto.createHash('sha256').update(JSON.stringify(components)).digest().toString('hex');
+        return 'v2.TEST.' + crypto.createHash('sha256').update(JSON.stringify(components)).digest().toString('hex');
     };
     test('Access cached content', async () => {
         const cacheUri = Uri.parse('test:cache/');
         const dirResponse = deflateSync(new TextEncoder().encode(JSON.stringify("not_exists")));
-        const dir2Content = ['FILE'];
+        const dir2Content = ['/DIR2/FILE'];
         const dir2Response = deflateSync(new TextEncoder().encode(JSON.stringify({ data: dir2Content })));
         const fileContent = 'file content';
         const fileResponse = deflateSync(new TextEncoder().encode(JSON.stringify({ data: fileContent })));
@@ -98,27 +98,27 @@ suite('External files', () => {
             fs: {
                 readFile: async (uri: Uri) => {
                     const filename = uri.path.split('/').pop();
-                    if (filename === nameGenerator(['SERVER', 'TEST', '/DIR']))
+                    if (filename === nameGenerator(['SERVER', '/DIR']))
                         return dirResponse;
-                    if (filename === nameGenerator(['SERVER', 'TEST', '/DIR2']))
+                    if (filename === nameGenerator(['SERVER', '/DIR2']))
                         return dir2Response;
-                    if (filename === nameGenerator(['SERVER', 'TEST', '/DIR2/FILE']))
+                    if (filename === nameGenerator(['SERVER', '/DIR2/FILE']))
                         return fileResponse;
                     assert.ok(false);
                 },
                 writeFile: async (uri: Uri, content: Uint8Array) => {
                     const filename = uri.path.split('/').pop();
-                    if (filename === nameGenerator(['SERVER', 'TEST', '/DIR'])) {
+                    if (filename === nameGenerator(['SERVER', '/DIR'])) {
                         dirWritten = true;
                         assert.deepStrictEqual(content, dirResponse);
                         return;
                     }
-                    if (filename === nameGenerator(['SERVER', 'TEST', '/DIR2'])) {
+                    if (filename === nameGenerator(['SERVER', '/DIR2'])) {
                         dir2Written = true;
                         assert.deepStrictEqual(content, dir2Response);
                         return;
                     }
-                    if (filename === nameGenerator(['SERVER', 'TEST', '/DIR2/FILE'])) {
+                    if (filename === nameGenerator(['SERVER', '/DIR2/FILE'])) {
                         fileWritten = true;
                         assert.deepStrictEqual(content, fileResponse);
                         return;
@@ -170,7 +170,7 @@ suite('External files', () => {
         assert.strictEqual(dir2.id, 5);
         assert.ok('data' in dir2);
         assert.ok(dir2.data instanceof Object);
-        assert.deepStrictEqual(dir2.data.members, dir2Content);
+        assert.deepStrictEqual(dir2.data.member_urls, ['test:/TEST/DIR2/FILE']);
 
         const file = await ext.handleRawMessage({ id: 6, op: 'read_file', url: 'test:/TEST/DIR2/FILE' });
         assert.ok(file);

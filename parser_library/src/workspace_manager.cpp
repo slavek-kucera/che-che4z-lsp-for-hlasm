@@ -890,12 +890,14 @@ private:
             {
                 try
                 {
-                    std::string ext(c.suggested_extension);
                     auto& dirs = result.first;
-                    for (auto s : c.members)
+                    for (auto s : c.member_urls)
                     {
-                        std::string file(s);
-                        dirs.emplace_back(std::move(file), utils::resource::resource_location::join(dir, file + ext));
+                        auto url = utils::resource::resource_location(std::string_view(s));
+                        auto filename = url.filename();
+                        if (auto dot = filename.find('.'); dot != std::string::npos)
+                            filename.erase(dot);
+                        dirs.emplace_back(std::move(filename), std::move(url));
                     }
                 }
                 catch (...)

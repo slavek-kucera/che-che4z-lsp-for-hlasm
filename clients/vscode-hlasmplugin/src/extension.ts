@@ -35,7 +35,7 @@ import { HLASMExternalFiles } from './hlasmExternalFiles';
 import { HLASMExternalFilesFtp } from './hlasmExternalFilesFtp';
 import { HLASMExternalConfigurationProvider, HLASMExternalConfigurationProviderHandler } from './hlasmExternalConfigurationProvider';
 import { HlasmExtension } from './extension.interface';
-import { handleE4EIntegration } from './hlasmExtenalFilesEndevor';
+import { handleE4EIntegration } from './hlasmExternalFilesEndevor';
 import { pickUser } from './uiUtils';
 
 export const EXTENSION_ID = "broadcommfd.hlasm-language-support";

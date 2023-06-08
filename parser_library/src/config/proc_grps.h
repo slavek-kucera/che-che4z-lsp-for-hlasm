@@ -59,6 +59,8 @@ void from_json(const nlohmann::json& j, dataset& p);
 struct endevor
 {
     std::string profile;
+
+    std::string instance;
     std::string environment;
     std::string stage;
     std::string system;

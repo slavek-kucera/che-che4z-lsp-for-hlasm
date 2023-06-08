@@ -39,7 +39,7 @@ async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 			return {
 				connect: (_: string) => Promise.resolve(),
 				listMembers: (_: { path: string, file: string } & ClientUriDetails) => {
-					return Promise.resolve(['MACA', 'MACB', 'MACC']);
+					return Promise.resolve(['MACA', 'MACB', 'MACC'].map(x => `/${path}/${x}`));
 				},
 				readMember: (args: { path: string, file: string } & ClientUriDetails) => {
 					if (/^MAC[A-C]$/.test(args.file))

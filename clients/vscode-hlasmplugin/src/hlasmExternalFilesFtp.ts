@@ -83,7 +83,7 @@ export function HLASMExternalFilesFtp(context: vscode.ExtensionContext): ClientI
                         await checkedCommand(client, 'TYPE A');
                         checkResponse(await client.cd(`'${args.dataset}'`));
                         const list = await client.list();
-                        return list.map(x => x.name);
+                        return list.map(x => `/${args.dataset}/${x.name}.hlasm`);
                     }
                     catch (e) {
                         if (e instanceof ftp.FTPError && e.code == 550)

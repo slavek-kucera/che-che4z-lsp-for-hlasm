@@ -44,8 +44,7 @@ interface ExternalReadFileResponse {
 interface ExternalListDirectoryResponse {
     id: number,
     data: {
-        members: string[],
-        suggested_extension: string | undefined,
+        member_urls: string[],
     },
 }
 
@@ -69,7 +68,7 @@ export interface ClientUriDetails {
 
 export interface ClientInterface<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
     getConnInfo: () => Promise<{ info: ConnectArgs, uniqueId?: string }>,
-    parseArgs: (path: string, purpose: ExternalRequestType) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
+    parseArgs: (path: string, purpose: ExternalRequestType, query?: string) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
     createClient: () => ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>,
     invalidate?: vscode.Event<void>,
 };
@@ -97,11 +96,25 @@ function take<T>(it: IterableIterator<T>, n: number): T[] {
     return result;
 }
 
-const not_exists = Object.freeze({});
-const no_client = Object.freeze({});
+const not_exists = Object.freeze(new class { __supid_typescript_workaround: undefined; });
+const no_client = Object.freeze(new class { __supid_typescript_workaround: undefined; });
 interface InError { message: string };
 
 const not_exists_json = new TextEncoder().encode(JSON.stringify("not_exists"));
+
+const enum CachedResultType {
+    string,
+    arrayOfStrings,
+};
+
+function isValidCachedValue<R extends CachedResultType>(x: any, e: R): x is {
+    [CachedResultType.string]: string,
+    [CachedResultType.arrayOfStrings]: string[],
+}[R] {
+    if (e === CachedResultType.string) return typeof x === 'string';
+    if (e === CachedResultType.arrayOfStrings) return Array.isArray(x) && x.every(y => typeof y === 'string');
+    return false;
+}
 
 interface CacheEntry<T> {
     service: string | null,
@@ -120,7 +133,7 @@ interface ClientInstance<ConnectArgs, ReadArgs extends ClientUriDetails, ListArg
     activeConnectionInfo: { info: ConnectArgs, uniqueId?: string } | null;
     pool: ConnectionPool<ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>>,
     suspended: boolean,
-    parseArgs: (path: string, purpose: ExternalRequestType) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
+    parseArgs: (path: string, purpose: ExternalRequestType, query?: string) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
     ensureConnectionInfo: () => Promise<string | undefined>,
     dispose: () => void,
 };
@@ -236,7 +249,7 @@ export class HLASMExternalFiles {
         service: null,
         client: null,
         details: null,
-        associatedWorkspace: null,
+        associatedWorkspaceUrlPrefix: null,
     });
 
     private extractUriDetails<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(uri: string | vscode.Uri, purpose: ExternalRequestType): {
@@ -244,19 +257,19 @@ export class HLASMExternalFiles {
         service: null;
         client: null;
         details: null;
-        associatedWorkspace: null;
+        associatedWorkspaceUrlPrefix: null;
     } | {
         cacheKey: string;
         service: string;
         client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>;
         details: ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose],
-        associatedWorkspace: string;
+        associatedWorkspaceUrlPrefix: string;
     } | {
         cacheKey: string;
-        service: null;
+        service: string;
         client: null;
         details: null;
-        associatedWorkspace: string;
+        associatedWorkspaceUrlPrefix: string;
     } {
         if (typeof uri === 'string')
             uri = vscode.Uri.parse(uri, true);
@@ -272,7 +285,7 @@ export class HLASMExternalFiles {
         const subpath = matches[2] || '';
 
         const client: ClientInstance<ConnectArgs, ReadArgs, ListArgs> | undefined = this.clients.get(service);
-        const details = client?.parseArgs(subpath, purpose) ?? null;
+        const details = client?.parseArgs(subpath, purpose, uri.query) ?? null;
 
         if (details && client) {
             return {
@@ -280,22 +293,22 @@ export class HLASMExternalFiles {
                 service: service,
                 client: client,
                 details: details,
-                associatedWorkspace: uriFriendlyBase16Decode(uri.authority)
+                associatedWorkspaceUrlPrefix: uri.with({ path: '', query: '', fragment: '' }).toString()
             };
         }
         else
             return {
                 cacheKey: uri.path,
-                service: null,
+                service: service,
                 client: null,
                 details: null,
-                associatedWorkspace: uriFriendlyBase16Decode(uri.authority)
+                associatedWorkspaceUrlPrefix: uri.with({ path: '', query: '', fragment: '' }).toString()
             };
     }
 
     private prepareChangeNotification<T>(service: string, cache: Map<string, CacheEntry<T>>, all: boolean) {
         const changes = [...cache]
-            .filter(([, v]) => (v.service === null || v.service === service) && (
+            .filter(([, v]) => (v.service === service) && (
                 all ||
                 v.result instanceof Object && (v.result === no_client || 'message' in v.result)
             ))
@@ -435,9 +448,9 @@ export class HLASMExternalFiles {
         ])).digest().toString('hex');
     }
 
-    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: 'string'): Promise<string | InError | typeof not_exists | undefined>;
-    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: 'arrayOfStrings'): Promise<string[] | InError | typeof not_exists | undefined>;
-    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: 'string' | 'arrayOfStrings') {
+    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: CachedResultType.string): Promise<string | InError | typeof not_exists | undefined>
+    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: CachedResultType.arrayOfStrings): Promise<string[] | InError | typeof not_exists | undefined>
+    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: CachedResultType): Promise<unknown> {
         if (!this.cache) return undefined;
         const clientId = await client.ensureConnectionInfo();
         if (!clientId) return undefined;
@@ -451,9 +464,7 @@ export class HLASMExternalFiles {
             if (cachedResult instanceof Object && 'data' in cachedResult) {
                 const data = cachedResult.data;
 
-                if (expect === 'string' && typeof data === 'string')
-                    return data;
-                if (expect === 'arrayOfStrings' && Array.isArray(data) && data.every(x => typeof x === 'string'))
+                if (isValidCachedValue(data, expect))
                     return data;
             }
         }
@@ -494,7 +505,7 @@ export class HLASMExternalFiles {
     private async getFile<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, parsedArgs: ReadArgs): Promise<string | InError | typeof not_exists | typeof no_client | null> {
         try {
             const normalizedPath = parsedArgs.normalizedPath();
-            return await this.getCachedResult(client, service, normalizedPath, 'string') ?? await this.askClient(service, parsedArgs.toDisplayString?.() ?? normalizedPath, () => client.pool.withClient(c => c.readMember(parsedArgs)));
+            return await this.getCachedResult(client, service, normalizedPath, CachedResultType.string) ?? await this.askClient(service, parsedArgs.toDisplayString?.() ?? normalizedPath, () => client.pool.withClient(c => c.readMember(parsedArgs)));
         }
         catch (x) { return this.handleError(x); }
     }
@@ -502,7 +513,12 @@ export class HLASMExternalFiles {
     private async getDir<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, parsedArgs: ListArgs): Promise<string[] | InError | typeof not_exists | typeof no_client | null> {
         try {
             const normalizedPath = parsedArgs.normalizedPath();
-            return await this.getCachedResult(client, service, normalizedPath, 'arrayOfStrings') ?? await this.askClient(service, parsedArgs.toDisplayString?.() ?? normalizedPath, () => client.pool.withClient(c => c.listMembers(parsedArgs)));
+            return await this.getCachedResult(client, service, normalizedPath, CachedResultType.arrayOfStrings)
+                ?? await this.askClient(service, parsedArgs.toDisplayString?.() ?? normalizedPath,
+                    () => client.pool.withClient(
+                        c => c.listMembers(parsedArgs)
+                    )
+                );
         }
         catch (x) { return this.handleError(x); }
     }
@@ -511,10 +527,10 @@ export class HLASMExternalFiles {
         msg: ExternalRequest,
         getData: (client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, details: ExternalRequestDetails<ReadArgs, ListArgs>[typeof msg.op]) => Promise<CacheEntry<T>['result'] | null>,
         inMemoryCache: Map<string, CacheEntry<T>>,
-        responseTransform: (result: T) => (T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse)['data']):
+        responseTransform: (result: T, urlPrefix: string) => (T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse)['data']):
         Promise<(T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse) | ExternalErrorResponse | null> {
         if (msg.op !== ExternalRequestType.read_file && msg.op !== ExternalRequestType.list_directory) throw Error("");
-        const { cacheKey, service, client, details } = this.extractUriDetails<ConnectArgs, ReadArgs, ListArgs>(msg.url, msg.op);
+        const { cacheKey, service, client, details, associatedWorkspaceUrlPrefix } = this.extractUriDetails<ConnectArgs, ReadArgs, ListArgs>(msg.url, msg.op);
         if (!cacheKey || client && !details)
             return this.generateError(msg.id, -5, 'Invalid request');
 
@@ -534,7 +550,7 @@ export class HLASMExternalFiles {
         }
         content.references.add(msg.url);
 
-        const { response, cache } = await this.transformResult(msg.id, content, responseTransform);
+        const { response, cache } = await this.transformResult(msg.id, content, x => responseTransform(x, `${associatedWorkspaceUrlPrefix}/${service}`));
 
         if (cache && client && !content.cached)
             content.cached = await this.storeCachedResult(client, service, details.normalizedPath(), content.result);
@@ -574,10 +590,9 @@ export class HLASMExternalFiles {
         return this.handleMessage(msg, this.getFile.bind(this), this.memberContent, x => x);
     }
     private handleDirMessage(msg: ExternalRequest) {
-        return this.handleMessage(msg, this.getDir.bind(this), this.memberLists, (result) => {
+        return this.handleMessage(msg, this.getDir.bind(this), this.memberLists, (result, urlPrefix) => {
             return {
-                members: result,
-                suggested_extension: '.hlasm',
+                member_urls: result.map(x => urlPrefix + x),
             };
         });
     }

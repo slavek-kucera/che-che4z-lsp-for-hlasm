@@ -315,9 +315,10 @@ void workspace_configuration::process_processor_group_library(const config::ende
     new_uri_components.scheme = external_uri_scheme;
     new_uri_components.auth.emplace().host = utils::encoding::uri_friendly_base16_encode(m_location.get_uri());
     new_uri_components.path = "/ENDEVOR/" + utils::encoding::percent_encode(end.profile) + "/"
-        + std::string(end.use_map ? "map" : "nomap") + "/" + utils::encoding::percent_encode(end.environment) + "/"
-        + utils::encoding::percent_encode(end.stage) + "/" + utils::encoding::percent_encode(end.system) + "/"
-        + utils::encoding::percent_encode(end.subsystem) + "/" + utils::encoding::percent_encode(end.type);
+        + std::string(end.use_map ? "map" : "nomap") + "/" + utils::encoding::percent_encode(end.instance) + "/"
+        + utils::encoding::percent_encode(end.environment) + "/" + utils::encoding::percent_encode(end.stage) + "/"
+        + utils::encoding::percent_encode(end.system) + "/" + utils::encoding::percent_encode(end.subsystem) + "/"
+        + utils::encoding::percent_encode(end.type);
     utils::resource::resource_location new_uri(utils::path::reconstruct_uri(new_uri_components));
 
     prc_grp.add_library(get_local_library(new_uri, { .optional_library = end.optional }));
