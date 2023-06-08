@@ -91,7 +91,7 @@ void external_file_reader::read_external_directory(
     auto next_id = m_next_id.fetch_add(1, std::memory_order_relaxed);
     nlohmann::json msg = {
         { "id", next_id },
-        { "op", "read_directory" },
+        { "op", "list_directory" },
         { "url", url },
     };
 

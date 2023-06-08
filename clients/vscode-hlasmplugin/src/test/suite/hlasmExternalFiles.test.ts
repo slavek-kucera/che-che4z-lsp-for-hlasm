@@ -159,13 +159,13 @@ suite('External files', () => {
             }
         } as any as ClientInterface<string, ClientUriDetails, ClientUriDetails>);
 
-        const dir = await ext.handleRawMessage({ id: 4, op: 'read_directory', url: 'test:/TEST/DIR' });
+        const dir = await ext.handleRawMessage({ id: 4, op: 'list_directory', url: 'test:/TEST/DIR' });
         assert.ok(dir);
         assert.strictEqual(dir.id, 4);
         assert.ok('error' in dir);
         assert.strictEqual(dir?.error?.code, 0);
 
-        const dir2 = await ext.handleRawMessage({ id: 5, op: 'read_directory', url: 'test:/TEST/DIR2' });
+        const dir2 = await ext.handleRawMessage({ id: 5, op: 'list_directory', url: 'test:/TEST/DIR2' });
         assert.ok(dir2);
         assert.strictEqual(dir2.id, 5);
         assert.ok('data' in dir2);
@@ -218,7 +218,7 @@ suite('External files', () => {
             }
         } as any as ClientInterface<string, ClientUriDetails, ClientUriDetails>);
 
-        const dir = await ext.handleRawMessage({ id: 4, op: 'read_directory', url: 'test:/TEST/DIR' });
+        const dir = await ext.handleRawMessage({ id: 4, op: 'list_directory', url: 'test:/TEST/DIR' });
         assert.ok(dir);
         assert.strictEqual(dir.id, 4);
         assert.ok('error' in dir);

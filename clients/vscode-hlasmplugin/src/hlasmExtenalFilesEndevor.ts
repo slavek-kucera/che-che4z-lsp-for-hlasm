@@ -17,7 +17,7 @@ import { ExternalRequestType, HlasmExtension } from './extension.interface';
 
 function performRegistration(ext: HlasmExtension, e4e: unknown) {
     const invalidationEventEmmiter = new vscode.EventEmitter<void>();
-    
+
     ext.registerExternalFileClient('ENDEVOR', {
         getConnInfo: () => Promise.resolve({ info: '', uniqueId: '' }),
         parseArgs(p: string, purpose: ExternalRequestType) {
@@ -25,7 +25,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
             if (args.length !== 7 + +(purpose === ExternalRequestType.read_file)) return null;
 
 
-            if (purpose === ExternalRequestType.read_directory) {
+            if (purpose === ExternalRequestType.list_directory) {
                 const [profile, use_map, environment, stage, system, subsystem, type] = args;
                 return {
                     profile,

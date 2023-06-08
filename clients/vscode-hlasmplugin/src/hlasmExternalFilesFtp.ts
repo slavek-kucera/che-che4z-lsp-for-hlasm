@@ -61,7 +61,7 @@ export function HLASMExternalFilesFtp(context: vscode.ExtensionContext): ClientI
                 case ExternalRequestType.read_file:
                     if (!member || !/^[A-Z$#@][A-Z$#@0-9]{1,7}(?:\..*)?$/.test(member)) return null; // ignore extension
                     break;
-                case ExternalRequestType.read_directory:
+                case ExternalRequestType.list_directory:
                     if (member) return null;
                     break;
             }

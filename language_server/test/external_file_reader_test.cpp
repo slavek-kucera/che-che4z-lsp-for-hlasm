@@ -178,7 +178,7 @@ TEST(external_file_reader, directory_reading)
   "method":"external_file_request",
   "params":{
     "id":1,
-    "op":"read_directory",
+    "op":"list_directory",
     "url":"CCC"
   }
 })"_json));
@@ -226,7 +226,7 @@ TEST(external_file_reader, directory_reading_bad)
   "method":"external_file_request",
   "params":{
     "id":1,
-    "op":"read_directory",
+    "op":"list_directory",
     "url":"CCC"
   }
 })"_json));
@@ -266,7 +266,7 @@ TEST(external_file_reader, directory_reading_bad2)
   "method":"external_file_request",
   "params":{
     "id":1,
-    "op":"read_directory",
+    "op":"list_directory",
     "url":"CCC"
   }
 })"_json));
@@ -306,7 +306,7 @@ TEST(external_file_reader, directory_reading_bad3)
   "method":"external_file_request",
   "params":{
     "id":1,
-    "op":"read_directory",
+    "op":"list_directory",
     "url":"CCC"
   }
 })"_json));
@@ -346,7 +346,7 @@ TEST(external_file_reader, directory_reading_error)
   "method":"external_file_request",
   "params":{
     "id":1,
-    "op":"read_directory",
+    "op":"list_directory",
     "url":"DDD"
   }
 })"_json));

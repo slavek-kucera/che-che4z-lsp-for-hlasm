@@ -27,7 +27,7 @@ import { AsyncMutex } from "./asyncMutex";
 
 export const enum ExternalRequestType {
     read_file = 'read_file',
-    read_directory = 'read_directory',
+    list_directory = 'list_directory',
 }
 
 interface ExternalRequest {
@@ -41,7 +41,7 @@ interface ExternalReadFileResponse {
     data: string,
 }
 
-interface ExternalReadDirectoryResponse {
+interface ExternalListDirectoryResponse {
     id: number,
     data: {
         members: string[],
@@ -51,7 +51,7 @@ interface ExternalReadDirectoryResponse {
 
 type ExternalRequestDetails<R, L> = {
     [ExternalRequestType.read_file]: R,
-    [ExternalRequestType.read_directory]: L,
+    [ExternalRequestType.list_directory]: L,
 };
 
 interface ExternalErrorResponse {
@@ -511,9 +511,9 @@ export class HLASMExternalFiles {
         msg: ExternalRequest,
         getData: (client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, details: ExternalRequestDetails<ReadArgs, ListArgs>[typeof msg.op]) => Promise<CacheEntry<T>['result'] | null>,
         inMemoryCache: Map<string, CacheEntry<T>>,
-        responseTransform: (result: T) => (T extends string[] ? ExternalReadDirectoryResponse : ExternalReadFileResponse)['data']):
-        Promise<(T extends string[] ? ExternalReadDirectoryResponse : ExternalReadFileResponse) | ExternalErrorResponse | null> {
-        if (msg.op !== ExternalRequestType.read_file && msg.op !== ExternalRequestType.read_directory) throw Error("");
+        responseTransform: (result: T) => (T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse)['data']):
+        Promise<(T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse) | ExternalErrorResponse | null> {
+        if (msg.op !== ExternalRequestType.read_file && msg.op !== ExternalRequestType.list_directory) throw Error("");
         const { cacheKey, service, client, details } = this.extractUriDetails<ConnectArgs, ReadArgs, ListArgs>(msg.url, msg.op);
         if (!cacheKey || client && !details)
             return this.generateError(msg.id, -5, 'Invalid request');
@@ -549,9 +549,9 @@ export class HLASMExternalFiles {
     private transformResult<T>(
         id: number,
         content: CacheEntry<T>,
-        transform: (result: T) => (T extends string[] ? ExternalReadDirectoryResponse : ExternalReadFileResponse)['data']
+        transform: (result: T) => (T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse)['data']
     ): Promise<{
-        response: (T extends string[] ? ExternalReadDirectoryResponse : ExternalReadFileResponse) | ExternalErrorResponse,
+        response: (T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse) | ExternalErrorResponse,
         cache: boolean
     }> {
         if (content.result === not_exists)
@@ -562,7 +562,7 @@ export class HLASMExternalFiles {
             return Promise.resolve({ response: this.generateError(id, -1000, content.result.message), cache: false });
         else
             return Promise.resolve({
-                response: <T extends string[] ? ExternalReadDirectoryResponse : ExternalReadFileResponse>{
+                response: <T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse>{
                     id,
                     data: transform(<T>content.result),
                 },
@@ -582,13 +582,13 @@ export class HLASMExternalFiles {
         });
     }
 
-    public handleRawMessage(msg: any): Promise<ExternalReadFileResponse | ExternalReadDirectoryResponse | ExternalErrorResponse | null> {
+    public handleRawMessage(msg: any): Promise<ExternalReadFileResponse | ExternalListDirectoryResponse | ExternalErrorResponse | null> {
         if (!msg || typeof msg.id !== 'number' || typeof msg.op !== 'string')
             return Promise.resolve(null);
 
         if (msg.op === ExternalRequestType.read_file && typeof msg.url === 'string')
             return this.handleFileMessage(msg);
-        if (msg.op === ExternalRequestType.read_directory && typeof msg.url === 'string')
+        if (msg.op === ExternalRequestType.list_directory && typeof msg.url === 'string')
             return this.handleDirMessage(msg);
 
         return Promise.resolve(this.generateError(msg.id, -5, 'Invalid request'));
