@@ -110,6 +110,38 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
         },
         invalidate: invalidationEventEmmiter.event,
     });
+
+    const cp = ext.registerExternalConfigurationProvider(async (uri: vscode.Uri) => {
+        if (!uri.path.includes('/test.hlasm'))
+            return null;
+        else
+            return {
+                configuration: {
+                    "name": "GRP1",
+                    "libs": [
+                        {
+                            "dataset": "SYS1.MACLIB"
+                        },
+                        {
+                            "dataset": "SYS1.MODGEN"
+                        },
+                        {
+                            "environment": "DEV",
+                            "stage": "1",
+                            "system": "SYSTEM",
+                            "subsystem": "SUBSYS",
+                            "type": "ASMMAC"
+                        },
+                        {
+                            "dataset": "AAAA.BBBB",
+                            "profile": ""
+                        }
+                    ]
+                }
+            };
+    });
+
+    // e4e(cp);
 }
 
 function findE4EAndRegister(ext: HlasmExtension) {
