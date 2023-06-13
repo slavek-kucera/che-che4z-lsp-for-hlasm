@@ -85,7 +85,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                     else
                         return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `${type_spec.normalizedPath()}/${x}.hlasm`));
                 },
-                readMember: (file_spec) => {
+                readMember: async (file_spec) => {
                     if ('use_map' in file_spec)
                         return `.*
         MACRO
