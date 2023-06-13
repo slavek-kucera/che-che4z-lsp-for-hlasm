@@ -51,6 +51,10 @@
                             "optional": {
                                 "type": "boolean",
                                 "description": "Specify 'true' if it is acceptable to not locate the data set."
+                            },
+                            "profile": {
+                                "type": "string",
+                                "description": "(Internal) Profile name to be used by the E4E extension"
                             }
                         },
                         "required": [
@@ -60,10 +64,6 @@
                     {
                         "type": "object",
                         "properties": {
-                            "profile": {
-                                "type": "string",
-                                "description": "Endevor profile name to be used by the E4E extension"
-                            },
                             "environment": {
                                 "type": "string",
                                 "description": "Endevor environment"
@@ -92,6 +92,10 @@
                             "optional": {
                                 "type": "boolean",
                                 "description": "Specify 'true' if it is acceptable to not locate the endevor location."
+                            },
+                            "profile": {
+                                "type": "string",
+                                "description": "(Internal) Profile name to be used by the E4E extension"
                             }
                         },
                         "required": [

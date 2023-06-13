@@ -22,10 +22,8 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
         getConnInfo: () => Promise.resolve({ info: '', uniqueId: '' }),
         parseArgs(p: string, purpose: ExternalRequestType, query?: string) {
             const args = p.split('/').slice(1);
-            if (args.length !== 7 + +(purpose === ExternalRequestType.read_file)) return null;
-
-            const [profile, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
-            if (purpose === ExternalRequestType.list_directory) {
+            if (purpose === ExternalRequestType.list_directory && args.length === 7) {
+                const [profile, use_map, environment, stage, system, subsystem, type] = args;
                 return {
                     profile,
                     use_map,
@@ -36,7 +34,18 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                     type,
                     normalizedPath() { return `/${profile}/${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`; },
                 };
-            } else {
+            }
+            if (purpose === ExternalRequestType.list_directory && args.length === 2) {
+                const [profile, dataset] = args;
+                return {
+                    profile,
+                    dataset,
+                    normalizedPath() { return `/${profile}/${dataset}`; },
+                };
+            }
+            if (purpose === ExternalRequestType.read_file && args.length === 8) {
+                const [profile, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
+
                 const [element] = element_hlasm.split('.');
                 const fingerprint = query?.match(/^fingerprint=([a-zA-Z0-9]+)$/)?.[1];
                 const q = fingerprint ? '?' + query : '';
@@ -52,21 +61,44 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                     fingerprint,
                     normalizedPath() { return `/${profile}/${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}.hlasm${q}`; },
                 };
-
             }
+            if (purpose === ExternalRequestType.read_file && args.length === 3) {
+                const [profile, dataset, memeber_hlasm] = args;
+
+                const [member] = memeber_hlasm.split('.');
+                return {
+                    profile,
+                    dataset,
+                    member,
+                    normalizedPath() { return `/${profile}/${dataset}/${member}.hlasm`; },
+                };
+            }
+
+            return null;
         },
         createClient: () => {
             return {
                 connect: (_: string) => Promise.resolve(),
                 listMembers: (type_spec) => {
-                    return Promise.resolve(['MACA', 'MACB', 'MACC'].map((x, i) => `${type_spec.normalizedPath()}/${x}.hlasm?fingerprint=${i.toString()}`));
+                    if ('use_map' in type_spec)
+                        return Promise.resolve(['MACA', 'MACB', 'MACC'].map((x, i) => `${type_spec.normalizedPath()}/${x}.hlasm?fingerprint=${i.toString()}`));
+                    else
+                        return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `${type_spec.normalizedPath()}/${x}.hlasm`));
                 },
                 readMember: (file_spec) => {
-                    return `.*
+                    if ('use_map' in file_spec)
+                        return `.*
         MACRO
         ${file_spec.element!}
  MNOTE 4,'${file_spec.normalizedPath()}'
  MNOTE 4,'${file_spec.fingerprint ?? ' '}'
+        MEND
+`;
+                    else
+                        return `.*
+        MACRO
+        ${file_spec.member!}
+ MNOTE 4,'${file_spec.normalizedPath()}'
         MEND
 `;
                 },

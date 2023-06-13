@@ -323,6 +323,22 @@ void workspace_configuration::process_processor_group_library(const config::ende
     prc_grp.add_library(get_local_library(new_uri, { .optional_library = end.optional }));
 }
 
+void workspace_configuration::process_processor_group_library(const config::endevor_dataset& end,
+    const utils::resource::resource_location&,
+    std::vector<diagnostic_s>&,
+    std::span<const std::string>,
+    processor_group& prc_grp)
+{
+    utils::path::dissected_uri new_uri_components;
+    new_uri_components.scheme = external_uri_scheme;
+    new_uri_components.auth.emplace().host = utils::encoding::uri_friendly_base16_encode(m_location.get_uri());
+    new_uri_components.path =
+        "/ENDEVOR/" + utils::encoding::percent_encode(end.profile) + "/" + utils::encoding::percent_encode(end.dsn);
+    utils::resource::resource_location new_uri(utils::path::reconstruct_uri(new_uri_components));
+
+    prc_grp.add_library(get_local_library(new_uri, { .optional_library = end.optional }));
+}
+
 namespace {
 void modify_hlasm_external_uri(
     utils::resource::resource_location& rl, const utils::resource::resource_location& workspace)

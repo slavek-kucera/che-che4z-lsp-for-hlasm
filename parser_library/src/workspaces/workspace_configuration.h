@@ -318,6 +318,11 @@ class workspace_configuration
         std::vector<diagnostic_s>& diags,
         std::span<const std::string> fallback_macro_extensions,
         processor_group& prc_grp);
+    void process_processor_group_library(const config::endevor_dataset& end,
+        const utils::resource::resource_location& alternative_root,
+        std::vector<diagnostic_s>& diags,
+        std::span<const std::string> fallback_macro_extensions,
+        processor_group& prc_grp);
 
     void process_processor_group_and_cleanup_libraries(std::span<const config::processor_group> pgs,
         std::span<const std::string> fallback_macro_extensions,
