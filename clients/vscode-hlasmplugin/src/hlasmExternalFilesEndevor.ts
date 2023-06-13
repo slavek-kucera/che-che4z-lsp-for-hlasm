@@ -142,16 +142,22 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
     });
 
     // e4e(cp);
+
+    return { dispose: cp.dispose };
 }
 
-function findE4EAndRegister(ext: HlasmExtension) {
-    return !!vscode.extensions.getExtension('broadcommfd.explorer-for-endevor')?.activate().then(e4e => performRegistration(ext, e4e));
+function findE4EAndRegister(ext: HlasmExtension, subscriptions: vscode.Disposable[]) {
+    return !!vscode.extensions.getExtension('broadcommfd.explorer-for-endevor')?.activate()
+        .then(e4e => subscriptions.push(performRegistration(ext, e4e)))
+        .then(undefined, e => vscode.window.showErrorMessage("Explorer for Endevor integration failed", e));
 }
 
-export function handleE4EIntegration(ext: HlasmExtension) {
-    if (findE4EAndRegister(ext)) return;
-    const listener = vscode.extensions.onDidChange(() => {
-        if (!findE4EAndRegister(ext)) return;
-        listener.dispose();
+export function handleE4EIntegration(ext: HlasmExtension, subscriptions: vscode.Disposable[]) {
+    if (findE4EAndRegister(ext, subscriptions)) return;
+    let listener: vscode.Disposable | null = vscode.extensions.onDidChange(() => {
+        if (!findE4EAndRegister(ext, subscriptions)) return;
+        listener?.dispose();
+        listener = null;
     });
+    subscriptions.push({ dispose: () => { listener?.dispose(); listener = null; } });
 }
