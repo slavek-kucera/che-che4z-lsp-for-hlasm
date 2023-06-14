@@ -239,7 +239,7 @@ export class HLASMExternalConfigurationProvider {
         this.requestHandlers.push(h);
         this.invalidateConfiguration(null);
 
-        return {
+        return Object.freeze({
             dispose: () => {
                 const idx = this.requestHandlers.indexOf(h);
                 if (idx >= 0)
@@ -247,6 +247,6 @@ export class HLASMExternalConfigurationProvider {
                 this.invalidateConfiguration(null);
             },
             invalidate: (uri: vscode.Uri | null) => { this.invalidateConfiguration(uri); }
-        };
+        });
     }
 }

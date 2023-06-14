@@ -24,39 +24,38 @@ async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 	const ext = await vscode.extensions.getExtension<ReturnType<typeof activate>>(EXTENSION_ID)!.activate();
 
 	ext.registerExternalFileClient('TEST', {
-		getConnInfo: () => Promise.resolve({ info: '', uniqueId: undefined }),
-		parseArgs(p: string, _purpose) {
+		async parseArgs(p: string, _purpose) {
 			const [path, file] = p.split('/').slice(1).map(decodeURIComponent).map(x => x.toUpperCase());
 			return {
-				path: path || '',
-				file: (file || '').split('.')[0],
-				toDisplayString() { return `${path}/${file}`; },
-				normalizedPath() { return `/${path}/${file}`; },
+				details: {
+					path: path || '',
+					file: (file || '').split('.')[0],
+					toDisplayString() { return `${path}/${file}`; },
+					normalizedPath() { return `/${path}/${file}`; },
+				},
+				server: undefined,
 			}
 		},
-		createClient: () => {
-			return {
-				connect: (_: string) => Promise.resolve(),
-				listMembers: (arg) => {
-					const { path } = arg;
-					return Promise.resolve(['MACA', 'MACB', 'MACC'].map(x => `/${path}/${x}`));
-				},
-				readMember: (args) => {
-					if (/^MAC[A-C]$/.test(args.file))
-						return Promise.resolve(`.*
+
+		listMembers: (arg) => {
+			const { path } = arg;
+			return Promise.resolve(['MACA', 'MACB', 'MACC'].map(x => `/${path}/${x}`));
+		},
+
+		readMember: (args) => {
+			if (/^MAC[A-C]$/.test(args.file))
+				return Promise.resolve(`.*
           MACRO
           ${args.file}
           MEND`);
 
-					return Promise.resolve(null);
-				},
-
-				dispose: () => { },
-
-				reusable: () => true,
-			};
+			return Promise.resolve(null);
 		},
+
+		suspend: () => { },
+		dispose: () => { },
 	});
+
 	ext.registerExternalConfigurationProvider((uri: vscode.Uri) => {
 		const uriString = uri.toString();
 		if (uriString.includes("AAAAA"))

@@ -20,10 +20,6 @@ import { uriFriendlyBase16Decode, uriFriendlyBase16Encode } from "./conversions"
 import * as crypto from "crypto";
 import { TextDecoder, TextEncoder, promisify } from "util";
 import { deflate, inflate } from "zlib";
-import { ConnectionPool } from "./connectionPool";
-import { AsyncMutex } from "./asyncMutex";
-
-// This is a temporary demo implementation
 
 export const enum ExternalRequestType {
     read_file = 'read_file',
@@ -63,6 +59,7 @@ interface ExternalErrorResponse {
 
 export interface ClientUriDetails {
     normalizedPath(): string;
+    clientId?: () => string | undefined;
     toDisplayString?(): string;
 }
 
@@ -72,21 +69,22 @@ export interface ExternalFilesInvalidationdata {
 }
 
 export interface ClientInterface<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
-    getConnInfo: () => Promise<{ info: ConnectArgs, uniqueId?: string }>,
-    parseArgs: (path: string, purpose: ExternalRequestType, query?: string) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
-    createClient: () => ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>,
-    invalidate?: vscode.Event<ExternalFilesInvalidationdata | undefined>,
+    parseArgs: (path: string, purpose: ExternalRequestType, query?: string) => Promise<{ details: ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose], server: ConnectArgs } | null>,
+
+    listMembers(arg: ListArgs, server: ConnectArgs): Promise<string[] | null>;
+    readMember(arg: ReadArgs, server: ConnectArgs): Promise<string | null>;
+
+    invalidate?: vscode.Event<ExternalFilesInvalidationdata | undefined>;
+
+    clientId?: (force: boolean) => Promise<string | undefined>;
+
+    suspend: () => void;
+
+    dispose: () => void;
 };
 
-export interface ExternalFilesClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
-    dispose(): void;
-
-    connect(arg: ConnectArgs): Promise<void>;
-
-    listMembers(arg: ListArgs): Promise<string[] | null>;
-    readMember(arg: ReadArgs): Promise<string | null>;
-
-    reusable: () => boolean;
+async function clientId<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(details: ClientUriDetails, client: ClientInterface<ConnectArgs, ReadArgs, ListArgs>, force: boolean) {
+    return details.clientId?.() ?? await client.clientId?.(force);
 }
 
 function take<T>(it: IterableIterator<T>, n: number): T[] {
@@ -131,15 +129,9 @@ interface CacheEntry<T> {
 
 const cacheVersion = 'v2';
 
-const connectionPoolSize = 4;
-const connectionPoolTimeout = 30000;
-
 interface ClientInstance<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
-    activeConnectionInfo: { info: ConnectArgs, uniqueId?: string } | null;
-    pool: ConnectionPool<ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>>,
     suspended: boolean,
-    parseArgs: (path: string, purpose: ExternalRequestType, query?: string) => ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose] | null,
-    ensureConnectionInfo: () => Promise<string | undefined>,
+    client: Readonly<ClientInterface<ConnectArgs, ReadArgs, ListArgs>>,
     dispose: () => void,
 };
 
@@ -151,7 +143,6 @@ export class HLASMExternalFiles {
 
     private pendingRequests = new Set<{ topic: string }>();
 
-    private mutex = new AsyncMutex();
     private clients = new Map<string, ClientInstance<any, any, any>>();
 
     constructor(
@@ -167,73 +158,18 @@ export class HLASMExternalFiles {
         )));
     }
 
-    private async getConnectedClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(
-        createClient: () => ExternalFilesClient<ConnectArgs, ReadArgs, ListArgs>,
-        getConnInfo: () => Promise<{ info: ConnectArgs, uniqueId?: string }>,
-        clientType: ClientInstance<ConnectArgs, ReadArgs, ListArgs>) {
-        const client = createClient();
-        return await this.mutex.locked(async () => {
-            while (true) {
-                try {
-                    if (clientType.suspended)
-                        throw new vscode.CancellationError();
-                    const connection = clientType.activeConnectionInfo ?? await getConnInfo();
-                    clientType.activeConnectionInfo = null;
-                    try {
-                        await client.connect(connection.info);
-                    }
-                    catch (e) {
-                        vscode.window.showErrorMessage(asError(e).message);
-                        continue;
-                    }
-                    clientType.activeConnectionInfo = connection;
-                    return client;
-                }
-                catch (e) {
-                    this.suspendAll(); // needs to be done with lock held to prevent showing UI elements
-                    try { client.dispose(); } catch (_) { }
-                    throw e;
-                }
-            }
-        });
-    }
-
     setClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(
         service: string,
-        client: Readonly<ClientInterface<ConnectArgs, ReadArgs, ListArgs>> | null) {
+        client: Readonly<ClientInterface<ConnectArgs, ReadArgs, ListArgs>>): vscode.Disposable {
         if (!/^[A-Z]+$/.test(service))
             throw Error('Invalid service name');
 
-        const oldClient = this.clients.get(service);
-        if (oldClient) {
-            this.clients.delete(service);
-            oldClient.dispose();
-        }
-
-        if (!client) return;
-
+        if (this.clients.get(service))
+            throw Error('Service already registered')
 
         const newClient: ClientInstance<ConnectArgs, ReadArgs, ListArgs> = {
-            activeConnectionInfo: null,
             suspended: false,
-            pool: new ConnectionPool({
-                create: () => this.getConnectedClient(client.createClient, client.getConnInfo, newClient),
-                reusable: (c) => !newClient.suspended && c.reusable(),
-                close: (c) => { try { c.dispose(); } catch (e) { } },
-            }, connectionPoolSize, connectionPoolTimeout),
-            parseArgs: client.parseArgs,
-            ensureConnectionInfo: () => this.mutex.locked(async () => {
-                if (newClient.suspended) return undefined;
-                if (newClient.activeConnectionInfo) return newClient.activeConnectionInfo.uniqueId;
-                try {
-                    newClient.activeConnectionInfo = await client.getConnInfo();
-                    return newClient.activeConnectionInfo.uniqueId;
-                }
-                catch (e) {
-                    this.suspendAll(); // needs to be done with lock held to prevent showing UI elements
-                    throw e;
-                }
-            }),
+            client: client,
             dispose: (() => {
                 const toDispose = client.invalidate?.((list) => {
                     if (!list)
@@ -242,43 +178,54 @@ export class HLASMExternalFiles {
                         this.clearCache(service, list.paths, list.clientId);
                 });
                 return () => {
+                    this.clients.delete(service);
                     toDispose?.dispose();
-                    newClient.pool.dispose();
-                };
+                    client.dispose();
+                    this.notifyAllWorkspaces(service, true);
+                }
             })(),
         };
+
         this.clients.set(service, newClient);
 
-        this.notifyAllWorkspaces(service, !!oldClient);
+        this.notifyAllWorkspaces(service, false);
+
+        return Object.freeze({
+            dispose: () => newClient.dispose()
+        });
     }
 
     private static readonly emptyUriDetails = Object.freeze({
         cacheKey: null,
         service: null,
-        client: null,
+        instance: null,
         details: null,
+        server: null,
         associatedWorkspaceUrlPrefix: null,
     });
 
-    private extractUriDetails<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(uri: string | vscode.Uri, purpose: ExternalRequestType): {
+    private async extractUriDetails<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(uri: string | vscode.Uri, purpose: ExternalRequestType): Promise<{
         cacheKey: null;
         service: null;
-        client: null;
+        instance: null;
         details: null;
+        server: null;
         associatedWorkspaceUrlPrefix: null;
     } | {
         cacheKey: string;
         service: string;
-        client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>;
+        instance: ClientInstance<ConnectArgs, ReadArgs, ListArgs>;
         details: ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose],
+        server: ConnectArgs;
         associatedWorkspaceUrlPrefix: string;
     } | {
         cacheKey: string;
         service: string;
-        client: null;
+        instance: null;
         details: null;
+        server: null;
         associatedWorkspaceUrlPrefix: string;
-    } {
+    }> {
         if (typeof uri === 'string')
             uri = vscode.Uri.parse(uri, true);
 
@@ -292,15 +239,17 @@ export class HLASMExternalFiles {
         const service = matches[1];
         const subpath = matches[2] || '';
 
-        const client: ClientInstance<ConnectArgs, ReadArgs, ListArgs> | undefined = this.clients.get(service);
-        const details = client?.parseArgs(subpath, purpose, uri.query) ?? null;
+        const instance: ClientInstance<ConnectArgs, ReadArgs, ListArgs> | undefined = this.clients.get(service);
+        const details_server = await instance?.client?.parseArgs(subpath, purpose, uri.query) ?? null;
 
-        if (details && client) {
+        if (details_server && instance) {
+            const { details, server } = details_server;
             return {
                 cacheKey: `/${service}${details.normalizedPath()}`,
                 service: service,
-                client: client,
+                instance: instance,
                 details: details,
+                server: server,
                 associatedWorkspaceUrlPrefix: uri.with({ path: '', query: '', fragment: '' }).toString()
             };
         }
@@ -308,8 +257,9 @@ export class HLASMExternalFiles {
             return {
                 cacheKey: encodeURI(uri.path),
                 service: service,
-                client: null,
+                instance: null,
                 details: null,
+                server: null,
                 associatedWorkspaceUrlPrefix: uri.with({ path: '', query: '', fragment: '' }).toString()
             };
     }
@@ -385,7 +335,7 @@ export class HLASMExternalFiles {
         this.clients.forEach(client => {
             if (client.suspended) return;
             client.suspended = oneSuspended = true;
-            client.pool.closeClients();
+            client.client.suspend();
         });
 
         if (oneSuspended) {
@@ -423,7 +373,7 @@ export class HLASMExternalFiles {
 
     dispose() {
         this.toDispose.forEach(x => x.dispose());
-        [...this.clients.keys()].forEach(x => this.setClient(x, null));
+        [...this.clients.values()].forEach(x => x.dispose());
     }
 
     private async askClient<T>(
@@ -456,12 +406,10 @@ export class HLASMExternalFiles {
         ])).digest().toString('hex');
     }
 
-    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: CachedResultType.string): Promise<string | InError | typeof not_exists | undefined>
-    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: CachedResultType.arrayOfStrings): Promise<string[] | InError | typeof not_exists | undefined>
-    private async getCachedResult<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, expect: CachedResultType): Promise<unknown> {
-        if (!this.cache) return undefined;
-        const clientId = await client.ensureConnectionInfo();
-        if (clientId === undefined) return undefined;
+    private async getCachedResult(clientId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType.string): Promise<string | InError | typeof not_exists | undefined>
+    private async getCachedResult(clientId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType.arrayOfStrings): Promise<string[] | InError | typeof not_exists | undefined>
+    private async getCachedResult(clientId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType): Promise<unknown> {
+        if (clientId === undefined || !this.cache) return undefined;
 
         const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(clientId, service, normalizedPath));
 
@@ -481,10 +429,8 @@ export class HLASMExternalFiles {
         return undefined;
     }
 
-    private async storeCachedResult<T, ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, normalizedPath: string, value: T | typeof not_exists) {
-        if (!this.cache) return false;
-        const clientId = client.activeConnectionInfo?.uniqueId;
-        if (clientId === undefined) return false;
+    private async storeCachedResult<T, ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(clientId: string | undefined, service: string, normalizedPath: string, value: T | typeof not_exists) {
+        if (clientId === undefined || !this.cache) return false;
 
         const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(clientId, service, normalizedPath));
 
@@ -510,21 +456,28 @@ export class HLASMExternalFiles {
         return { message: e.message };
     }
 
-    private async getFile<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, parsedArgs: ReadArgs): Promise<string | InError | typeof not_exists | typeof no_client | null> {
+    private async getFile<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>({ client, suspended }: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, [path, connArgs]: [ReadArgs, ConnectArgs]): Promise<string | InError | typeof not_exists | typeof no_client | null> {
         try {
-            const normalizedPath = parsedArgs.normalizedPath();
-            return await this.getCachedResult(client, service, normalizedPath, CachedResultType.string) ?? await this.askClient(service, parsedArgs.toDisplayString?.() ?? normalizedPath, () => client.pool.withClient(c => c.readMember(parsedArgs)));
+            const normalizedPath = path.normalizedPath();
+            return await this.getCachedResult(await clientId(path, client, !suspended), service, normalizedPath, CachedResultType.string)
+                ?? (suspended
+                    ? no_client
+                    : await this.askClient(service, path.toDisplayString?.() ?? normalizedPath,
+                        () => client.readMember(path, connArgs)
+                    )
+                );
         }
         catch (x) { return this.handleError(x); }
     }
 
-    private async getDir<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, parsedArgs: ListArgs): Promise<string[] | InError | typeof not_exists | typeof no_client | null> {
+    private async getDir<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>({ client, suspended }: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, [path, connArgs]: [ListArgs, ConnectArgs]): Promise<string[] | InError | typeof not_exists | typeof no_client | null> {
         try {
-            const normalizedPath = parsedArgs.normalizedPath();
-            return await this.getCachedResult(client, service, normalizedPath, CachedResultType.arrayOfStrings)
-                ?? await this.askClient(service, parsedArgs.toDisplayString?.() ?? normalizedPath,
-                    () => client.pool.withClient(
-                        c => c.listMembers(parsedArgs)
+            const normalizedPath = path.normalizedPath();
+            return await this.getCachedResult(await clientId(path, client, !suspended), service, normalizedPath, CachedResultType.arrayOfStrings)
+                ?? (suspended
+                    ? no_client
+                    : await this.askClient(service, path.toDisplayString?.() ?? normalizedPath,
+                        () => client.listMembers(path, connArgs)
                     )
                 );
         }
@@ -533,18 +486,18 @@ export class HLASMExternalFiles {
 
     private async handleMessage<T, ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(
         msg: ExternalRequest,
-        getData: (client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, details: ExternalRequestDetails<ReadArgs, ListArgs>[typeof msg.op]) => Promise<CacheEntry<T>['result'] | null>,
+        getData: (client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, details: [ExternalRequestDetails<ReadArgs, ListArgs>[typeof msg.op], ConnectArgs]) => Promise<CacheEntry<T>['result'] | null>,
         inMemoryCache: Map<string, CacheEntry<T>>,
         responseTransform: (result: T, urlPrefix: string) => (T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse)['data']):
         Promise<(T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse) | ExternalErrorResponse | null> {
         if (msg.op !== ExternalRequestType.read_file && msg.op !== ExternalRequestType.list_directory) throw Error("");
-        const { cacheKey, service, client, details, associatedWorkspaceUrlPrefix } = this.extractUriDetails<ConnectArgs, ReadArgs, ListArgs>(msg.url, msg.op);
-        if (!cacheKey || client && !details)
+        const { cacheKey, service, instance, details, server, associatedWorkspaceUrlPrefix } = await this.extractUriDetails<ConnectArgs, ReadArgs, ListArgs>(msg.url, msg.op);
+        if (!cacheKey || instance && !details)
             return this.generateError(msg.id, -5, 'Invalid request');
 
         let content = inMemoryCache.get(cacheKey);
         if (content === undefined) {
-            const result = client ? await getData(client, service, details) : no_client;
+            const result = instance ? await getData(instance, service, [details, server]) : no_client;
             if (!result) return Promise.resolve(null);
             content = {
                 service: service,
@@ -560,8 +513,8 @@ export class HLASMExternalFiles {
 
         const { response, cache } = await this.transformResult(msg.id, content, x => responseTransform(x, `${associatedWorkspaceUrlPrefix}/${service}`));
 
-        if (cache && client && !content.cached)
-            content.cached = await this.storeCachedResult(client, service, details.normalizedPath(), content.result);
+        if (cache && instance && !content.cached)
+            content.cached = await this.storeCachedResult(await clientId(details, instance.client, false), service, details.normalizedPath(), content.result);
 
         return response;
     }
@@ -620,7 +573,7 @@ export class HLASMExternalFiles {
     public async clearCache(service?: string, paths?: string[], clientId?: string) {
         if (this.cache) {
             const prefix = service && cacheVersion + '.' + service + '.';
-            const useClientId = clientId !== undefined ? clientId : service && this.clients.get(service)?.activeConnectionInfo?.uniqueId;
+            const useClientId = clientId !== undefined ? clientId : service && await this.clients.get(service)?.client.clientId?.(false);
             const cacheKeys = paths && service && (useClientId !== undefined) && new Set(paths.map(x => this.deriveCacheEntryName(useClientId, service, x)));
             const { uri, fs } = this.cache;
 

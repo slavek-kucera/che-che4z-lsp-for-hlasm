@@ -146,7 +146,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<HlasmE
 
     let api: HlasmExtension = {
         registerExternalFileClient(service, client) {
-            extFiles.setClient(service, client);
+            return extFiles.setClient(service, client);
         },
         registerExternalConfigurationProvider(h: HLASMExternalConfigurationProviderHandler) {
             return extConfProvider.addHandler(h);

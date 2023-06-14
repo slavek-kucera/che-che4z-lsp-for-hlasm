@@ -129,35 +129,38 @@ suite('External files', () => {
         });
 
         ext.setClient('TEST', {
-            getConnInfo: () => Promise.resolve({ info: '', uniqueId: 'SERVER' }),
-            parseArgs: (path: string, purpose: ExternalRequestType): ClientUriDetails | null => {
+            parseArgs: async (path: string, purpose: ExternalRequestType) => {
                 if (purpose === ExternalRequestType.read_file)
                     return {
-                        normalizedPath: () => '/DIR2/FILE',
+                        details: {
+                            normalizedPath: () => '/DIR2/FILE',
+                        },
+                        server: undefined,
                     };
                 else if (path.endsWith('DIR'))
                     return {
-                        normalizedPath: () => '/DIR',
+                        details: {
+                            normalizedPath: () => '/DIR',
+                        },
+                        server: undefined,
                     };
                 else if (path.endsWith('DIR2'))
                     return {
-                        normalizedPath: () => '/DIR2',
+                        details: {
+                            normalizedPath: () => '/DIR2',
+                        },
+                        server: undefined,
                     };
                 return null;
             },
-            createClient: () => {
-                return {
-                    dispose: () => { },
+            dispose: () => { },
+            suspend: () => { },
 
-                    connect: (_: string) => Promise.resolve(),
+            listMembers: (_: ClientUriDetails) => Promise.resolve(null),
+            readMember: (_: ClientUriDetails) => Promise.resolve(null),
 
-                    listMembers: (_: ClientUriDetails) => Promise.resolve(null),
-                    readMember: (_: ClientUriDetails) => Promise.resolve(null),
-
-                    reusable: () => false,
-                };
-            }
-        } as any as ClientInterface<string, ClientUriDetails, ClientUriDetails>);
+            clientId: async () => 'SERVER',
+        });
 
         const dir = await ext.handleRawMessage({ id: 4, op: 'list_directory', url: 'test:/TEST/DIR' });
         assert.ok(dir);
@@ -198,25 +201,21 @@ suite('External files', () => {
         });
 
         ext.setClient('TEST', {
-            getConnInfo: () => Promise.resolve({ info: '', uniqueId: 'SERVER' }),
-            parseArgs: (_path: string, _purpose: ExternalRequestType): ClientUriDetails | null => {
+            parseArgs: async (_path: string, _purpose: ExternalRequestType) => {
                 return {
-                    normalizedPath: () => '/DIR',
+                    details: {
+                        normalizedPath: () => '/DIR',
+                    },
+                    server: undefined,
                 };
             },
-            createClient: () => {
-                return {
-                    dispose: () => { },
 
-                    connect: (_: string) => Promise.resolve(),
+            listMembers: (_: ClientUriDetails) => Promise.resolve(null),
+            readMember: (_: ClientUriDetails) => Promise.resolve(null),
 
-                    listMembers: (_: ClientUriDetails) => Promise.resolve(null),
-                    readMember: (_: ClientUriDetails) => Promise.resolve(null),
-
-                    reusable: () => false,
-                };
-            }
-        } as any as ClientInterface<string, ClientUriDetails, ClientUriDetails>);
+            dispose: () => { },
+            suspend: () => { },
+        });
 
         const dir = await ext.handleRawMessage({ id: 4, op: 'list_directory', url: 'test:/TEST/DIR' });
         assert.ok(dir);
@@ -250,23 +249,15 @@ suite('External files', () => {
 
         const emmiter = new EventEmitter<ExternalFilesInvalidationdata | undefined>();
         ext.setClient('TEST', {
-            getConnInfo: () => Promise.resolve({ info: '', uniqueId: 'SERVER' }),
-            parseArgs: (path: string, purpose: ExternalRequestType): ClientUriDetails | null => null,
-            createClient: () => {
-                return {
-                    dispose: () => { },
+            parseArgs: async (path: string, purpose: ExternalRequestType) => null,
+            listMembers: (_: ClientUriDetails) => Promise.resolve(null),
+            readMember: (_: ClientUriDetails) => Promise.resolve(null),
 
-                    connect: (_: string) => Promise.resolve(),
-
-                    listMembers: (_: ClientUriDetails) => Promise.resolve(null),
-                    readMember: (_: ClientUriDetails) => Promise.resolve(null),
-
-                    reusable: () => false,
-                };
-            },
             invalidate: emmiter.event,
 
-        } as any as ClientInterface<string, ClientUriDetails, ClientUriDetails>);
+            dispose: () => { },
+            suspend: () => { },
+        });
 
         emmiter.fire({ paths: ['A'], clientId: 'SERVER' });
 

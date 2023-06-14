@@ -15,32 +15,80 @@
 import * as vscode from 'vscode';
 import { ExternalRequestType, HlasmExtension, ExternalFilesInvalidationdata } from './extension.interface';
 
+interface EndevorType {
+    use_map: string,
+    environment: string,
+    stage: string,
+    system: string,
+    subsystem: string,
+    type: string,
+    normalizedPath: () => string,
+    toDisplayString: () => string,
+    clientId: () => string | undefined,
+};
+interface EndevorElement {
+    use_map: string,
+    environment: string,
+    stage: string,
+    system: string,
+    subsystem: string,
+    type: string,
+    element: string,
+    fingerprint: string,
+    normalizedPath: () => string,
+    toDisplayString: () => string,
+    clientId: () => string | undefined,
+};
+interface EndevorDataset {
+    dataset: string,
+    normalizedPath: () => string,
+    toDisplayString: () => string,
+    clientId: () => string | undefined,
+};
+
+interface EndevorMember {
+    dataset: string,
+    member: string,
+    normalizedPath: () => string,
+    toDisplayString: () => string,
+    clientId: () => string | undefined,
+};
+
 function performRegistration(ext: HlasmExtension, e4e: unknown) {
     const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
+    const defaultProfile = 'defaultEndevorProfile';
+    const getProfile = (profile: string) => profile ? profile : defaultProfile;
 
-    ext.registerExternalFileClient('ENDEVOR', {
-        getConnInfo: () => Promise.resolve({ info: '', uniqueId: '' }),
-        parseArgs(p: string, purpose: ExternalRequestType, query?: string) {
+    ext.registerExternalFileClient<string, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
+        parseArgs: async (p: string, purpose: ExternalRequestType, query?: string) => {
             const args = p.split('/').slice(1).map(decodeURIComponent);
             if (purpose === ExternalRequestType.list_directory && args.length === 7) {
                 const [profile, use_map, environment, stage, system, subsystem, type] = args;
                 return {
-                    profile,
-                    use_map,
-                    environment,
-                    stage,
-                    system,
-                    subsystem,
-                    type,
-                    normalizedPath() { return `/${encodeURIComponent(profile)}/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`; },
+                    details: {
+                        use_map,
+                        environment,
+                        stage,
+                        system,
+                        subsystem,
+                        type,
+                        normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`,
+                        toDisplayString: () => `${getProfile(profile)}:${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
+                        clientId: () => getProfile(profile) + '.server.net',
+                    },
+                    server: getProfile(profile),
                 };
             }
             if (purpose === ExternalRequestType.list_directory && args.length === 2) {
                 const [profile, dataset] = args;
                 return {
-                    profile,
-                    dataset,
-                    normalizedPath() { return `/${encodeURIComponent(profile)}/${encodeURIComponent(dataset)}`; },
+                    details: {
+                        dataset,
+                        normalizedPath: () => `/${encodeURIComponent(dataset)}`,
+                        toDisplayString: () => `${getProfile(profile)}:${dataset}`,
+                        clientId: () => getProfile(profile) + '.server.net',
+                    },
+                    server: getProfile(profile),
                 };
             }
             if (purpose === ExternalRequestType.read_file && args.length === 8) {
@@ -50,16 +98,20 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                 const fingerprint = query?.match(/^fingerprint=([a-zA-Z0-9]+)$/)?.[1];
                 const q = fingerprint ? '?' + query : '';
                 return {
-                    profile,
-                    use_map,
-                    environment,
-                    stage,
-                    system,
-                    subsystem,
-                    type,
-                    element,
-                    fingerprint,
-                    normalizedPath() { return `/${encodeURIComponent(profile)}/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${encodeURIComponent(q)}`; },
+                    details: {
+                        use_map,
+                        environment,
+                        stage,
+                        system,
+                        subsystem,
+                        type,
+                        element,
+                        fingerprint,
+                        normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`,
+                        toDisplayString: () => `${getProfile(profile)}:${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
+                        clientId: () => getProfile(profile) + '.server.net',
+                    },
+                    server: getProfile(profile),
                 };
             }
             if (purpose === ExternalRequestType.read_file && args.length === 3) {
@@ -67,47 +119,51 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
 
                 const [member] = memeber_hlasm.split('.');
                 return {
-                    profile,
-                    dataset,
-                    member,
-                    normalizedPath() { return `/${encodeURIComponent(profile)}/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`; },
+                    details: {
+                        dataset,
+                        member,
+                        normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
+                        toDisplayString: () => `${getProfile(profile)}:${dataset}(${member})`,
+                        clientId: () => getProfile(profile) + '.server.net',
+                    },
+                    server: getProfile(profile),
                 };
             }
 
             return null;
         },
-        createClient: () => {
-            return {
-                connect: (_: string) => Promise.resolve(),
-                listMembers: (type_spec) => {
-                    if ('use_map' in type_spec)
-                        return Promise.resolve(['MACA', 'MACB', 'MACC'].map((x, i) => `${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm?fingerprint=${i.toString()}`));
-                    else
-                        return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm`));
-                },
-                readMember: async (file_spec) => {
-                    if ('use_map' in file_spec)
-                        return `.*
+
+        listMembers: (type_spec, profile: string) => {
+            if ('use_map' in type_spec)
+                return Promise.resolve(['MACA', 'MACB', 'MACC'].map((x, i) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm?fingerprint=${i.toString()}`));
+            else
+                return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm`));
+        },
+
+        readMember: async (file_spec, profile: string) => {
+            if ('use_map' in file_spec)
+                return `.*
         MACRO
         ${file_spec.element!}
+.* ${profile}
  MNOTE 4,'${file_spec.normalizedPath()}'
  MNOTE 4,'${file_spec.fingerprint ?? ' '}'
         MEND
 `;
-                    else
-                        return `.*
+            else
+                return `.*
         MACRO
+.* ${profile}
         ${file_spec.member!}
  MNOTE 4,'${file_spec.normalizedPath()}'
         MEND
 `;
-                },
-
-                dispose: () => { },
-
-                reusable: () => true,
-            };
         },
+
+        suspend: () => { },
+
+        dispose: () => { },
+
         invalidate: invalidationEventEmmiter.event,
     });
 

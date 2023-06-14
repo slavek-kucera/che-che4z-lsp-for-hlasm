@@ -12,11 +12,12 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
-import { ConfigurationProviderRegistration, HLASMExternalConfigurationProviderHandler } from "./hlasmExternalConfigurationProvider";
-import { ClientInterface, ClientUriDetails, ExternalFilesInvalidationdata, ExternalRequestType } from "./hlasmExternalFiles";
+import * as vscode from 'vscode'
+import { ConfigurationProviderRegistration, HLASMExternalConfigurationProviderHandler } from './hlasmExternalConfigurationProvider';
+import { ClientInterface, ClientUriDetails, ExternalFilesInvalidationdata, ExternalRequestType } from './hlasmExternalFiles';
 
 export interface HlasmExtension {
-    registerExternalFileClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(service: string, client: Readonly<ClientInterface<ConnectArgs, ReadArgs, ListArgs>>): void;
+    registerExternalFileClient<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(service: string, client: Readonly<ClientInterface<ConnectArgs, ReadArgs, ListArgs>>): vscode.Disposable;
     registerExternalConfigurationProvider(h: HLASMExternalConfigurationProviderHandler): ConfigurationProviderRegistration;
 };
 
