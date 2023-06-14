@@ -26,7 +26,7 @@ async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 	ext.registerExternalFileClient('TEST', {
 		getConnInfo: () => Promise.resolve({ info: '', uniqueId: undefined }),
 		parseArgs(p: string, _purpose) {
-			const [path, file] = p.split('/').slice(1).map(x => x.toUpperCase());
+			const [path, file] = p.split('/').slice(1).map(decodeURIComponent).map(x => x.toUpperCase());
 			return {
 				path: path || '',
 				file: (file || '').split('.')[0],

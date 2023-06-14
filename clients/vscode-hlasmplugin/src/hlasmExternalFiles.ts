@@ -306,7 +306,7 @@ export class HLASMExternalFiles {
         }
         else
             return {
-                cacheKey: uri.path,
+                cacheKey: encodeURI(uri.path),
                 service: service,
                 client: null,
                 details: null,

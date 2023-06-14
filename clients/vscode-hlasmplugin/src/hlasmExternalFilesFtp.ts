@@ -54,7 +54,7 @@ export function HLASMExternalFilesFtp(context: vscode.ExtensionContext): ClientI
             return { info, uniqueId: info.host + ':' + (info.port ?? '21') };
         },
         parseArgs: (path: string, purpose: ExternalRequestType) => {
-            const [dataset, member] = path.split('/').slice(1).map(x => x.toUpperCase());
+            const [dataset, member] = path.split('/').slice(1).map(decodeURIComponent).map(x => x.toUpperCase());
 
             if (!dataset || !/^(?:[A-Z$#@][A-Z$#@0-9]{1,7})(?:\.(?:[A-Z$#@][A-Z$#@0-9]{1,7}))*$/.test(dataset) || dataset.length > 44) return null;
             switch (purpose) {

@@ -21,7 +21,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
     ext.registerExternalFileClient('ENDEVOR', {
         getConnInfo: () => Promise.resolve({ info: '', uniqueId: '' }),
         parseArgs(p: string, purpose: ExternalRequestType, query?: string) {
-            const args = p.split('/').slice(1);
+            const args = p.split('/').slice(1).map(decodeURIComponent);
             if (purpose === ExternalRequestType.list_directory && args.length === 7) {
                 const [profile, use_map, environment, stage, system, subsystem, type] = args;
                 return {
@@ -32,7 +32,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                     system,
                     subsystem,
                     type,
-                    normalizedPath() { return `/${profile}/${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`; },
+                    normalizedPath() { return `/${encodeURIComponent(profile)}/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`; },
                 };
             }
             if (purpose === ExternalRequestType.list_directory && args.length === 2) {
@@ -40,7 +40,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                 return {
                     profile,
                     dataset,
-                    normalizedPath() { return `/${profile}/${dataset}`; },
+                    normalizedPath() { return `/${encodeURIComponent(profile)}/${encodeURIComponent(dataset)}`; },
                 };
             }
             if (purpose === ExternalRequestType.read_file && args.length === 8) {
@@ -59,7 +59,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                     type,
                     element,
                     fingerprint,
-                    normalizedPath() { return `/${profile}/${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}.hlasm${q}`; },
+                    normalizedPath() { return `/${encodeURIComponent(profile)}/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${encodeURIComponent(q)}`; },
                 };
             }
             if (purpose === ExternalRequestType.read_file && args.length === 3) {
@@ -70,7 +70,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                     profile,
                     dataset,
                     member,
-                    normalizedPath() { return `/${profile}/${dataset}/${member}.hlasm`; },
+                    normalizedPath() { return `/${encodeURIComponent(profile)}/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`; },
                 };
             }
 
@@ -81,9 +81,9 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                 connect: (_: string) => Promise.resolve(),
                 listMembers: (type_spec) => {
                     if ('use_map' in type_spec)
-                        return Promise.resolve(['MACA', 'MACB', 'MACC'].map((x, i) => `${type_spec.normalizedPath()}/${x}.hlasm?fingerprint=${i.toString()}`));
+                        return Promise.resolve(['MACA', 'MACB', 'MACC'].map((x, i) => `${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm?fingerprint=${i.toString()}`));
                     else
-                        return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `${type_spec.normalizedPath()}/${x}.hlasm`));
+                        return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm`));
                 },
                 readMember: async (file_spec) => {
                     if ('use_map' in file_spec)
