@@ -59,13 +59,13 @@ interface ExternalErrorResponse {
 
 export interface ClientUriDetails {
     normalizedPath(): string;
-    clientId?: () => string | undefined;
+    serverId?: () => string | undefined;
     toDisplayString?(): string;
 }
 
 export interface ExternalFilesInvalidationdata {
     paths: string[];
-    clientId?: string;
+    serverId?: string;
 }
 
 export interface ClientInterface<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails> {
@@ -76,15 +76,15 @@ export interface ClientInterface<ConnectArgs, ReadArgs extends ClientUriDetails,
 
     invalidate?: vscode.Event<ExternalFilesInvalidationdata | undefined>;
 
-    clientId?: (force: boolean) => Promise<string | undefined>;
+    serverId?: (force: boolean) => Promise<string | undefined>;
 
     suspend: () => void;
 
     dispose: () => void;
 };
 
-async function clientId<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(details: ClientUriDetails, client: ClientInterface<ConnectArgs, ReadArgs, ListArgs>, force: boolean) {
-    return details.clientId?.() ?? await client.clientId?.(force);
+async function serverId<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(details: ClientUriDetails, client: ClientInterface<ConnectArgs, ReadArgs, ListArgs>, force: boolean) {
+    return details.serverId?.() ?? await client.serverId?.(force);
 }
 
 function take<T>(it: IterableIterator<T>, n: number): T[] {
@@ -175,7 +175,7 @@ export class HLASMExternalFiles {
                     if (!list)
                         this.clearCache(service);
                     else
-                        this.clearCache(service, list.paths, list.clientId);
+                        this.clearCache(service, list.paths, list.serverId);
                 });
                 return () => {
                     this.clients.delete(service);
@@ -399,19 +399,19 @@ export class HLASMExternalFiles {
         }
     }
 
-    private deriveCacheEntryName(clientId: string, service: string, normalizedPath: string) {
+    private deriveCacheEntryName(serverId: string, service: string, normalizedPath: string) {
         return cacheVersion + '.' + service + '.' + crypto.createHash('sha256').update(JSON.stringify([
-            clientId,
+            serverId,
             normalizedPath
         ])).digest().toString('hex');
     }
 
-    private async getCachedResult(clientId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType.string): Promise<string | InError | typeof not_exists | undefined>
-    private async getCachedResult(clientId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType.arrayOfStrings): Promise<string[] | InError | typeof not_exists | undefined>
-    private async getCachedResult(clientId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType): Promise<unknown> {
-        if (clientId === undefined || !this.cache) return undefined;
+    private async getCachedResult(serverId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType.string): Promise<string | InError | typeof not_exists | undefined>
+    private async getCachedResult(serverId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType.arrayOfStrings): Promise<string[] | InError | typeof not_exists | undefined>
+    private async getCachedResult(serverId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType): Promise<unknown> {
+        if (serverId === undefined || !this.cache) return undefined;
 
-        const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(clientId, service, normalizedPath));
+        const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(serverId, service, normalizedPath));
 
         try {
             const cachedResult = JSON.parse(new TextDecoder().decode(await promisify(inflate)(await this.cache.fs.readFile(cacheEntryName))));
@@ -429,10 +429,10 @@ export class HLASMExternalFiles {
         return undefined;
     }
 
-    private async storeCachedResult<T, ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(clientId: string | undefined, service: string, normalizedPath: string, value: T | typeof not_exists) {
-        if (clientId === undefined || !this.cache) return false;
+    private async storeCachedResult<T>(serverId: string | undefined, service: string, normalizedPath: string, value: T | typeof not_exists) {
+        if (serverId === undefined || !this.cache) return false;
 
-        const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(clientId, service, normalizedPath));
+        const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(serverId, service, normalizedPath));
 
         try {
             const data = value === not_exists
@@ -459,7 +459,7 @@ export class HLASMExternalFiles {
     private async getFile<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>({ client, suspended }: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, [path, connArgs]: [ReadArgs, ConnectArgs]): Promise<string | InError | typeof not_exists | typeof no_client | null> {
         try {
             const normalizedPath = path.normalizedPath();
-            return await this.getCachedResult(await clientId(path, client, !suspended), service, normalizedPath, CachedResultType.string)
+            return await this.getCachedResult(await serverId(path, client, !suspended), service, normalizedPath, CachedResultType.string)
                 ?? (suspended
                     ? no_client
                     : await this.askClient(service, path.toDisplayString?.() ?? normalizedPath,
@@ -473,7 +473,7 @@ export class HLASMExternalFiles {
     private async getDir<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>({ client, suspended }: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, [path, connArgs]: [ListArgs, ConnectArgs]): Promise<string[] | InError | typeof not_exists | typeof no_client | null> {
         try {
             const normalizedPath = path.normalizedPath();
-            return await this.getCachedResult(await clientId(path, client, !suspended), service, normalizedPath, CachedResultType.arrayOfStrings)
+            return await this.getCachedResult(await serverId(path, client, !suspended), service, normalizedPath, CachedResultType.arrayOfStrings)
                 ?? (suspended
                     ? no_client
                     : await this.askClient(service, path.toDisplayString?.() ?? normalizedPath,
@@ -514,7 +514,7 @@ export class HLASMExternalFiles {
         const { response, cache } = await this.transformResult(msg.id, content, x => responseTransform(x, `${associatedWorkspaceUrlPrefix}/${service}`));
 
         if (cache && instance && !content.cached)
-            content.cached = await this.storeCachedResult(await clientId(details, instance.client, false), service, details.normalizedPath(), content.result);
+            content.cached = await this.storeCachedResult(await serverId(details, instance.client, false), service, details.normalizedPath(), content.result);
 
         return response;
     }
@@ -570,11 +570,11 @@ export class HLASMExternalFiles {
         return Promise.resolve(this.generateError(msg.id, -5, 'Invalid request'));
     }
 
-    public async clearCache(service?: string, paths?: string[], clientId?: string) {
+    public async clearCache(service?: string, paths?: string[], serverId?: string) {
         if (this.cache) {
             const prefix = service && cacheVersion + '.' + service + '.';
-            const useClientId = clientId !== undefined ? clientId : service && await this.clients.get(service)?.client.clientId?.(false);
-            const cacheKeys = paths && service && (useClientId !== undefined) && new Set(paths.map(x => this.deriveCacheEntryName(useClientId, service, x)));
+            const useServerId = serverId !== undefined ? serverId : service && await this.clients.get(service)?.client.serverId?.(false);
+            const cacheKeys = paths && service && (useServerId !== undefined) && new Set(paths.map(x => this.deriveCacheEntryName(useServerId, service, x)));
             const { uri, fs } = this.cache;
 
             const files = await fs.readDirectory(uri);

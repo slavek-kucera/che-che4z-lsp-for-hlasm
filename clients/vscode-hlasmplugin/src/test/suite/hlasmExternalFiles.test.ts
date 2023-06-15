@@ -159,7 +159,7 @@ suite('External files', () => {
             listMembers: (_: ClientUriDetails) => Promise.resolve(null),
             readMember: (_: ClientUriDetails) => Promise.resolve(null),
 
-            clientId: async () => 'SERVER',
+            serverId: async () => 'SERVER',
         });
 
         const dir = await ext.handleRawMessage({ id: 4, op: 'list_directory', url: 'test:/TEST/DIR' });
@@ -259,7 +259,7 @@ suite('External files', () => {
             suspend: () => { },
         });
 
-        emmiter.fire({ paths: ['A'], clientId: 'SERVER' });
+        emmiter.fire({ paths: ['A'], serverId: 'SERVER' });
 
         await deletePromise;
 

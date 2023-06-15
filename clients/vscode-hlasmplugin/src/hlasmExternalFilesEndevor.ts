@@ -24,7 +24,7 @@ interface EndevorType {
     type: string,
     normalizedPath: () => string,
     toDisplayString: () => string,
-    clientId: () => string | undefined,
+    serverId: () => string | undefined,
 };
 interface EndevorElement {
     use_map: string,
@@ -37,13 +37,13 @@ interface EndevorElement {
     fingerprint: string,
     normalizedPath: () => string,
     toDisplayString: () => string,
-    clientId: () => string | undefined,
+    serverId: () => string | undefined,
 };
 interface EndevorDataset {
     dataset: string,
     normalizedPath: () => string,
     toDisplayString: () => string,
-    clientId: () => string | undefined,
+    serverId: () => string | undefined,
 };
 
 interface EndevorMember {
@@ -51,7 +51,7 @@ interface EndevorMember {
     member: string,
     normalizedPath: () => string,
     toDisplayString: () => string,
-    clientId: () => string | undefined,
+    serverId: () => string | undefined,
 };
 
 function performRegistration(ext: HlasmExtension, e4e: unknown) {
@@ -74,7 +74,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                         type,
                         normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`,
                         toDisplayString: () => `${getProfile(profile)}:${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
-                        clientId: () => getProfile(profile) + '.server.net',
+                        serverId: () => getProfile(profile) + '.server.net',
                     },
                     server: getProfile(profile),
                 };
@@ -86,7 +86,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                         dataset,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}`,
                         toDisplayString: () => `${getProfile(profile)}:${dataset}`,
-                        clientId: () => getProfile(profile) + '.server.net',
+                        serverId: () => getProfile(profile) + '.server.net',
                     },
                     server: getProfile(profile),
                 };
@@ -109,7 +109,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                         fingerprint,
                         normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`,
                         toDisplayString: () => `${getProfile(profile)}:${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
-                        clientId: () => getProfile(profile) + '.server.net',
+                        serverId: () => getProfile(profile) + '.server.net',
                     },
                     server: getProfile(profile),
                 };
@@ -124,7 +124,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
                         member,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
                         toDisplayString: () => `${getProfile(profile)}:${dataset}(${member})`,
-                        clientId: () => getProfile(profile) + '.server.net',
+                        serverId: () => getProfile(profile) + '.server.net',
                     },
                     server: getProfile(profile),
                 };

@@ -128,7 +128,7 @@ export function HLASMExternalFilesFtp(context: vscode.ExtensionContext): ClientI
             }
         }),
 
-        clientId: (force: boolean) => mutex.locked(
+        serverId: (force: boolean) => mutex.locked(
             async () => activeConnectionInfo ?? (force ? activeConnectionInfo = await getConnInfo() : undefined)
         ).then(
             arg => arg ? arg.host + ':' + (arg.port ?? '21') : undefined,
