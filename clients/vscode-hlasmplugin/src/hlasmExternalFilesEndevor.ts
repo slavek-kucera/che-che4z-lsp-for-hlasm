@@ -59,7 +59,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
     const defaultProfile = 'defaultEndevorProfile';
     const getProfile = (profile: string) => profile ? profile : defaultProfile;
 
-    ext.registerExternalFileClient<string, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
+    const extFiles = ext.registerExternalFileClient<string, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
         parseArgs: async (p: string, purpose: ExternalRequestType, query?: string) => {
             const args = p.split('/').slice(1).map(decodeURIComponent);
             if (purpose === ExternalRequestType.list_directory && args.length === 7) {
@@ -160,10 +160,6 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
 `;
         },
 
-        suspend: () => { },
-
-        dispose: () => { },
-
         invalidate: invalidationEventEmmiter.event,
     });
 
@@ -199,7 +195,7 @@ function performRegistration(ext: HlasmExtension, e4e: unknown) {
 
     // e4e(cp);
 
-    return { dispose: cp.dispose };
+    return { dispose: () => { extFiles.dispose(); cp.dispose(); } };
 }
 
 function findE4EAndRegister(ext: HlasmExtension, subscriptions: vscode.Disposable[]) {

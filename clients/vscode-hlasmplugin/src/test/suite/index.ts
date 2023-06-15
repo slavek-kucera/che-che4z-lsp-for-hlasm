@@ -51,9 +51,6 @@ async function registerTestImplementations(): Promise<vscode.Disposable[]> {
 
 			return Promise.resolve(null);
 		},
-
-		suspend: () => { },
-		dispose: () => { },
 	});
 
 	ext.registerExternalConfigurationProvider((uri: vscode.Uri) => {

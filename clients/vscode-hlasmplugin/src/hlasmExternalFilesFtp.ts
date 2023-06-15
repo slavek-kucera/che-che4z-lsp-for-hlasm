@@ -60,6 +60,8 @@ export function HLASMExternalFilesFtp(context: vscode.ExtensionContext): ClientI
 
         return info;
     };
+    let allowCredQuery = 0;
+    let mirrorCredQuery = allowCredQuery;
 
     const pool = new ConnectionPool<ftp.Client>({
         create: async () => {
@@ -128,14 +130,24 @@ export function HLASMExternalFilesFtp(context: vscode.ExtensionContext): ClientI
             }
         }),
 
-        serverId: (force: boolean) => mutex.locked(
-            async () => activeConnectionInfo ?? (force ? activeConnectionInfo = await getConnInfo() : undefined)
-        ).then(
-            arg => arg ? arg.host + ':' + (arg.port ?? '21') : undefined,
-            (e) => { if (force) throw e; return undefined; }
-        ),
+        serverId: () => mutex.locked(async () => {
+            const transform = (arg: ConnectionInfo) => arg.host + ':' + (arg.port ?? '21');
 
-        suspend: () => pool.closeClients(),
+            if (activeConnectionInfo)
+                return transform(activeConnectionInfo);
+
+            if (mirrorCredQuery !== allowCredQuery)
+                return undefined;
+
+            ++allowCredQuery;
+            activeConnectionInfo = await getConnInfo();
+            mirrorCredQuery = allowCredQuery;
+
+            return transform(activeConnectionInfo);
+        }),
+
+        suspended: () => { ++allowCredQuery; pool.closeClients(); },
+        resumed: () => { mirrorCredQuery = allowCredQuery; },
         dispose: () => pool.closeClients(),
     };
 }

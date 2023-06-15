@@ -153,8 +153,6 @@ suite('External files', () => {
                     };
                 return null;
             },
-            dispose: () => { },
-            suspend: () => { },
 
             listMembers: (_: ClientUriDetails) => Promise.resolve(null),
             readMember: (_: ClientUriDetails) => Promise.resolve(null),
@@ -212,9 +210,6 @@ suite('External files', () => {
 
             listMembers: (_: ClientUriDetails) => Promise.resolve(null),
             readMember: (_: ClientUriDetails) => Promise.resolve(null),
-
-            dispose: () => { },
-            suspend: () => { },
         });
 
         const dir = await ext.handleRawMessage({ id: 4, op: 'list_directory', url: 'test:/TEST/DIR' });
@@ -254,9 +249,6 @@ suite('External files', () => {
             readMember: (_: ClientUriDetails) => Promise.resolve(null),
 
             invalidate: emmiter.event,
-
-            dispose: () => { },
-            suspend: () => { },
         });
 
         emmiter.fire({ paths: ['A'], serverId: 'SERVER' });
