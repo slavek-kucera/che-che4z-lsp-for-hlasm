@@ -54,11 +54,37 @@ interface EndevorMember {
     serverId: () => string | undefined,
 };
 
+type Filename = string;
+type Fingerprint = string;
+type Content = string;
 interface E4E {
-
+    listCopybooks: (sourceUri: string, type: {
+        use_map: string,
+        environment: string,
+        stage: string,
+        system: string,
+        subsystem: string,
+        type: string
+    }) => Promise<[Filename, Fingerprint][]>;
+    getCopybook: (sourceUri: string, type: {
+        use_map: string,
+        environment: string,
+        stage: string,
+        system: string,
+        subsystem: string,
+        type: string,
+        element: string,
+        fingerprint: string
+    }) => Promise<Content>;
+    getTemporaryFolderUri: () => string,
 };
 
-function validateE4E(e4e: any): e4e is E4E { return true; }
+function validateE4E(e4e: any): e4e is E4E {
+    const valid = e4e instanceof Object && 'listCopybooks' in e4e && 'getCopybook' in e4e && 'getTemporaryFolderUri' in e4e;
+    if (!valid)
+        vscode.window.showErrorMessage('Bad E4E interface!!!');
+    return valid;
+}
 
 function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
@@ -80,7 +106,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         type,
                         normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`,
                         toDisplayString: () => `${getProfile(profile)}:${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
-                        serverId: () => getProfile(profile) + '.server.net',
+                        serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
                 };
@@ -92,7 +118,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         dataset,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}`,
                         toDisplayString: () => `${getProfile(profile)}:${dataset}`,
-                        serverId: () => getProfile(profile) + '.server.net',
+                        serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
                 };
@@ -115,7 +141,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         fingerprint,
                         normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`,
                         toDisplayString: () => `${getProfile(profile)}:${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
-                        serverId: () => getProfile(profile) + '.server.net',
+                        serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
                 };
@@ -130,7 +156,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         member,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
                         toDisplayString: () => `${getProfile(profile)}:${dataset}(${member})`,
-                        serverId: () => getProfile(profile) + '.server.net',
+                        serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
                 };
@@ -140,22 +166,32 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         },
 
         listMembers: (type_spec, profile: string) => {
-            if ('use_map' in type_spec)
-                return Promise.resolve(['MACA', 'MACB', 'MACC'].map((x, i) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm?fingerprint=${i.toString()}`));
+            if ('use_map' in type_spec) {
+                return e4e.listCopybooks(profile, {
+                    use_map: type_spec.use_map,
+                    environment: type_spec.environment,
+                    stage: type_spec.stage,
+                    system: type_spec.system,
+                    subsystem: type_spec.subsystem,
+                    type: type_spec.type
+                }).then(r => r.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?fingerprint=${fingerprint.toString()}`));
+            }
             else
                 return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm`));
         },
 
         readMember: async (file_spec, profile: string) => {
             if ('use_map' in file_spec)
-                return `.*
-        MACRO
-        ${file_spec.element!}
-.* ${profile}
- MNOTE 4,'${file_spec.normalizedPath()}'
- MNOTE 4,'${file_spec.fingerprint ?? ' '}'
-        MEND
-`;
+                return e4e.getCopybook(profile, {
+                    use_map: file_spec.use_map,
+                    environment: file_spec.environment,
+                    stage: file_spec.stage,
+                    system: file_spec.system,
+                    subsystem: file_spec.subsystem,
+                    type: file_spec.type,
+                    element: file_spec.element,
+                    fingerprint: file_spec.fingerprint,
+                });
             else
                 return `.*
         MACRO
@@ -169,37 +205,38 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         invalidate: invalidationEventEmmiter.event,
     });
 
+    const e4eTemp = e4e.getTemporaryFolderUri();
     const cp = ext.registerExternalConfigurationProvider(async (uri: vscode.Uri) => {
-        if (!uri.path.includes('/test.hlasm'))
+        if (!uri.toString().startsWith(e4eTemp))
             return null;
-        else
-            return {
-                configuration: {
-                    "name": "GRP1",
-                    "libs": [
-                        {
-                            "dataset": "SYS1.MACLIB"
-                        },
-                        {
-                            "dataset": "SYS1.MODGEN"
-                        },
-                        {
-                            "environment": "DEV",
-                            "stage": "1",
-                            "system": "SYSTEM",
-                            "subsystem": "SUBSYS",
-                            "type": "ASMMAC"
-                        },
-                        {
-                            "dataset": "AAAA.BBBB",
-                            "profile": ""
-                        }
-                    ]
-                }
-            };
-    });
 
-    // e4e(cp);
+        const {
+            element: {
+                environment,
+                stageNumber,
+                system,
+                subSystem,
+                type,
+            },
+            fingerprint,
+        } = JSON.parse(uri.query);
+        return {
+            configuration: {
+                name: "GRP1",
+                libs: [
+                    {
+                        environment,
+                        stage: stageNumber,
+                        system,
+                        subsystem: subSystem,
+                        type: type.replace(/PGM$/i, 'MAC'),
+                        use_map: true,
+                        profile: uri.toString(),
+                    }
+                ]
+            }
+        };
+    });
 
     return { dispose: () => { extFiles.dispose(); cp.dispose(); } };
 }
