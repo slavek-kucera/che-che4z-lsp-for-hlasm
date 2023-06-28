@@ -59,7 +59,7 @@ type Fingerprint = string;
 type Content = string;
 interface E4E {
     listCopybooks: (sourceUri: string, type: {
-        use_map: string,
+        use_map: boolean,
         environment: string,
         stage: string,
         system: string,
@@ -67,7 +67,7 @@ interface E4E {
         type: string
     }) => Promise<[Filename, Fingerprint][]>;
     getCopybook: (sourceUri: string, type: {
-        use_map: string,
+        use_map: boolean,
         environment: string,
         stage: string,
         system: string,
@@ -168,7 +168,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         listMembers: (type_spec, profile: string) => {
             if ('use_map' in type_spec) {
                 return e4e.listCopybooks(Buffer.from(profile, 'hex').toString(), {
-                    use_map: type_spec.use_map,
+                    use_map: type_spec.use_map === "map",
                     environment: type_spec.environment,
                     stage: type_spec.stage,
                     system: type_spec.system,
@@ -183,7 +183,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         readMember: async (file_spec, profile: string) => {
             if ('use_map' in file_spec)
                 return e4e.getCopybook(Buffer.from(profile, 'hex').toString(), {
-                    use_map: file_spec.use_map,
+                    use_map: file_spec.use_map === "map",
                     environment: file_spec.environment,
                     stage: file_spec.stage,
                     system: file_spec.system,
