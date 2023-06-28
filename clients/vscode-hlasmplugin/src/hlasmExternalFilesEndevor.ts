@@ -167,7 +167,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
 
         listMembers: (type_spec, profile: string) => {
             if ('use_map' in type_spec) {
-                return e4e.listCopybooks(profile, {
+                return e4e.listCopybooks(Buffer.from(profile, 'hex').toString(), {
                     use_map: type_spec.use_map,
                     environment: type_spec.environment,
                     stage: type_spec.stage,
@@ -182,7 +182,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
 
         readMember: async (file_spec, profile: string) => {
             if ('use_map' in file_spec)
-                return e4e.getCopybook(profile, {
+                return e4e.getCopybook(Buffer.from(profile, 'hex').toString(), {
                     use_map: file_spec.use_map,
                     environment: file_spec.environment,
                     stage: file_spec.stage,
@@ -219,7 +219,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                 type,
             },
             fingerprint,
-        } = JSON.parse(uri.query);
+        } = JSON.parse(decodeURIComponent(uri.query));
         return {
             configuration: {
                 name: "GRP1",
@@ -231,7 +231,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         subsystem: subSystem,
                         type: type.replace(/PGM$/i, 'MAC'),
                         use_map: true,
-                        profile: uri.toString(),
+                        profile: Buffer.from(uri.toString()).toString('hex'),
                     }
                 ]
             }
