@@ -80,7 +80,7 @@ interface E4E {
 };
 
 function validateE4E(e4e: any): e4e is E4E {
-    const valid = e4e instanceof Object && 'listCopybooks' in e4e && 'getCopybook' in e4e && 'getTemporaryFolderUri' in e4e;
+    const valid = e4e instanceof Object && 'listElements' in e4e && 'getElement' in e4e && 'isEndevorElement' in e4e;
     if (!valid)
         vscode.window.showErrorMessage('Bad E4E interface!!!');
     return valid;
