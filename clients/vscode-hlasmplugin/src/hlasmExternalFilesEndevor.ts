@@ -58,15 +58,15 @@ type Filename = string;
 type Fingerprint = string;
 type Content = string;
 interface E4E {
-    listCopybooks: (sourceUri: string, type: {
+    listElements: (sourceUri: string, type: {
         use_map: boolean,
         environment: string,
         stage: string,
         system: string,
         subsystem: string,
         type: string
-    }) => Promise<[Filename, Fingerprint][]>;
-    getCopybook: (sourceUri: string, type: {
+    }) => Promise<[Filename, Fingerprint][] | null>;
+    getElement: (sourceUri: string, type: {
         use_map: boolean,
         environment: string,
         stage: string,
@@ -75,8 +75,8 @@ interface E4E {
         type: string,
         element: string,
         fingerprint: string
-    }) => Promise<Content>;
-    getTemporaryFolderUri: () => string,
+    }) => Promise<Content | null>;
+    isEndevorElement: (uri: string) => boolean,
 };
 
 function validateE4E(e4e: any): e4e is E4E {
@@ -167,14 +167,14 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
 
         listMembers: (type_spec, profile: string) => {
             if ('use_map' in type_spec) {
-                return e4e.listCopybooks(Buffer.from(profile, 'hex').toString(), {
+                return e4e.listElements(Buffer.from(profile, 'hex').toString(), {
                     use_map: type_spec.use_map === "map",
                     environment: type_spec.environment,
                     stage: type_spec.stage,
                     system: type_spec.system,
                     subsystem: type_spec.subsystem,
                     type: type_spec.type
-                }).then(r => r.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?fingerprint=${fingerprint.toString()}`));
+                }).then(r => r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?fingerprint=${fingerprint.toString()}`) ?? null);
             }
             else
                 return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm`));
@@ -182,7 +182,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
 
         readMember: async (file_spec, profile: string) => {
             if ('use_map' in file_spec)
-                return e4e.getCopybook(Buffer.from(profile, 'hex').toString(), {
+                return e4e.getElement(Buffer.from(profile, 'hex').toString(), {
                     use_map: file_spec.use_map === "map",
                     environment: file_spec.environment,
                     stage: file_spec.stage,
@@ -205,9 +205,8 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         invalidate: invalidationEventEmmiter.event,
     });
 
-    const e4eTemp = e4e.getTemporaryFolderUri();
     const cp = ext.registerExternalConfigurationProvider(async (uri: vscode.Uri) => {
-        if (!uri.toString().startsWith(e4eTemp))
+        if (!e4e.isEndevorElement(uri.toString()))
             return null;
 
         const {
