@@ -78,9 +78,10 @@ interface E4E {
     }) => Promise<Content | null>;
     isEndevorElement: (uri: string) => boolean,
 };
+const nameof = <T>(name: keyof T) => name;
 
 function validateE4E(e4e: any): e4e is E4E {
-    const valid = e4e instanceof Object && 'listElements' in e4e && 'getElement' in e4e && 'isEndevorElement' in e4e;
+    const valid = e4e instanceof Object && nameof<E4E>('listElements') in e4e && nameof<E4E>('getElement') in e4e && nameof<E4E>('isEndevorElement') in e4e;
     if (!valid)
         vscode.window.showErrorMessage('Bad E4E interface!!!');
     return valid;
