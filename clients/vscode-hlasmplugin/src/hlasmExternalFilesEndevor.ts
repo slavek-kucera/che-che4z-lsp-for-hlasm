@@ -145,7 +145,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         fingerprint,
                         normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`,
                         toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
-                        serverId: () => getProfile(profile),
+                        // serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
                 };
@@ -161,7 +161,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         member,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
                         toDisplayString: () => `${dataset}(${member})`,
-                        serverId: () => getProfile(profile),
+                        // serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
                 };
