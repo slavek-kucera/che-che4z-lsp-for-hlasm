@@ -128,7 +128,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                 const [profile, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
 
                 const [element] = element_hlasm.split('.');
-                const fingerprint = query?.match(/^fingerprint=([a-zA-Z0-9]+)$/)?.[1];
+                const fingerprint = query?.match(/^([a-zA-Z0-9]+)$/)?.[1];
                 const q = fingerprint ? '?' + query : '';
                 return {
                     details: {
@@ -175,7 +175,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                     system: type_spec.system,
                     subsystem: type_spec.subsystem,
                     type: type_spec.type
-                }).then(r => r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?fingerprint=${fingerprint.toString()}`) ?? null);
+                }).then(r => r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null);
             }
             else
                 return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm`));

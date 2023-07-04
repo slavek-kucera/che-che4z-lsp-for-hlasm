@@ -897,6 +897,12 @@ private:
                         auto filename = url.filename();
                         if (auto dot = filename.find('.'); dot != std::string::npos)
                             filename.erase(dot);
+                        filename = utils::encoding::percent_decode(filename);
+                        if (filename.empty())
+                        {
+                            result = { {}, other_failure };
+                            break;
+                        }
                         dirs.emplace_back(std::move(filename), std::move(url));
                     }
                 }
