@@ -24,7 +24,7 @@ interface EndevorType {
     type: string,
     normalizedPath: () => string,
     toDisplayString: () => string,
-    serverId: () => string | undefined,
+    serverId?: () => string | undefined,
 };
 interface EndevorElement {
     use_map: string,
@@ -37,13 +37,13 @@ interface EndevorElement {
     fingerprint: string,
     normalizedPath: () => string,
     toDisplayString: () => string,
-    serverId: () => string | undefined,
+    serverId?: () => string | undefined,
 };
 interface EndevorDataset {
     dataset: string,
     normalizedPath: () => string,
     toDisplayString: () => string,
-    serverId: () => string | undefined,
+    serverId?: () => string | undefined,
 };
 
 interface EndevorMember {
@@ -51,7 +51,7 @@ interface EndevorMember {
     member: string,
     normalizedPath: () => string,
     toDisplayString: () => string,
-    serverId: () => string | undefined,
+    serverId?: () => string | undefined,
 };
 
 type Filename = string;
