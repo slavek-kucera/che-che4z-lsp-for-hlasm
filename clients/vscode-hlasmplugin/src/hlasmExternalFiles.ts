@@ -15,7 +15,7 @@
 import * as vscode from 'vscode';
 import * as vscodelc from 'vscode-languageclient';
 import { asError, isCancellationError } from "./helpers";
-import { uriFriendlyBase16Decode, uriFriendlyBase16Encode } from "./conversions";
+import { uriFriendlyBase16Encode } from "./conversions";
 
 import * as crypto from "crypto";
 import { TextDecoder, TextEncoder, promisify } from "util";
@@ -202,7 +202,7 @@ export class HLASMExternalFiles {
         instance: null,
         details: null,
         server: null,
-        associatedWorkspaceUrlPrefix: null,
+        associatedWorkspaceFragment: null,
     });
 
     private async extractUriDetails<ConnectArgs, ReadArgs extends ClientUriDetails, ListArgs extends ClientUriDetails>(uri: string | vscode.Uri, purpose: ExternalRequestType): Promise<{
@@ -211,21 +211,21 @@ export class HLASMExternalFiles {
         instance: null;
         details: null;
         server: null;
-        associatedWorkspaceUrlPrefix: null;
+        associatedWorkspaceFragment: null;
     } | {
         cacheKey: string;
         service: string;
         instance: ClientInstance<ConnectArgs, ReadArgs, ListArgs>;
         details: ExternalRequestDetails<ReadArgs, ListArgs>[typeof purpose],
         server: ConnectArgs;
-        associatedWorkspaceUrlPrefix: string;
+        associatedWorkspaceFragment: string;
     } | {
         cacheKey: string;
         service: string;
         instance: null;
         details: null;
         server: null;
-        associatedWorkspaceUrlPrefix: string;
+        associatedWorkspaceFragment: string;
     }> {
         if (typeof uri === 'string')
             uri = vscode.Uri.parse(uri, true);
@@ -251,7 +251,7 @@ export class HLASMExternalFiles {
                 instance: instance,
                 details: details,
                 server: server,
-                associatedWorkspaceUrlPrefix: uri.with({ path: '', query: '', fragment: '' }).toString()
+                associatedWorkspaceFragment: uri.fragment
             };
         }
         else
@@ -261,7 +261,7 @@ export class HLASMExternalFiles {
                 instance: null,
                 details: null,
                 server: null,
-                associatedWorkspaceUrlPrefix: uri.with({ path: '', query: '', fragment: '' }).toString()
+                associatedWorkspaceFragment: uri.fragment
             };
     }
 
@@ -287,7 +287,7 @@ export class HLASMExternalFiles {
         this.channel.sendNotification(vscodelc.DidChangeWatchedFilesNotification.type, {
             changes: (vscode.workspace.workspaceFolders || []).map(w => {
                 return {
-                    uri: `${this.magicScheme}://${uriFriendlyBase16Encode(w.uri.toString())}/${service}`,
+                    uri: `${this.magicScheme}:/${service}#${uriFriendlyBase16Encode(w.uri.toString())}`,
                     type: vscodelc.FileChangeType.Changed
                 };
             })
@@ -490,10 +490,10 @@ export class HLASMExternalFiles {
         msg: ExternalRequest,
         getData: (client: ClientInstance<ConnectArgs, ReadArgs, ListArgs>, service: string, details: [ExternalRequestDetails<ReadArgs, ListArgs>[typeof msg.op], ConnectArgs]) => Promise<CacheEntry<T>['result'] | null>,
         inMemoryCache: Map<string, CacheEntry<T>>,
-        responseTransform: (result: T, urlPrefix: string) => (T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse)['data']):
+        responseTransform: (result: T, pathTransform: (p: string) => string) => (T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse)['data']):
         Promise<(T extends string[] ? ExternalListDirectoryResponse : ExternalReadFileResponse) | ExternalErrorResponse | null> {
         if (msg.op !== ExternalRequestType.read_file && msg.op !== ExternalRequestType.list_directory) throw Error("");
-        const { cacheKey, service, instance, details, server, associatedWorkspaceUrlPrefix } = await this.extractUriDetails<ConnectArgs, ReadArgs, ListArgs>(msg.url, msg.op);
+        const { cacheKey, service, instance, details, server, associatedWorkspaceFragment } = await this.extractUriDetails<ConnectArgs, ReadArgs, ListArgs>(msg.url, msg.op);
         if (!cacheKey || instance && !details)
             return this.generateError(msg.id, -5, 'Invalid request');
 
@@ -513,7 +513,7 @@ export class HLASMExternalFiles {
         }
         content.references.add(msg.url);
 
-        const { response, cache } = await this.transformResult(msg.id, content, x => responseTransform(x, `${associatedWorkspaceUrlPrefix}/${service}`));
+        const { response, cache } = await this.transformResult(msg.id, content, x => responseTransform(x, x => `${this.magicScheme}:/${service}${x}#${associatedWorkspaceFragment}`));
 
         if (cache && instance && !content.cached)
             content.cached = await this.storeCachedResult(await serverId(details, instance), service, details.normalizedPath(), content.result);
@@ -553,9 +553,9 @@ export class HLASMExternalFiles {
         return this.handleMessage(msg, this.getFile.bind(this), this.memberContent, x => x);
     }
     private handleDirMessage(msg: ExternalRequest) {
-        return this.handleMessage(msg, this.getDir.bind(this), this.memberLists, (result, urlPrefix) => {
+        return this.handleMessage(msg, this.getDir.bind(this), this.memberLists, (result, urlTransform) => {
             return {
-                member_urls: result.map(x => urlPrefix + x),
+                member_urls: result.map(x => urlTransform(x)),
             };
         });
     }

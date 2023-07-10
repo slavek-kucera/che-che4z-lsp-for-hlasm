@@ -106,7 +106,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         subsystem,
                         type,
                         normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`,
-                        toDisplayString: () => `${getProfile(profile)}:${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
+                        toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
                         serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
@@ -118,7 +118,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                     details: {
                         dataset,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}`,
-                        toDisplayString: () => `${getProfile(profile)}:${dataset}`,
+                        toDisplayString: () => `${dataset}`,
                         serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
@@ -128,6 +128,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                 const [profile, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
 
                 const [element] = element_hlasm.split('.');
+                if (element.length === 0) return null;
                 const fingerprint = query?.match(/^([a-zA-Z0-9]+)$/)?.[1];
                 const q = fingerprint ? '?' + query : '';
                 return {
@@ -141,7 +142,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         element,
                         fingerprint,
                         normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`,
-                        toDisplayString: () => `${getProfile(profile)}:${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
+                        toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
                         serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
@@ -151,12 +152,13 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                 const [profile, dataset, memeber_hlasm] = args;
 
                 const [member] = memeber_hlasm.split('.');
+                if (member.length === 0) return null;
                 return {
                     details: {
                         dataset,
                         member,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
-                        toDisplayString: () => `${getProfile(profile)}:${dataset}(${member})`,
+                        toDisplayString: () => `${dataset}(${member})`,
                         serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),

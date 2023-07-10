@@ -218,7 +218,7 @@ suite('Integration Test Suite', () => {
     }).timeout(10000).slow(2500);
 
     test('Open remote file', async () => {
-        const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse('hlasm-external:///TEST/something/MACA.hlasm'));
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse('hlasm-external:/TEST/something/MACA.hlasm'));
 
         assert.ok(doc);
         assert.match(doc.getText(), /MACA/);

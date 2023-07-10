@@ -639,7 +639,7 @@ TEST_F(workspace_test, use_external_library)
     workspace ws(empty_loc, "workspace_name", fm, config, global_settings);
     ws.open().run();
 
-    EXPECT_CALL(external_files, list_directory_files(resource_location("hlasm-external:///DATASET/REMOTE.DATASET")))
+    EXPECT_CALL(external_files, list_directory_files(resource_location("hlasm-external:/DATASET/REMOTE.DATASET#")))
         .WillOnce(Invoke([]() {
             return value_task<list_directory_result>::from_value({ {}, path::list_directory_rc::done });
         }));

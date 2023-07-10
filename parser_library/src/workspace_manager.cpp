@@ -109,9 +109,9 @@ public:
         if (document_uri.starts_with(hlasm_external_scheme))
         {
             utils::path::dissected_uri uri_components = utils::path::dissect_uri(document_uri);
-            if (uri_components.contains_host())
+            if (uri_components.fragment)
             {
-                replacement_uri = utils::encoding::uri_friendly_base16_decode(uri_components.auth->host);
+                replacement_uri = utils::encoding::uri_friendly_base16_decode(*uri_components.fragment);
                 if (!replacement_uri.empty())
                     document_uri = replacement_uri;
             }
@@ -841,7 +841,7 @@ private:
 
     unsigned long long next_unique_id() { return ++m_unique_id_sequence; }
 
-    static constexpr std::string_view hlasm_external_scheme = "hlasm-external://";
+    static constexpr std::string_view hlasm_external_scheme = "hlasm-external:";
 
     [[nodiscard]] utils::value_task<std::optional<std::string>> load_text_external(
         const utils::resource::resource_location& document_loc) const

@@ -171,13 +171,19 @@ suite('External files', () => {
         assert.strictEqual(dir2.id, 5);
         assert.ok('data' in dir2);
         assert.ok(dir2.data instanceof Object);
-        assert.deepStrictEqual(dir2.data.member_urls, ['test:/TEST/DIR2/FILE']);
+        assert.deepStrictEqual(dir2.data.member_urls, ['test:/TEST/DIR2/FILE#']);
 
         const file = await ext.handleRawMessage({ id: 6, op: 'read_file', url: 'test:/TEST/DIR2/FILE' });
         assert.ok(file);
         assert.strictEqual(file.id, 6);
         assert.ok('data' in file);
         assert.strictEqual(file.data, fileContent);
+
+        const fileh = await ext.handleRawMessage({ id: 6, op: 'read_file', url: 'test:/TEST/DIR2/FILE#' });
+        assert.ok(fileh);
+        assert.strictEqual(fileh.id, 6);
+        assert.ok('data' in fileh);
+        assert.strictEqual(fileh.data, fileContent);
 
         ext.dispose();
 

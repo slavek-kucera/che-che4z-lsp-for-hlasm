@@ -194,21 +194,18 @@ void lsp_analyzer::opencode_finished(workspaces::parse_lib_provider& libs)
 
 void lsp_analyzer::assign_statement_occurrences(const utils::resource::resource_location& doc_location)
 {
-    if (in_macro_)
-    {
-        auto& file_occs = macro_occurrences_[doc_location];
-        file_occs.insert(file_occs.end(),
-            std::move_iterator(stmt_occurrences_.begin()),
-            std::move_iterator(stmt_occurrences_.end()));
-    }
+    auto& file_occs = in_macro_ ? macro_occurrences_[doc_location] : opencode_occurrences_[doc_location];
+
+    if (file_occs.empty())
+        file_occs = std::move(stmt_occurrences_);
     else
     {
-        auto& file_occs = opencode_occurrences_[doc_location];
         file_occs.insert(file_occs.end(),
             std::move_iterator(stmt_occurrences_.begin()),
             std::move_iterator(stmt_occurrences_.end()));
+
+        stmt_occurrences_.clear();
     }
-    stmt_occurrences_.clear();
 }
 
 void lsp_analyzer::collect_occurrences(
