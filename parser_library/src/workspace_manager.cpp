@@ -75,8 +75,10 @@ class workspace_manager_impl final : public workspace_manager,
             external_configuration_requests* ecr)
             : ws(location, name, file_manager, global_config, settings, ecr)
         {}
-        opened_workspace(workspaces::file_manager& file_manager, const lib_config& global_config)
-            : ws(file_manager, global_config, settings)
+        opened_workspace(workspaces::file_manager& file_manager,
+            const lib_config& global_config,
+            external_configuration_requests* ecr)
+            : ws(file_manager, global_config, settings, nullptr, ecr)
         {}
         workspaces::shared_json settings = std::make_shared<const nlohmann::json>(nlohmann::json::object());
         workspaces::workspace ws;
@@ -86,8 +88,8 @@ public:
     explicit workspace_manager_impl(workspace_manager_external_file_requests* external_file_requests)
         : m_external_file_requests(external_file_requests)
         , m_file_manager(*this)
-        , m_implicit_workspace(m_file_manager, m_global_config)
-        , m_quiet_implicit_workspace(m_file_manager, supress_all)
+        , m_implicit_workspace(m_file_manager, m_global_config, this)
+        , m_quiet_implicit_workspace(m_file_manager, supress_all, this)
     {}
     workspace_manager_impl(const workspace_manager_impl&) = delete;
     workspace_manager_impl& operator=(const workspace_manager_impl&) = delete;
