@@ -92,6 +92,8 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const defaultProfile = 'defaultEndevorProfile';
     const getProfile = (profile: string) => profile ? profile : defaultProfile;
 
+    const translateError = (e: string | Readonly<{ messages: ReadonlyArray<string>; }>) => typeof e === 'string' ? Error(e) : Error(['Error occured during E4E request:', ...e.messages].join('\n'));
+
     const extFiles = ext.registerExternalFileClient<string, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
         parseArgs: async (p: string, purpose: ExternalRequestType, query?: string) => {
             const args = p.split('/').slice(1).map(decodeURIComponent);
@@ -107,7 +109,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         type,
                         normalizedPath: () => `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`,
                         toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
-                        serverId: () => getProfile(profile),
+                        // serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
                 };
@@ -119,7 +121,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         dataset,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}`,
                         toDisplayString: () => `${dataset}`,
-                        serverId: () => getProfile(profile),
+                        // serverId: () => getProfile(profile),
                     },
                     server: getProfile(profile),
                 };
@@ -177,7 +179,10 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                     system: type_spec.system,
                     subsystem: type_spec.subsystem,
                     type: type_spec.type
-                }).then(r => r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null);
+                }).then(
+                    r => r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null,
+                    e => Promise.reject(translateError(e))
+                );
             }
             else
                 return Promise.resolve(['MACDA', 'MACDB', 'MACDC'].map((x) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(x)}.hlasm`));
@@ -194,7 +199,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                     type: file_spec.type,
                     element: file_spec.element,
                     fingerprint: file_spec.fingerprint,
-                });
+                }).catch(e => Promise.reject(translateError(e)));
             else
                 return `.*
         MACRO
