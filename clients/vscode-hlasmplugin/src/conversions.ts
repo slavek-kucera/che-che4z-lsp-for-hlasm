@@ -12,7 +12,7 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
-import { textEncode, textDecode, EOL } from "./tools";
+import { textEncode, EOL, textDecodeStrict } from "./tools";
 
 function toBufferArray(s: string): Uint8Array[] {
     const e = new TextEncoder();
@@ -70,7 +70,7 @@ export function uriFriendlyBase16Decode(s: string) {
         array.push((c0 & 15) << 4 | (c1 & 15));
     }
     try {
-        return textDecode(Uint8Array.from(array));
+        return textDecodeStrict(Uint8Array.from(array));
     } catch (e) {
         return '';
     }

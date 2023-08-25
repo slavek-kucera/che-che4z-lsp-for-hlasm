@@ -31,10 +31,15 @@ export async function inflate(data: Uint8Array): Promise<Uint8Array> {
 }
 
 const decoder = new TextDecoder();
+const decoderStrict = new TextDecoder(undefined, { fatal: true });
 const encoder = new TextEncoder();
 
 export function textDecode(input: Uint8Array): string {
     return decoder.decode(input);
+}
+
+export function textDecodeStrict(input: Uint8Array): string {
+    return decoderStrict.decode(input);
 }
 
 export function textEncode(input: string): Uint8Array {
@@ -53,4 +58,12 @@ export function relative(base: vscode.Uri, target: vscode.Uri) {
 
 export function decodeBase64(s: string): string {
     return Buffer.from(s, "base64").toString().trim();
+}
+
+export function textFromHex(s: string): string {
+    return Buffer.from(s, 'hex').toString();
+}
+
+export function arrayFromHex(s: string): Uint8Array {
+    return Buffer.from(s, 'hex');
 }
