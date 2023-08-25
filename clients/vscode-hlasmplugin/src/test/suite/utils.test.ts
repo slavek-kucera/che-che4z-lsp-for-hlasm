@@ -13,12 +13,13 @@
  */
 
 import { Readable, Stream } from "stream";
-import { FBStreamingConvertor, FBWritable } from "../../FBWritable";
+import { FBWritable } from "../../FBWritable";
 import * as assert from 'assert';
 import { AsyncMutex, AsyncSemaphore } from "../../asyncMutex";
 import { isCancellationError } from "../../helpers";
 import { CancellationError } from "vscode";
 import { connectionSecurityLevel, gatherSecurityLevelFromZowe, translateConnectionInfo } from "../../ftpCreds";
+import { FBStreamingConvertor } from "../../FBStreamingConvertor";
 
 
 suite('Utilities', () => {

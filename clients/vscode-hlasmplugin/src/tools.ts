@@ -30,7 +30,7 @@ export async function inflate(data: Uint8Array): Promise<Uint8Array> {
     });
 }
 
-const decoder = new TextDecoder(undefined, { fatal: true, ignoreBOM: false });
+const decoder = new TextDecoder();
 const encoder = new TextEncoder();
 
 export function textDecode(input: Uint8Array): string {
