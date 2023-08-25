@@ -13,6 +13,7 @@
  */
 
 import TelemetryReporter, { TelemetryEventMeasurements, TelemetryEventProperties } from '@vscode/extension-telemetry';
+import { decodeBase64 } from './tools';
 
 const TELEMETRY_DEFAULT_KEY = "NOT_TELEMETRY_KEY";
 
@@ -26,7 +27,7 @@ export class Telemetry {
 
     private getTelemetryKey(): string {
         if (this.telemetry_key === undefined)
-            this.telemetry_key = Buffer.from(TELEMETRY_KEY_ENCODED, "base64").toString().trim();
+            this.telemetry_key = decodeBase64(TELEMETRY_KEY_ENCODED);
         return this.telemetry_key;
     }
 

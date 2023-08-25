@@ -13,14 +13,14 @@
  */
 
 import * as vscode from 'vscode';
-import * as vscodelc from 'vscode-languageclient/node';
+import * as vscodelc from 'vscode-languageclient';
 
 
 import { HLASMConfigurationProvider, getCurrentProgramName, getProgramName } from './debugProvider';
 import { insertContinuation, removeContinuation, rearrangeSequenceNumbers } from './continuationHandler';
 import { CustomEditorCommands } from './customEditorCommands';
 import { EventsHandler, getConfig } from './eventsHandler';
-import { ServerFactory, ServerVariant } from './serverFactory';
+import { ServerVariant, createLanguageServer } from './serverFactory';
 import { HLASMDebugAdapterFactory } from './hlasmDebugAdapterFactory';
 import { Telemetry } from './telemetry';
 import { LanguageClientErrorHandler } from './languageClientErrorHandler';
@@ -101,19 +101,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<HlasmE
         middleware: getLanguageClientMiddleware(),
     };
 
-
-    // create server options
-    const factory = new ServerFactory();
-
-    const serverOptions = await factory.create(serverVariant);
-
     //client init
-    const hlasmpluginClient = new vscodelc.LanguageClient('Hlasmplugin Language Server', serverOptions, clientOptions);
+    const hlasmpluginClient = await createLanguageServer(serverVariant, clientOptions);
     context.subscriptions.push(hlasmpluginClient);
 
     clientErrorHandler.defaultHandler = hlasmpluginClient.createDefaultErrorHandler();
 
-    const extConfProvider = new HLASMExternalConfigurationProvider(hlasmpluginClient)
+    const extConfProvider = new HLASMExternalConfigurationProvider(hlasmpluginClient);
     context.subscriptions.push(extConfProvider);
 
     // The objectToString is necessary, because telemetry reporter only takes objects with
@@ -175,7 +169,7 @@ function offerSwitchToWasmClient() {
     });
 }
 
-async function registerToContext(context: vscode.ExtensionContext, client: vscodelc.LanguageClient, telemetry: Telemetry, extFiles: HLASMExternalFiles) {
+async function registerToContext(context: vscode.ExtensionContext, client: vscodelc.BaseLanguageClient, telemetry: Telemetry, extFiles: HLASMExternalFiles) {
     const completeCommand = "editor.action.triggerSuggest";
 
     // initialize helpers

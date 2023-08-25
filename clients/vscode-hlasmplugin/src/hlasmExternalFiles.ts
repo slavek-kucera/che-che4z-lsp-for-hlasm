@@ -16,10 +16,7 @@ import * as vscode from 'vscode';
 import * as vscodelc from 'vscode-languageclient';
 import { asError, isCancellationError } from "./helpers";
 import { uriFriendlyBase16Encode } from "./conversions";
-
-import * as crypto from "crypto";
-import { TextDecoder, TextEncoder, promisify } from "util";
-import { deflate, inflate } from "zlib";
+import { deflate, inflate, sha256 } from './tools';
 
 export const enum ExternalRequestType {
     read_file = 'read_file',
@@ -404,10 +401,10 @@ export class HLASMExternalFiles {
     }
 
     private deriveCacheEntryName(serverId: string, service: string, normalizedPath: string) {
-        return cacheVersion + '.' + service + '.' + crypto.createHash('sha256').update(JSON.stringify([
+        return cacheVersion + '.' + service + '.' + sha256(JSON.stringify([
             serverId,
             normalizedPath
-        ])).digest().toString('hex');
+        ]));
     }
 
     private async getCachedResult(serverId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType.string): Promise<string | InError | typeof not_exists | undefined>
@@ -418,7 +415,7 @@ export class HLASMExternalFiles {
         const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(serverId, service, normalizedPath));
 
         try {
-            const cachedResult = JSON.parse(new TextDecoder().decode(await promisify(inflate)(await this.cache.fs.readFile(cacheEntryName))));
+            const cachedResult = JSON.parse(new TextDecoder().decode(await inflate(await this.cache.fs.readFile(cacheEntryName))));
 
             if (cachedResult === 'not_exists') return not_exists;
             if (cachedResult instanceof Object && 'data' in cachedResult) {
@@ -443,7 +440,7 @@ export class HLASMExternalFiles {
                 ? not_exists_json
                 : new TextEncoder().encode(JSON.stringify({ data: value }));
 
-            await this.cache.fs.writeFile(cacheEntryName, await promisify(deflate)(data));
+            await this.cache.fs.writeFile(cacheEntryName, await deflate(data));
             return true;
         }
         catch (e) { }
