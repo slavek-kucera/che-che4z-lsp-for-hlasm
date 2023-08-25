@@ -3,6 +3,7 @@ dist/
 lib/
 hlasmplugin.log
 .vscode-test/
+.vscode-test-web/
 .nyc_output/
 coverage/
 /bin
