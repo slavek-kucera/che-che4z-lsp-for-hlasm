@@ -71,7 +71,7 @@ suite('Connection pool', () => {
             assert.strictEqual(c, firstClient);
         });
 
-        await Promise.resolve().then(() => { });
+        await Promise.resolve();
 
         assert.strictEqual(f.createdCount, 1);
         assert.strictEqual(f.reusableCount, 0);
