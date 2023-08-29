@@ -66,10 +66,7 @@ public:
         if (utils::platform::is_web())
         {
             MAIN_THREAD_EM_ASM(
-                {
-                    console.log("postMessage", JSON.parse(new TextDecoder().decode(HEAPU8.slice($0, $0 + $1))));
-                    Module['worker'].postMessage(JSON.parse(new TextDecoder().decode(HEAPU8.slice($0, $0 + $1))));
-                },
+                { Module['worker'].postMessage(JSON.parse(new TextDecoder().decode(HEAPU8.slice($0, $0 + $1)))); },
                 msg_string.data(),
                 msg_string.size());
         }
@@ -110,7 +107,6 @@ public:
                     Module["emscripten_std_setup_term"] = Module["emscripten_std_setup_term"] || new Map();
                     function consume(e)
                     {
-                        console.log("onmessage", e.data);
                         const data_to_pass = new TextEncoder().encode(JSON.stringify(e.data));
                         const store_buffer = Module.get_stdin_buffer(ptr, data_to_pass.length);
                         store_buffer.set(data_to_pass, 0);

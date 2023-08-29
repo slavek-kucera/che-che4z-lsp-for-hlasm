@@ -42,7 +42,6 @@ function worker_main(extensionUri: string, hlasm_arguments: string) {
             arguments: JSON.parse(hlasm_arguments),
             locateFile(path: any) {
                 if (typeof path !== 'string') return path;
-                console.log(path);
                 if (path.endsWith(".wasm")) {
                     return URL.createObjectURL(wasm_blob);
                 } else if (path.endsWith("language_server.worker.js")) {
