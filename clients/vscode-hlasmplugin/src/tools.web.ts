@@ -44,10 +44,6 @@ export function sha256(s: string): string {
     throw Error('Not implemented');
 }
 
-export function relative(base: vscode.Uri, target: vscode.Uri) {
-    throw Error('Not implemented');
-}
-
 export function decodeBase64(s: string): string {
     return '';
 }

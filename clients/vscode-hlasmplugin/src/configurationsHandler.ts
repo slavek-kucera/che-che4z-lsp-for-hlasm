@@ -159,6 +159,7 @@ export class ConfigurationsHandler {
         if (document.isClosed) return [];
         const workspace = vscode.workspace.getWorkspaceFolder(document.uri);
         if (!workspace) return [];
+        const documentRelativeUri = vscode.workspace.asRelativePath(document.uri);
 
         const configNodes = await retrieveConfigurationNodes(workspace.uri, document.uri);
 
@@ -167,7 +168,7 @@ export class ConfigurationsHandler {
             !(configNodes.pgmConf.exists || configNodes.bridgeJson.exists || configNodes.ebgFolder.exists),
             configNodes,
             workspace.uri,
-            document)
+            documentRelativeUri)
             .map(x => new vscode.CodeLens(document.lineAt(0).range, x.command));
     }
 }

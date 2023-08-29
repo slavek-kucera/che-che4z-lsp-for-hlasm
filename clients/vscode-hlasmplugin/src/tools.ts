@@ -52,10 +52,6 @@ export function sha256(s: string): string {
     return crypto.createHash('sha256').update(s).digest().toString('hex')
 }
 
-export function relative(base: vscode.Uri, target: vscode.Uri) {
-    return path.relative(base.path, target.path);
-}
-
 export function decodeBase64(s: string): string {
     return Buffer.from(s, "base64").toString().trim();
 }
