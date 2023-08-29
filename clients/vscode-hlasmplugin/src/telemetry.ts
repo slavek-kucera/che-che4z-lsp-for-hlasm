@@ -27,7 +27,7 @@ export class Telemetry {
 
     private getTelemetryKey(): string {
         if (this.telemetry_key === undefined)
-            this.telemetry_key = decodeBase64(TELEMETRY_KEY_ENCODED);
+            this.telemetry_key = decodeBase64(TELEMETRY_KEY_ENCODED).trim();
         return this.telemetry_key;
     }
 

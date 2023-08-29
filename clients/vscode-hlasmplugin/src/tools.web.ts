@@ -12,14 +12,24 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
-import * as vscode from 'vscode';
-
-export async function deflate(_data: Uint8Array): Promise<Uint8Array> {
-    return Promise.reject('Not implemented');
+export async function deflate(data: Uint8Array): Promise<Uint8Array> {
+    const input = new ReadableStream({
+        start(controller) {
+            controller.enqueue(data);
+            controller.close();
+        },
+    });
+    return new Uint8Array(await new Response(input.pipeThrough(new CompressionStream('deflate'))).arrayBuffer());
 }
 
-export async function inflate(_data: Uint8Array): Promise<Uint8Array> {
-    return Promise.reject('Not implemented');
+export async function inflate(data: Uint8Array): Promise<Uint8Array> {
+    const input = new ReadableStream({
+        start(controller) {
+            controller.enqueue(data);
+            controller.close();
+        },
+    });
+    return new Uint8Array(await new Response(input.pipeThrough(new DecompressionStream('deflate'))).arrayBuffer());
 }
 
 const decoder = new TextDecoder();
@@ -40,12 +50,22 @@ export function textEncode(input: string): Uint8Array {
 
 export const EOL = '\n';
 
-export function sha256(s: string): string {
-    throw Error('Not implemented');
+export async function sha256(s: string): Promise<string> {
+    // This will fail outside of secure contexts because of W3C.
+
+    const hash = await crypto.subtle.digest("SHA-256", textEncode(s));
+
+    let result = '';
+    for (const b of new Uint8Array(hash)) {
+        result += '0123456789abcdef'[b >> 4];
+        result += '0123456789abcdef'[b & 15];
+    }
+
+    return result;
 }
 
 export function decodeBase64(s: string): string {
-    return '';
+    return atob(s);
 }
 
 function fromHexNibble(s: string): number {

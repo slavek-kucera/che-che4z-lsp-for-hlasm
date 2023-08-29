@@ -398,8 +398,8 @@ export class HLASMExternalFiles {
         }
     }
 
-    private deriveCacheEntryName(serverId: string, service: string, normalizedPath: string) {
-        return cacheVersion + '.' + service + '.' + sha256(JSON.stringify([
+    private async deriveCacheEntryName(serverId: string, service: string, normalizedPath: string) {
+        return cacheVersion + '.' + service + '.' + await sha256(JSON.stringify([
             serverId,
             normalizedPath
         ]));
@@ -410,7 +410,7 @@ export class HLASMExternalFiles {
     private async getCachedResult(serverId: string | undefined, service: string, normalizedPath: string, expect: CachedResultType): Promise<unknown> {
         if (serverId === undefined || !this.cache) return undefined;
 
-        const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(serverId, service, normalizedPath));
+        const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, await this.deriveCacheEntryName(serverId, service, normalizedPath));
 
         try {
             const cachedResult = JSON.parse(textDecode(await inflate(await this.fs.readFile(cacheEntryName))));
@@ -431,7 +431,7 @@ export class HLASMExternalFiles {
     private async storeCachedResult<T>(serverId: string | undefined, service: string, normalizedPath: string, value: T | typeof not_exists) {
         if (serverId === undefined || !this.cache) return false;
 
-        const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, this.deriveCacheEntryName(serverId, service, normalizedPath));
+        const cacheEntryName = vscode.Uri.joinPath(this.cache.uri, await this.deriveCacheEntryName(serverId, service, normalizedPath));
 
         try {
             const data = value === not_exists
@@ -624,7 +624,7 @@ export class HLASMExternalFiles {
         if (this.cache) {
             const prefix = service && cacheVersion + '.' + service + '.';
             const useServerId = serverId ?? (service && await this.clients.get(service)?.client.serverId?.());
-            const cacheKeys = paths && service && useServerId && new Set(paths.map(x => this.deriveCacheEntryName(useServerId, service, x)));
+            const cacheKeys = paths && service && useServerId && new Set(await Promise.all(paths.map(x => this.deriveCacheEntryName(useServerId, service, x))));
             const { uri } = this.cache;
 
             const files = await this.fs.readDirectory(uri);

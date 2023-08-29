@@ -48,12 +48,12 @@ export function textEncode(input: string): Uint8Array {
 
 export const EOL = os.EOL;
 
-export function sha256(s: string): string {
+export async function sha256(s: string): Promise<string> {
     return crypto.createHash('sha256').update(s).digest().toString('hex')
 }
 
 export function decodeBase64(s: string): string {
-    return Buffer.from(s, "base64").toString().trim();
+    return Buffer.from(s, "base64").toString();
 }
 
 export function textFromHex(s: string): string {
