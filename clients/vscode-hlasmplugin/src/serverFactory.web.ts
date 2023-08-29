@@ -30,7 +30,7 @@ function worker_main(extensionUri: string, hlasm_arguments: string) {
     if (!extensionUri.endsWith('/'))
         extensionUri += '/';
 
-    const server_uri = extensionUri + 'bin/wasm/language_server.js';
+    const server_uri = extensionUri + 'bin/wasm/language_server.mjs';
     const wasm_uri = extensionUri + 'bin/wasm/language_server.wasm';
     const worker_uri = extensionUri + 'bin/wasm/language_server.worker.js';
 

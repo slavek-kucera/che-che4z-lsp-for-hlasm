@@ -64,8 +64,8 @@ export async function sha256(s: string): Promise<string> {
     return result;
 }
 
-export function decodeBase64(s: string): string {
-    return atob(s);
+export async function decodeBase64(s: string): Promise<string> {
+    return fetch(`data:application/octet-stream;base64,${s}`).then(res => res.text());
 }
 
 function fromHexNibble(s: string): number {

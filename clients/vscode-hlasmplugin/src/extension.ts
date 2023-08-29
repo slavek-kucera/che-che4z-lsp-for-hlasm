@@ -22,7 +22,7 @@ import { CustomEditorCommands } from './customEditorCommands';
 import { EventsHandler, getConfig } from './eventsHandler';
 import { ServerVariant, createLanguageServer } from './serverFactory';
 import { HLASMDebugAdapterFactory } from './hlasmDebugAdapterFactory';
-import { Telemetry } from './telemetry';
+import { Telemetry, createTelemetry } from './telemetry';
 import { LanguageClientErrorHandler } from './languageClientErrorHandler';
 import { HLASMVirtualFileContentProvider } from './hlasmVirtualFileContentProvider';
 import { downloadDependencies } from './hlasmDownloadCommands';
@@ -77,7 +77,7 @@ const getCacheInfo = async (uri: vscode.Uri, fs: vscode.FileSystem) => {
 export async function activate(context: vscode.ExtensionContext): Promise<HlasmExtension> {
     const serverVariant = getConfig<ServerVariant>('serverVariant', 'native');
 
-    const telemetry = new Telemetry();
+    const telemetry = await createTelemetry();
     context.subscriptions.push(telemetry);
 
     telemetry.reportEvent("hlasm.activated", { server_variant: serverVariant.toString() });

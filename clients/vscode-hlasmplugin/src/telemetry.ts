@@ -20,37 +20,34 @@ const TELEMETRY_DEFAULT_KEY = "NOT_TELEMETRY_KEY";
 // The following line is replaced by base64 encoded telemetry key in the CI
 const TELEMETRY_KEY_ENCODED = TELEMETRY_DEFAULT_KEY;
 
-export class Telemetry {
-
-    private reporter: TelemetryReporter | null = null;
-    private telemetry_key?: string = undefined;
-
-    private getTelemetryKey(): string {
-        if (this.telemetry_key === undefined)
-            this.telemetry_key = decodeBase64(TELEMETRY_KEY_ENCODED).trim();
-        return this.telemetry_key;
-    }
-
-    constructor() {
-        try {
-            // This is mainly to handle Theia's lack of support
-            this.reporter = new TelemetryReporter(this.getTelemetryKey());
-        } catch (e) {
-            console.log('Error encountered while creating TelemetryReporter:', e);
-        }
-    }
-
-    public reportEvent(eventName: string, properties?: TelemetryEventProperties, measurements?: TelemetryEventMeasurements): void {
-        if (this.isValidTelemetryKey()) {
-            this.reporter?.sendTelemetryEvent(eventName, properties, measurements);
-        }
-    }
-
-    public dispose(): any {
-        this.reporter?.dispose();
-    }
-
-    private isValidTelemetryKey(): boolean {
-        return this.getTelemetryKey() !== TELEMETRY_DEFAULT_KEY;
-    }
+export interface Telemetry {
+    reportEvent: (eventName: string, properties?: TelemetryEventProperties, measurements?: TelemetryEventMeasurements) => void,
+    dispose: () => void,
 }
+
+export async function createTelemetry(): Promise<Telemetry> {
+    try {
+        if (TELEMETRY_KEY_ENCODED !== TELEMETRY_DEFAULT_KEY) {
+            // This is mainly to handle Theia's lack of support
+            const reporter = new TelemetryReporter(await decodeBase64(TELEMETRY_KEY_ENCODED).then(x => x.trim()));
+
+            return {
+                reportEvent: (eventName: string, properties?: TelemetryEventProperties, measurements?: TelemetryEventMeasurements) => {
+                    reporter.sendTelemetryEvent(eventName, properties, measurements);
+                },
+                dispose: () => {
+                    reporter.dispose();
+                }
+            };
+        }
+    }
+    catch (e) {
+        console.log('Error encountered while creating TelemetryReporter:', e);
+    }
+
+    return {
+        reportEvent: (_eventName: string, _properties?: TelemetryEventProperties, _measurements?: TelemetryEventMeasurements) => { },
+        dispose: () => { }
+    };
+}
+
