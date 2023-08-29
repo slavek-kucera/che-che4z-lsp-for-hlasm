@@ -211,7 +211,11 @@ struct json_settings_replacer
                 utilized_settings_values.emplace(reduced_key, v);
             }
             else if (key == "workspaceFolder")
-                r.append(location.get_path()); // TODO: change to get_uri as soon as possible
+            {
+                // This seems broken in VSCode.
+                // Our version attempts to do the right thing, while maintaining compatibility
+                r.append(!location.is_local() ? location.get_uri() : location.get_path());
+            }
             else
                 unavailable.emplace(key);
 
