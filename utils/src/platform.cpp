@@ -42,7 +42,7 @@ bool is_web()
 {
 #ifdef __EMSCRIPTEN__
     // clang-format off
-    static const bool web_flag = []() { return EM_ASM_INT({ return typeof process === "undefined" ? 1 : 0; }); }();
+    static const bool web_flag = []() { return EM_ASM_INT({ return Module["web"] ?? typeof process === "undefined" ? 1 : 0; }); }();
     // clang-format on
     return web_flag;
 #else
