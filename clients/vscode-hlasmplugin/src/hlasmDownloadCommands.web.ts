@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Broadcom.
+ * Copyright (c) 2023 Broadcom.
  * The term "Broadcom" refers to Broadcom Inc. and/or its subsidiaries.
  *
  * This program and the accompanying materials are made
@@ -12,18 +12,4 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
-#ifndef HLASMPLUGIN_UTILS_PLATFORM_H
-#define HLASMPLUGIN_UTILS_PLATFORM_H
-
-#include <optional>
-#include <string>
-
-namespace hlasm_plugin::utils::platform {
-bool is_windows();
-bool is_web();
-const std::string& home();
-std::optional<std::string> read_file(const std::string& file);
-
-} // namespace hlasm_plugin::utils::platform
-
-#endif
+export async function downloadDependencies(..._: any[]) { throw Error('Not supported'); }

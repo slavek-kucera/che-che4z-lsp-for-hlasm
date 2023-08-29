@@ -42,6 +42,7 @@
 #include "utils/encoding.h"
 #include "utils/error_codes.h"
 #include "utils/path_conversions.h"
+#include "utils/platform.h"
 #include "utils/resource_location.h"
 #include "utils/scope_exit.h"
 #include "utils/task.h"
@@ -134,7 +135,9 @@ public:
             }
         }
 
-        static constexpr std::string_view schema_list[] = { "file:", "untitled:", hlasm_external_scheme };
+        static constexpr std::string_view schema_list[] = {
+            "file:", "untitled:", hlasm_external_scheme, "vscode-vfs:", "vscode-test-web:"
+        };
 
         if (max_ows != nullptr)
             return std::pair(max_ows, std::move(uri));
@@ -869,7 +872,7 @@ private:
     [[nodiscard]] utils::value_task<std::optional<std::string>> load_text(
         const utils::resource::resource_location& document_loc) const override
     {
-        if (!document_loc.get_uri().starts_with(hlasm_external_scheme))
+        if (document_loc.is_local() && !utils::platform::is_web())
             return utils::value_task<std::optional<std::string>>::from_value(utils::resource::load_text(document_loc));
 
         if (!m_external_file_requests || !m_vscode_extensions)
@@ -938,7 +941,7 @@ private:
         utils::path::list_directory_rc>>
     list_directory_files(const utils::resource::resource_location& directory) const override
     {
-        if (!directory.get_uri().starts_with(hlasm_external_scheme))
+        if (directory.is_local() && !utils::platform::is_web())
             return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
                 utils::path::list_directory_rc>>::from_value(utils::resource::list_directory_files(directory));
 
@@ -947,6 +950,19 @@ private:
                 utils::path::list_directory_rc>>::from_value({ {}, utils::path::list_directory_rc::not_exists });
 
         return list_directory_files_external(directory);
+    }
+
+    utils::value_task<bool> dir_exists(const utils::resource::resource_location& directory) const override
+    {
+        if (directory.is_local() && !utils::platform::is_web())
+            return utils::value_task<bool>::from_value(utils::resource::dir_exists(directory));
+
+        if (!m_external_file_requests || !m_vscode_extensions)
+            return utils::value_task<bool>::from_value(false);
+
+        // TODO: this is very inefficient implementation
+        return list_directory_files_external(directory).then(
+            [](auto resp) { return resp.second == utils::path::list_directory_rc::done; });
     }
 
     std::deque<work_item> m_work_queue;

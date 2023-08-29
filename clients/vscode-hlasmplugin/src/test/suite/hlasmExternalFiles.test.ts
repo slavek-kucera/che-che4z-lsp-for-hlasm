@@ -27,7 +27,7 @@ suite('External files', () => {
         const ext = new HLASMExternalFiles('test', {
             onNotification: (_, __) => { return { dispose: () => { } }; },
             sendNotification: (_: any, __: any) => Promise.resolve(),
-        });
+        }, {} as any as FileSystem);
 
         assert.strictEqual(await ext.handleRawMessage(null), null);
         assert.strictEqual(await ext.handleRawMessage(undefined), null);
@@ -55,18 +55,18 @@ suite('External files', () => {
             onNotification: (_, __) => { return { dispose: () => { } }; },
             sendNotification: (_: any, __: any) => Promise.resolve(),
         }, {
+            readDirectory: async (uri: Uri) => {
+                ++readCounter;
+                assert.strictEqual(cacheUri.toString(), uri.toString());
+                return [['A', FileType.File]];
+            },
+            delete: async (uri: Uri, options?: { recursive?: boolean; useTrash?: boolean }) => {
+                ++deleteCounter;
+                assert.strictEqual(uri.toString(), Uri.joinPath(cacheUri, 'A').toString())
+            },
+        } as any as FileSystem, {
             uri: cacheUri,
-            fs: {
-                readDirectory: async (uri: Uri) => {
-                    ++readCounter;
-                    assert.strictEqual(cacheUri.toString(), uri.toString());
-                    return [['A', FileType.File]];
-                },
-                delete: async (uri: Uri, options?: { recursive?: boolean; useTrash?: boolean }) => {
-                    ++deleteCounter;
-                    assert.strictEqual(uri.toString(), Uri.joinPath(cacheUri, 'A').toString())
-                },
-            } as any as FileSystem
+
         });
 
         await ext.clearCache();
@@ -94,38 +94,38 @@ suite('External files', () => {
             onNotification: (_, __) => { return { dispose: () => { } }; },
             sendNotification: (_: any, __: any) => Promise.resolve(),
         }, {
+            readFile: async (uri: Uri) => {
+                const filename = uri.path.split('/').pop();
+                if (filename === nameGenerator(['SERVER', '/DIR']))
+                    return dirResponse;
+                if (filename === nameGenerator(['SERVER', '/DIR2']))
+                    return dir2Response;
+                if (filename === nameGenerator(['SERVER', '/DIR2/FILE']))
+                    return fileResponse;
+                assert.ok(false);
+            },
+            writeFile: async (uri: Uri, content: Uint8Array) => {
+                const filename = uri.path.split('/').pop();
+                if (filename === nameGenerator(['SERVER', '/DIR'])) {
+                    dirWritten = true;
+                    assert.deepStrictEqual(content, dirResponse);
+                    return;
+                }
+                if (filename === nameGenerator(['SERVER', '/DIR2'])) {
+                    dir2Written = true;
+                    assert.deepStrictEqual(content, dir2Response);
+                    return;
+                }
+                if (filename === nameGenerator(['SERVER', '/DIR2/FILE'])) {
+                    fileWritten = true;
+                    assert.deepStrictEqual(content, fileResponse);
+                    return;
+                }
+                assert.ok(false);
+            },
+        } as any as FileSystem, {
             uri: cacheUri,
-            fs: {
-                readFile: async (uri: Uri) => {
-                    const filename = uri.path.split('/').pop();
-                    if (filename === nameGenerator(['SERVER', '/DIR']))
-                        return dirResponse;
-                    if (filename === nameGenerator(['SERVER', '/DIR2']))
-                        return dir2Response;
-                    if (filename === nameGenerator(['SERVER', '/DIR2/FILE']))
-                        return fileResponse;
-                    assert.ok(false);
-                },
-                writeFile: async (uri: Uri, content: Uint8Array) => {
-                    const filename = uri.path.split('/').pop();
-                    if (filename === nameGenerator(['SERVER', '/DIR'])) {
-                        dirWritten = true;
-                        assert.deepStrictEqual(content, dirResponse);
-                        return;
-                    }
-                    if (filename === nameGenerator(['SERVER', '/DIR2'])) {
-                        dir2Written = true;
-                        assert.deepStrictEqual(content, dir2Response);
-                        return;
-                    }
-                    if (filename === nameGenerator(['SERVER', '/DIR2/FILE'])) {
-                        fileWritten = true;
-                        assert.deepStrictEqual(content, fileResponse);
-                        return;
-                    }
-                    assert.ok(false);
-                },
-            } as any as FileSystem
+
         });
 
         ext.setClient('TEST', {
@@ -197,11 +197,10 @@ suite('External files', () => {
             onNotification: (_, __) => { return { dispose: () => { } }; },
             sendNotification: (_: any, __: any) => Promise.resolve(),
         }, {
-            uri: Uri.parse('test:cache/'),
-            fs: {
-                readFile: async (_: Uri) => Uint8Array.from([0]),
-                writeFile: async (_uri: Uri, _content: Uint8Array) => { },
-            } as any as FileSystem
+            readFile: async (_: Uri) => Uint8Array.from([0]),
+            writeFile: async (_uri: Uri, _content: Uint8Array) => { },
+        } as any as FileSystem, {
+            uri: Uri.parse('test:cache/')
         });
 
         ext.setClient('TEST', {
@@ -235,17 +234,16 @@ suite('External files', () => {
             onNotification: (_, __) => { return { dispose: () => { } }; },
             sendNotification: (_: any, __: any) => Promise.resolve(),
         }, {
+            readDirectory: async (uri: Uri) => {
+                assert.strictEqual(cacheUri.toString(), uri.toString());
+                return [[nameGenerator(['SERVER', 'B'], 'TEST2'), FileType.File], [nameGenerator(['SERVER', 'A']), FileType.File]];
+            },
+            delete: async (uri: Uri, options?: { recursive?: boolean; useTrash?: boolean }) => {
+                assert.strictEqual(uri.toString(), Uri.joinPath(cacheUri, nameGenerator(['SERVER', 'A'])).toString())
+                resolve();
+            },
+        } as any as FileSystem, {
             uri: cacheUri,
-            fs: {
-                readDirectory: async (uri: Uri) => {
-                    assert.strictEqual(cacheUri.toString(), uri.toString());
-                    return [[nameGenerator(['SERVER', 'B'], 'TEST2'), FileType.File], [nameGenerator(['SERVER', 'A']), FileType.File]];
-                },
-                delete: async (uri: Uri, options?: { recursive?: boolean; useTrash?: boolean }) => {
-                    assert.strictEqual(uri.toString(), Uri.joinPath(cacheUri, nameGenerator(['SERVER', 'A'])).toString())
-                    resolve();
-                },
-            } as any as FileSystem
         });
 
         const emmiter = new EventEmitter<ExternalFilesInvalidationdata | undefined>();

@@ -33,5 +33,9 @@ struct external_file_reader_mock : hlasm_plugin::parser_library::workspaces::ext
         list_directory_files,
         (const hlasm_plugin::utils::resource::resource_location&),
         (const, override));
+    MOCK_METHOD(hlasm_plugin::utils::value_task<bool>,
+        dir_exists,
+        (const hlasm_plugin::utils::resource::resource_location&),
+        (const, override));
 };
 } // namespace

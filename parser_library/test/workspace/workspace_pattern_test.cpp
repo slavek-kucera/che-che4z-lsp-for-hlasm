@@ -444,7 +444,11 @@ public:
         return { {}, hlasm_plugin::utils::path::list_directory_rc::done };
     }
 
-    bool dir_exists(const hlasm_plugin::utils::resource::resource_location&) const override { return true; }
+    hlasm_plugin::utils::value_task<bool> dir_exists(
+        const hlasm_plugin::utils::resource::resource_location&) const override
+    {
+        return hlasm_plugin::utils::value_task<bool>::from_value(true);
+    }
 };
 
 struct test_variables_lib_pattern

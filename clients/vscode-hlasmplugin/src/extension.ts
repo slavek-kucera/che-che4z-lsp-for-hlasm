@@ -104,7 +104,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<HlasmE
     };
 
     //client init
-    const hlasmpluginClient = await createLanguageServer(serverVariant, clientOptions);
+    const hlasmpluginClient = await createLanguageServer(serverVariant, clientOptions, context.extensionUri);
+
     context.subscriptions.push(hlasmpluginClient);
 
     clientErrorHandler.defaultHandler = hlasmpluginClient.createDefaultErrorHandler();
@@ -115,6 +116,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<HlasmE
     // The objectToString is necessary, because telemetry reporter only takes objects with
     // string properties and there are some boolean that we receive from the language server
     hlasmpluginClient.onTelemetry((object) => { telemetry.reportEvent(object.method_name, objectToString(object.properties), object.measurements) });
+
+    const extFiles = new HLASMExternalFiles(
+        externalFilesScheme,
+        hlasmpluginClient,
+        vscode.workspace.fs,
+        await getCacheInfo(vscode.Uri.joinPath(context.globalStorageUri, 'external.files.cache'), vscode.workspace.fs)
+    );
+    context.subscriptions.push(extFiles);
 
     //give the server some time to start listening when using TCP
     if (serverVariant === 'tcp')
@@ -129,13 +138,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<HlasmE
 
         throw e;
     }
-
-    const extFiles = new HLASMExternalFiles(
-        externalFilesScheme,
-        hlasmpluginClient,
-        await getCacheInfo(vscode.Uri.joinPath(context.globalStorageUri, 'external.files.cache'), vscode.workspace.fs)
-    );
-    context.subscriptions.push(extFiles);
 
     // register all commands and objects to context
     await registerDebugSupport(context, hlasmpluginClient);
@@ -243,7 +245,9 @@ async function registerDebugSupport(context: vscode.ExtensionContext, client: vs
 async function registerExternalFileSupport(context: vscode.ExtensionContext, client: vscodelc.BaseLanguageClient, extFiles: HLASMExternalFiles) {
     context.subscriptions.push(client.onDidChangeState(e => e.newState === vscodelc.State.Starting && extFiles.reset()));
     context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(externalFilesScheme, extFiles.getTextDocumentContentProvider()));
-    extFiles.setClient('DATASET', HLASMExternalFilesFtp(context));
+    const datasetClient = HLASMExternalFilesFtp(context);
+    if (datasetClient)
+        extFiles.setClient('DATASET', datasetClient);
 
     context.subscriptions.push(vscode.commands.registerCommand('extension.hlasm-plugin.resumeRemoteActivity', () => extFiles.resumeAll()));
     context.subscriptions.push(vscode.commands.registerCommand('extension.hlasm-plugin.suspendRemoteActivity', () => extFiles.suspendAll()));

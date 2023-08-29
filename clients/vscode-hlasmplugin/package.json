@@ -78,6 +78,7 @@
     "test:insiders": "npm run compile:test && node ./build/bin/prepareWorkspace.js && node ./lib/test/runTest.js insiders",
     "test:theia": "npm run compile:test && node ./build/bin/prepareWorkspace.js && node ./build/bin/theiaTest.js"
   },
+  "browser": "./dist/extension.js",
   "contributes": {
     "jsonValidation": [
       {
@@ -257,7 +258,8 @@
       {
         "command": "extension.hlasm-plugin.downloadDependencies",
         "category": "HLASM",
-        "title": "Download Dependencies"
+        "title": "Download Dependencies",
+        "enablement": "!isWeb"
       },
       {
         "command": "extension.hlasm-plugin.toggleCommentEditorCommands",

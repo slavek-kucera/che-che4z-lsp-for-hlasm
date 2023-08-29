@@ -12,6 +12,7 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
+import * as vscode from 'vscode';
 import * as vscodelc from 'vscode-languageclient/node';
 import * as net from 'net';
 import * as cp from 'child_process'
@@ -27,10 +28,10 @@ const supportedNativePlatforms: Readonly<{ [key: string]: string }> = Object.fre
     'darwin.arm64': 'darwin',
 });
 
-export async function createLanguageServer(serverVariant: ServerVariant, clientOptions: vscodelc.LanguageClientOptions): Promise<vscodelc.BaseLanguageClient> {
+export async function createLanguageServer(serverVariant: ServerVariant, clientOptions: vscodelc.LanguageClientOptions, extUri: vscode.Uri): Promise<vscodelc.BaseLanguageClient> {
     const serverOptions = await generateServerOption(serverVariant);
 
-    return new vscodelc.LanguageClient('Hlasmplugin Language Server', serverOptions, clientOptions);
+    return new vscodelc.LanguageClient('HLASM plugin Language Server', serverOptions, clientOptions);
 }
 
 async function generateServerOption(method: ServerVariant): Promise<vscodelc.ServerOptions> {

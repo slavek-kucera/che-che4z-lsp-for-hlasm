@@ -35,6 +35,8 @@ public:
         const utils::resource::resource_location& document_loc) const = 0;
     [[nodiscard]] virtual utils::value_task<list_directory_result> list_directory_files(
         const utils::resource::resource_location& directory) const = 0;
+    [[nodiscard]] virtual utils::value_task<bool> dir_exists(
+        const utils::resource::resource_location& directory) const = 0;
 
 protected:
     ~external_file_reader() = default;
@@ -76,7 +78,7 @@ public:
         size_t ch_size) override;
     void did_close_file(const utils::resource::resource_location& document_loc) override;
 
-    bool dir_exists(const utils::resource::resource_location& dir_loc) const override;
+    utils::value_task<bool> dir_exists(const utils::resource::resource_location& dir_loc) const override;
 
     std::string_view put_virtual_file(
         unsigned long long id, std::string_view text, utils::resource::resource_location related_workspace) override;

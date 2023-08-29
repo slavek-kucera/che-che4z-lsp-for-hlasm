@@ -30,9 +30,21 @@ bool is_windows()
     return true;
 #elif __EMSCRIPTEN__
     // clang-format off
-    static const bool windows_flag = []() { return EM_ASM_INT({ return process.platform === "win32" ? 1 : 0; }); }();
+    static const bool windows_flag = !is_web() && []() { return EM_ASM_INT({ return process.platform === "win32" ? 1 : 0; }); }();
     // clang-format on
     return windows_flag;
+#else
+    return false;
+#endif
+}
+
+bool is_web()
+{
+#ifdef __EMSCRIPTEN__
+    // clang-format off
+    static const bool web_flag = []() { return EM_ASM_INT({ return typeof process === "undefined" ? 1 : 0; }); }();
+    // clang-format on
+    return web_flag;
 #else
     return false;
 #endif
@@ -68,6 +80,8 @@ const std::string& home()
 #elif __EMSCRIPTEN__
     static const std::string home_dir = []() {
         std::string s;
+        if (is_web())
+            return s;
 
         auto resize = +[](intptr_t ptr, ssize_t size) {
             auto str = (std::string*)ptr;
@@ -110,6 +124,8 @@ std::optional<std::string> read_file(const std::string& file)
 {
 #if __EMSCRIPTEN__
     std::optional<std::string> s;
+    if (is_web())
+        return s;
 
     [[maybe_unused]] thread_local const bool prepare_buffer_registered = []() {
         auto prepare_buffer = +[](intptr_t ptr, ssize_t size) {
