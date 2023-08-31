@@ -44,7 +44,7 @@ public:
         list_directory_files,
         (const resource_location& path),
         (const, override));
-    MOCK_METHOD(hlasm_plugin::parser_library::workspaces::list_directory_result,
+    MOCK_METHOD(value_task<hlasm_plugin::parser_library::workspaces::list_directory_result>,
         list_directory_subdirs_and_symlinks,
         (const resource_location& path),
         (const, override));

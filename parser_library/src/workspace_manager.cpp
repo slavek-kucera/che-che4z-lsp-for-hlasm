@@ -102,6 +102,12 @@ public:
     workspace_manager_impl(workspace_manager_impl&&) = delete;
     workspace_manager_impl& operator=(workspace_manager_impl&&) = delete;
 
+
+    static constexpr std::string_view hlasm_external_scheme = "hlasm-external:";
+    static constexpr std::string_view allowed_scheme_list[] = {
+        "file:", "untitled:", hlasm_external_scheme, "vscode-vfs:", "vscode-test-web:"
+    };
+
     static auto ws_path_match(auto& self, std::string_view unnormalized_uri)
     {
         auto uri = resource_location(unnormalized_uri).lexically_normal();
@@ -135,15 +141,11 @@ public:
             }
         }
 
-        static constexpr std::string_view schema_list[] = {
-            "file:", "untitled:", hlasm_external_scheme, "vscode-vfs:", "vscode-test-web:"
-        };
-
         if (max_ows != nullptr)
             return std::pair(max_ows, std::move(uri));
-        else if (std::any_of(std::begin(schema_list), std::end(schema_list), [u = uri.get_uri()](const auto& p) {
-                     return u.starts_with(p);
-                 }))
+        else if (std::any_of(std::begin(allowed_scheme_list),
+                     std::end(allowed_scheme_list),
+                     [u = uri.get_uri()](const auto& p) { return u.starts_with(p); }))
             return std::pair(&self.m_implicit_workspace, std::move(uri));
         else
             return std::pair(&self.m_quiet_implicit_workspace, std::move(uri));
@@ -851,8 +853,6 @@ private:
 
     unsigned long long next_unique_id() { return ++m_unique_id_sequence; }
 
-    static constexpr std::string_view hlasm_external_scheme = "hlasm-external:";
-
     [[nodiscard]] utils::value_task<std::optional<std::string>> load_text_external(
         const utils::resource::resource_location& document_loc) const
     {
@@ -875,7 +875,9 @@ private:
         if (document_loc.is_local() && !utils::platform::is_web())
             return utils::value_task<std::optional<std::string>>::from_value(utils::resource::load_text(document_loc));
 
-        if (!m_external_file_requests || !m_vscode_extensions)
+        const auto match_scheme = [&document_loc](auto scheme) { return document_loc.get_uri().starts_with(scheme); };
+        if (!m_external_file_requests || !m_vscode_extensions
+            || std::none_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), match_scheme))
             return utils::value_task<std::optional<std::string>>::from_value(std::nullopt);
 
         return load_text_external(document_loc);
@@ -945,7 +947,9 @@ private:
             return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
                 utils::path::list_directory_rc>>::from_value(utils::resource::list_directory_files(directory));
 
-        if (!m_external_file_requests || !m_vscode_extensions)
+        const auto match_scheme = [&directory](auto scheme) { return directory.get_uri().starts_with(scheme); };
+        if (!m_external_file_requests || !m_vscode_extensions
+            || std::none_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), match_scheme))
             return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
                 utils::path::list_directory_rc>>::from_value({ {}, utils::path::list_directory_rc::not_exists });
 
@@ -957,7 +961,9 @@ private:
         if (directory.is_local() && !utils::platform::is_web())
             return utils::value_task<bool>::from_value(utils::resource::dir_exists(directory));
 
-        if (!m_external_file_requests || !m_vscode_extensions)
+        const auto match_scheme = [&directory](auto scheme) { return directory.get_uri().starts_with(scheme); };
+        if (!m_external_file_requests || !m_vscode_extensions
+            || std::none_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), match_scheme))
             return utils::value_task<bool>::from_value(false);
 
         // TODO: this is very inefficient implementation

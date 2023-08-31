@@ -19,5 +19,9 @@
     "noImplicitReturns": true,
     "noImplicitThis": true,
     "strict": true
-  }
+  },
+  "exclude": [
+    "src/**/*.web.ts",
+    "lib/**"
+  ]
 }

@@ -673,7 +673,7 @@ utils::task workspace_configuration::find_and_add_libs(const utils::resource::re
         if (std::regex_match(dir.get_uri(), path_validator))
             prc_grp.add_library(get_local_library(dir, opts));
 
-        auto [subdir_list, return_code] = m_file_manager.list_directory_subdirs_and_symlinks(dir);
+        auto [subdir_list, return_code] = co_await m_file_manager.list_directory_subdirs_and_symlinks(dir);
         if (return_code != utils::path::list_directory_rc::done)
         {
             diags.push_back(diagnostic_s::error_L0001(m_proc_grps_loc, dir));

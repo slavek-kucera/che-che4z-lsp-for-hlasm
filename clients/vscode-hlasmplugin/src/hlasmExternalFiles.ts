@@ -547,51 +547,40 @@ export class HLASMExternalFiles {
             });
     }
 
-    private handleVFSFileMessage(msg: ExternalRequest) {
-        try {
-            const uri = vscode.Uri.parse(msg.url, true)
-            return new Promise<Uint8Array>((resolve, reject) => this.fs.readFile(uri).then(resolve, reject))
-                .then(x => textDecode(x))
-                .then(x => { return { id: msg.id, data: x }; })
-                .catch(x => this.generateError(msg.id, -1000, asError(x).message));
-        }
-        catch (e) {
-            return Promise.resolve(this.generateError(msg.id, -5, 'Invalid request'));
-        }
+    private handleVFSFileMessage(uri: vscode.Uri, msg: ExternalRequest) {
+        return new Promise<Uint8Array>((resolve, reject) => this.fs.readFile(uri).then(resolve, reject))
+            .then(x => textDecode(x))
+            .then(x => { return { id: msg.id, data: x }; })
+            .catch(x => this.generateError(msg.id, -1000, asError(x).message));
     }
 
-    private handleVFSDirMessage(msg: ExternalRequest) {
-        try {
-            const uri = vscode.Uri.parse(msg.url, true)
-            return new Promise<[string, vscode.FileType][]>((resolve, reject) => this.fs.readDirectory(uri).then(resolve, reject))
-                .then(x => {
-                    return {
-                        id: msg.id,
-                        data: {
-                            member_urls: x
-                                .map(u => [vscode.Uri.joinPath(uri, u[0]), u[1]])
-                                .filter(u => u[1] === vscode.FileType.File || u[1] === (vscode.FileType.File | vscode.FileType.SymbolicLink))
-                                .map(u => u[0].toString())
-                        }
-                    };
-                })
-                .catch(x => this.generateError(msg.id, -1000, asError(x).message));
-        }
-        catch (e) {
-            return Promise.resolve(this.generateError(msg.id, -5, 'Invalid request'));
-        }
+    private handleVFSDirMessage(uri: vscode.Uri, msg: ExternalRequest) {
+        console.log('Dir requrest', msg.url);
+        return new Promise<[string, vscode.FileType][]>((resolve, reject) => this.fs.readDirectory(uri).then(resolve, reject))
+            .then(x => {
+                return {
+                    id: msg.id,
+                    data: {
+                        member_urls: x
+                            .map(u => [vscode.Uri.joinPath(uri, u[0]), u[1]])
+                            .filter(u => u[1] === vscode.FileType.File || u[1] === (vscode.FileType.File | vscode.FileType.SymbolicLink))
+                            .map(u => u[0].toString())
+                    }
+                };
+            })
+            .catch(x => this.generateError(msg.id, -1000, asError(x).message));
     }
 
     private handleFileMessage(uri: vscode.Uri, msg: ExternalRequest) {
         if (uri.scheme !== this.magicScheme)
-            return this.handleVFSFileMessage(msg);
+            return this.handleVFSFileMessage(uri, msg);
 
         return this.handleMessage(uri, msg, this.getFile.bind(this), this.memberContent, x => x);
     }
 
     private handleDirMessage(uri: vscode.Uri, msg: ExternalRequest) {
         if (uri.scheme !== this.magicScheme)
-            return this.handleVFSDirMessage(msg);
+            return this.handleVFSDirMessage(uri, msg);
 
         return this.handleMessage(uri, msg, this.getDir.bind(this), this.memberLists, (result, urlTransform) => {
             return {

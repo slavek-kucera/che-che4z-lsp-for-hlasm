@@ -65,7 +65,7 @@ public:
 
     [[nodiscard]] utils::value_task<list_directory_result> list_directory_files(
         const utils::resource::resource_location& directory) const override;
-    list_directory_result list_directory_subdirs_and_symlinks(
+    [[nodiscard]] utils::value_task<list_directory_result> list_directory_subdirs_and_symlinks(
         const utils::resource::resource_location& directory) const override;
 
     std::string canonical(const utils::resource::resource_location& res_loc, std::error_code& ec) const override;

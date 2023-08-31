@@ -265,12 +265,35 @@ utils::value_task<list_directory_result> file_manager_impl::list_directory_files
     return m_file_reader->list_directory_files(directory);
 }
 
-list_directory_result file_manager_impl::list_directory_subdirs_and_symlinks(
+utils::value_task<list_directory_result> file_manager_impl::list_directory_subdirs_and_symlinks(
     const utils::resource::resource_location& directory) const
 {
-    if (utils::platform::is_web()) // TODO: not supported yet
-        return list_directory_result({}, utils::path::list_directory_rc::other_failure);
-    return utils::resource::list_directory_subdirs_and_symlinks(directory);
+    if (!utils::platform::is_web() && directory.is_local())
+        return utils::value_task<list_directory_result>::from_value(
+            utils::resource::list_directory_subdirs_and_symlinks(directory));
+
+    // TODO: this is beyond inefficient
+    return m_file_reader->list_directory_files(directory).then(
+        [this](list_directory_result files) -> utils::value_task<list_directory_result> {
+            if (files.second != list_directory_result::second_type::done)
+                co_return files;
+
+            std::vector<utils::value_task<bool>> verify_dirs;
+            for (const auto& [_, uri] : files.first)
+                verify_dirs.emplace_back(dir_exists(uri));
+
+            for (auto it = files.first.begin(); auto&& t : verify_dirs)
+            {
+                if (!co_await std::move(t))
+                    it->second = utils::resource::resource_location();
+                ++it;
+            }
+
+            std::erase_if(files.first, [](const auto& e) { return e.second.empty(); });
+
+
+            co_return files;
+        });
 }
 
 std::string file_manager_impl::canonical(const utils::resource::resource_location& res_loc, std::error_code& ec) const
