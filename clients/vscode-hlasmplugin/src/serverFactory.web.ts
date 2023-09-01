@@ -54,16 +54,9 @@ function worker_main(extensionUri: string, hlasm_arguments: string) {
 }
 
 export async function createLanguageServer(_serverVariant: ServerVariant, clientOptions: vscodelc.LanguageClientOptions, extUri: vscode.Uri): Promise<vscodelc.BaseLanguageClient> {
-    const worker_script = `
-    ${worker_main.toString()}
-    worker_main('${extUri.toString()}','${JSON.stringify(decorateArgs(getConfig<string[]>('arguments', [])))}');
-    `;
+    const worker_script = `(${worker_main.toString()})('${extUri.toString()}','${JSON.stringify(decorateArgs(getConfig<string[]>('arguments', [])))}');`;
 
-    const worker = new Worker(URL.createObjectURL(new Blob([worker_script.toString()],
-        {
-            type: 'application/javascript'
-        })
-    ));
+    const worker = new Worker(URL.createObjectURL(new Blob([worker_script], { type: 'application/javascript' })));
 
     return new vscodelc.LanguageClient(EXTENSION_ID, 'HLASM plugin Language Server', clientOptions, worker);
 }
