@@ -52,7 +52,7 @@ export async function sha256(s: string): Promise<string> {
     return crypto.createHash('sha256').update(s).digest().toString('hex')
 }
 
-export async function decodeBase64(s: string): Promise<string> {
+export function decodeBase64(s: string): string {
     return Buffer.from(s, "base64").toString();
 }
 

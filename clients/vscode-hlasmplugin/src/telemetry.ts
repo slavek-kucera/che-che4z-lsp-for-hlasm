@@ -29,7 +29,7 @@ export async function createTelemetry(): Promise<Telemetry> {
     try {
         if (TELEMETRY_KEY_ENCODED !== TELEMETRY_DEFAULT_KEY) {
             // This is mainly to handle Theia's lack of support
-            const reporter = new TelemetryReporter(await decodeBase64(TELEMETRY_KEY_ENCODED).then(x => x.trim()));
+            const reporter = new TelemetryReporter(decodeBase64(TELEMETRY_KEY_ENCODED).trim());
 
             return {
                 reportEvent: (eventName: string, properties?: TelemetryEventProperties, measurements?: TelemetryEventMeasurements) => {
