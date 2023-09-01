@@ -150,7 +150,8 @@ public:
     directory_op_support(std::function<void(const std::filesystem::path&)> h = {})
         : handler(h)
     {
-        static thread_local bool registered = false;
+        static thread_local bool registered = EM_ASM_INT(
+            { return !!Module.directory_op_support_get_buffer && !!Module.directory_op_support_commit_buffer; });
         if (!registered)
         {
             registered = true;
