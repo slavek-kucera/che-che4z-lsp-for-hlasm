@@ -20,6 +20,7 @@
 #include "utils/platform.h"
 
 namespace hlasm_plugin::utils::path {
+using utils::platform::is_web;
 using utils::platform::is_windows;
 
 namespace {
@@ -317,6 +318,9 @@ public:
     std::filesystem::path cwd(std::error_code& ec)
     {
         buffer.clear();
+        if (is_web())
+            return buffer;
+
         int result = EM_ASM_INT(
             {
                 try
