@@ -15,7 +15,7 @@
 
 import * as assert from 'assert';
 import * as crypto from "crypto";
-import { ClientInterface, ClientUriDetails, ExternalFilesInvalidationdata, ExternalRequestType, HLASMExternalFiles } from '../../hlasmExternalFiles';
+import { ClientUriDetails, ExternalFilesInvalidationdata, ExternalRequestType, HLASMExternalFiles } from '../../hlasmExternalFiles';
 import { EventEmitter, FileSystem, Uri } from 'vscode';
 import { FileType } from 'vscode';
 import { TextEncoder } from 'util';
@@ -27,7 +27,9 @@ suite('External files', () => {
         const ext = new HLASMExternalFiles('test', {
             onNotification: (_, __) => { return { dispose: () => { } }; },
             sendNotification: (_: any, __: any) => Promise.resolve(),
-        }, {} as any as FileSystem);
+        }, {
+            readFile: async (_: Uri) => { throw Error('not found'); }
+        } as any as FileSystem);
 
         assert.strictEqual(await ext.handleRawMessage(null), null);
         assert.strictEqual(await ext.handleRawMessage(undefined), null);
@@ -40,7 +42,7 @@ suite('External files', () => {
         assert.deepEqual(await ext.handleRawMessage({ id: 5, op: 'read_file', url: 5 }), { id: 5, error: { code: -5, msg: 'Invalid request' } });
         assert.deepEqual(await ext.handleRawMessage({ id: 5, op: 'read_file', url: {} }), { id: 5, error: { code: -5, msg: 'Invalid request' } });
 
-        assert.deepEqual(await ext.handleRawMessage({ id: 5, op: 'read_file', url: 'unknown:scheme' }), { id: 5, error: { code: -5, msg: 'Invalid request' } });
+        assert.deepEqual(await ext.handleRawMessage({ id: 5, op: 'read_file', url: 'unknown:scheme' }), { id: 5, error: { code: -1000, msg: 'not found' } });
 
         assert.deepEqual(await ext.handleRawMessage({ id: 5, op: 'read_file', url: 'test:/SERVICE' }), { id: 5, error: { code: -1000, msg: 'No client' } });
     });
