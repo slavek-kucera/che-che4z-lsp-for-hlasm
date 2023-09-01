@@ -130,12 +130,6 @@ class : public external_file_reader
         return utils::value_task<list_directory_result>::from_value(utils::resource::list_directory_files(directory));
     }
 
-    utils::value_task<bool> dir_exists(const utils::resource::resource_location& directory) const
-    {
-        return utils::value_task<bool>::from_value(
-            !utils::platform::is_web() && utils::resource::dir_exists(directory));
-    }
-
 } constexpr default_reader;
 
 file_manager_impl::file_manager_impl()
@@ -272,28 +266,30 @@ utils::value_task<list_directory_result> file_manager_impl::list_directory_subdi
         return utils::value_task<list_directory_result>::from_value(
             utils::resource::list_directory_subdirs_and_symlinks(directory));
 
-    // TODO: this is beyond inefficient
-    return m_file_reader->list_directory_files(directory).then(
-        [this](list_directory_result files) -> utils::value_task<list_directory_result> {
-            if (files.second != list_directory_result::second_type::done)
-                co_return files;
+    return utils::value_task<list_directory_result>::from_value({});
+    // TODO: needs to be implemented
 
-            std::vector<utils::value_task<bool>> verify_dirs;
-            for (const auto& [_, uri] : files.first)
-                verify_dirs.emplace_back(dir_exists(uri));
-
-            for (auto it = files.first.begin(); auto&& t : verify_dirs)
-            {
-                if (!co_await std::move(t))
-                    it->second = utils::resource::resource_location();
-                ++it;
-            }
-
-            std::erase_if(files.first, [](const auto& e) { return e.second.empty(); });
-
-
-            co_return files;
-        });
+    //    m_file_reader->list_directory_files(directory).then(
+    //    [this](list_directory_result files) -> utils::value_task<list_directory_result> {
+    //        if (files.second != list_directory_result::second_type::done)
+    //            co_return files;
+    //
+    //        std::vector<utils::value_task<bool>> verify_dirs;
+    //        for (const auto& [_, uri] : files.first)
+    //            verify_dirs.emplace_back(dir_exists(uri));
+    //
+    //        for (auto it = files.first.begin(); auto&& t : verify_dirs)
+    //        {
+    //            if (!co_await std::move(t))
+    //                it->second = utils::resource::resource_location();
+    //            ++it;
+    //        }
+    //
+    //        std::erase_if(files.first, [](const auto& e) { return e.second.empty(); });
+    //
+    //
+    //        co_return files;
+    //    });
 }
 
 std::string file_manager_impl::canonical(const utils::resource::resource_location& res_loc, std::error_code& ec) const
@@ -424,11 +420,6 @@ void file_manager_impl::did_close_file(const utils::resource::resource_location&
         it->second.file->m_it = m_files.end();
         m_files.erase(it);
     }
-}
-
-utils::value_task<bool> file_manager_impl::dir_exists(const utils::resource::resource_location& dir_loc) const
-{
-    return m_file_reader->dir_exists(dir_loc);
 }
 
 std::string_view file_manager_impl::put_virtual_file(

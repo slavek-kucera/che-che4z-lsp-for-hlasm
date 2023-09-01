@@ -65,9 +65,6 @@ public:
 
     virtual std::string canonical(const utils::resource::resource_location& res_loc, std::error_code& ec) const = 0;
 
-    [[nodiscard]] virtual utils::value_task<bool> dir_exists(
-        const utils::resource::resource_location& dir_loc) const = 0;
-
     virtual file_content_state did_open_file(
         const utils::resource::resource_location& document_loc, version_t version, std::string text) = 0;
     virtual void did_change_file(const utils::resource::resource_location& document_loc,

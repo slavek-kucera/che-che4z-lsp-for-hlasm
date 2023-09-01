@@ -49,8 +49,6 @@ public:
         (const resource_location& path),
         (const, override));
     MOCK_METHOD(std::string, canonical, (const resource_location& res_loc, std::error_code& ec), (const, override));
-    MOCK_METHOD(
-        hlasm_plugin::utils::value_task<bool>, dir_exists, (const resource_location& dir_loc), (const, override));
     MOCK_METHOD(hlasm_plugin::parser_library::workspaces::file_content_state,
         did_open_file,
         (const resource_location& document_loc, hlasm_plugin::parser_library::version_t version, std::string text),

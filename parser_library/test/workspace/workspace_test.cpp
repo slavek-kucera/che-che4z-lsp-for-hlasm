@@ -319,11 +319,6 @@ public:
         return hlasm_plugin::utils::value_task<std::optional<std::string>>::from_value(std::nullopt);
     }
 
-    hlasm_plugin::utils::value_task<bool> dir_exists(const resource_location&) const override
-    {
-        return hlasm_plugin::utils::value_task<bool>::from_value(false);
-    }
-
     bool insert_correct_macro = true;
 };
 

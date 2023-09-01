@@ -636,13 +636,6 @@ utils::task workspace_configuration::find_and_add_libs(const utils::resource::re
     const library_local_options& opts,
     std::vector<diagnostic_s>& diags)
 {
-    if (!co_await m_file_manager.dir_exists(root))
-    {
-        if (!opts.optional_library)
-            diags.push_back(diagnostic_s::error_L0001(m_proc_grps_loc, root));
-        co_return;
-    }
-
     std::regex path_validator = percent_encoded_pathmask_to_regex(path_pattern.get_uri());
 
     std::unordered_set<std::string> processed_canonical_paths;
@@ -656,8 +649,9 @@ utils::task workspace_configuration::find_and_add_libs(const utils::resource::re
     }
 
     constexpr size_t limit = 1000;
-    while (!dirs_to_search.empty())
+    for (bool first_ = true; !dirs_to_search.empty();)
     {
+        const auto first = std::exchange(first_, false);
         if (processed_canonical_paths.size() > limit)
         {
             diags.push_back(diagnostic_s::warning_L0005(m_proc_grps_loc, path_pattern.to_presentable(), limit));
@@ -676,7 +670,8 @@ utils::task workspace_configuration::find_and_add_libs(const utils::resource::re
         auto [subdir_list, return_code] = co_await m_file_manager.list_directory_subdirs_and_symlinks(dir);
         if (return_code != utils::path::list_directory_rc::done)
         {
-            diags.push_back(diagnostic_s::error_L0001(m_proc_grps_loc, dir));
+            if (!first || !opts.optional_library || return_code != utils::path::list_directory_rc::not_exists)
+                diags.push_back(diagnostic_s::error_L0001(m_proc_grps_loc, dir));
             break;
         }
 

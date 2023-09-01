@@ -956,21 +956,6 @@ private:
         return list_directory_files_external(directory);
     }
 
-    utils::value_task<bool> dir_exists(const utils::resource::resource_location& directory) const override
-    {
-        if (directory.is_local() && !utils::platform::is_web())
-            return utils::value_task<bool>::from_value(utils::resource::dir_exists(directory));
-
-        const auto match_scheme = [&directory](auto scheme) { return directory.get_uri().starts_with(scheme); };
-        if (!m_external_file_requests || !m_vscode_extensions
-            || std::none_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), match_scheme))
-            return utils::value_task<bool>::from_value(false);
-
-        // TODO: this is very inefficient implementation
-        return list_directory_files_external(directory).then(
-            [](auto resp) { return resp.second == utils::path::list_directory_rc::done; });
-    }
-
     std::deque<work_item> m_work_queue;
 
     struct
