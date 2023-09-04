@@ -1,0 +1,5 @@
+{
+    "browser": {
+        "assert": "./assert.web.ts"
+    }
+}

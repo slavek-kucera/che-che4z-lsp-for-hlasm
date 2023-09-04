@@ -75,6 +75,7 @@
     "compile:web": "dts-bundle-generator --no-banner --respect-preserve-const-enum=true --export-referenced-types=false -o typings/extension.d.ts src/extension.interface.ts && esbuild --bundle src/extension.ts --outdir=dist --sourcemap --external:vscode --platform=browser --format=cjs --minify",
     "clean": "node ./build/bin/clean.js",
     "test": "npm run compile:test && node ./build/bin/prepareWorkspace.js && node ./lib/test/runTest.js",
+    "test:web": "npm run compile:web && npx esbuild --bundle src/test/suite/index.web.ts --outdir=dist_test --sourcemap --external:vscode --platform=browser --format=cjs && node ./build/bin/prepareWorkspace.js && npx vscode-test-web --browserType=chromium --coi --extensionDevelopmentPath=. --headless --verbose --extensionTestsPath=dist_test/index.web.js lib/test/workspace/",
     "test:wasm": "npm run compile:test && node ./build/bin/prepareWorkspace.js wasm && node ./lib/test/runTest.js",
     "test:insiders": "npm run compile:test && node ./build/bin/prepareWorkspace.js && node ./lib/test/runTest.js insiders",
     "test:theia": "npm run compile:test && node ./build/bin/prepareWorkspace.js && node ./build/bin/theiaTest.js",
