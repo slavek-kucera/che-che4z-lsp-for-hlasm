@@ -35,6 +35,8 @@ public:
         const utils::resource::resource_location& document_loc) const = 0;
     [[nodiscard]] virtual utils::value_task<list_directory_result> list_directory_files(
         const utils::resource::resource_location& directory) const = 0;
+    [[nodiscard]] virtual utils::value_task<list_directory_result> list_directory_subdirs_and_symlinks(
+        const utils::resource::resource_location& directory) const = 0;
 
 protected:
     ~external_file_reader() = default;

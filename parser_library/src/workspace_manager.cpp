@@ -885,15 +885,17 @@ private:
 
     [[nodiscard]] utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
         utils::path::list_directory_rc>>
-    list_directory_files_external(const utils::resource::resource_location& directory) const
+    list_directory_files_external(const utils::resource::resource_location& directory, bool subdir) const
     {
         using enum utils::path::list_directory_rc;
         struct content_t
         {
-            explicit content_t(utils::resource::resource_location dir)
+            explicit content_t(utils::resource::resource_location dir, bool subdir)
                 : dir(std::move(dir))
+                , subdir(subdir)
             {}
             utils::resource::resource_location dir;
+            bool subdir;
             std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
                 utils::path::list_directory_rc>
                 result;
@@ -907,9 +909,9 @@ private:
                     {
                         auto url = utils::resource::resource_location(std::string_view(s));
                         auto filename = url.filename();
+                        if (subdir)
+                            url.join("");
                         filename = utils::encoding::percent_decode(filename);
-                        if (auto dot = filename.find('.', !filename.empty()); dot != std::string::npos)
-                            filename.erase(dot);
                         if (filename.empty())
                         {
                             result = { {}, other_failure };
@@ -933,8 +935,8 @@ private:
                     result.second = other_failure;
             }
         };
-        auto [channel, data] = make_workspace_manager_response(std::in_place_type<content_t>, directory);
-        m_external_file_requests->read_external_directory(data->dir.get_uri().c_str(), channel);
+        auto [channel, data] = make_workspace_manager_response(std::in_place_type<content_t>, directory, subdir);
+        m_external_file_requests->read_external_directory(data->dir.get_uri().c_str(), channel, subdir);
 
         return utils::async_busy_wait(std::move(channel), &data->result);
     }
@@ -953,7 +955,24 @@ private:
             return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
                 utils::path::list_directory_rc>>::from_value({ {}, utils::path::list_directory_rc::not_exists });
 
-        return list_directory_files_external(directory);
+        return list_directory_files_external(directory, false);
+    }
+    [[nodiscard]] utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
+        utils::path::list_directory_rc>>
+    list_directory_subdirs_and_symlinks(const utils::resource::resource_location& directory) const override
+    {
+        if (directory.is_local() && !utils::platform::is_web())
+            return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
+                utils::path::list_directory_rc>>::
+                from_value(utils::resource::list_directory_subdirs_and_symlinks(directory));
+
+        const auto match_scheme = [&directory](auto scheme) { return directory.get_uri().starts_with(scheme); };
+        if (!m_external_file_requests || !m_vscode_extensions
+            || std::none_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), match_scheme))
+            return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
+                utils::path::list_directory_rc>>::from_value({ {}, utils::path::list_directory_rc::not_exists });
+
+        return list_directory_files_external(directory, true);
     }
 
     std::deque<work_item> m_work_queue;

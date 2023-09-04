@@ -76,10 +76,8 @@ utils::resource::resource_location transform_to_resource_location(
         rl = resource_location(path);
     else if (auto fs_path = get_fs_abs_path(path); fs_path.has_value())
         rl = resource_location(utils::path::path_to_uri(utils::path::lexically_normal(*fs_path).string()));
-    else if (base_resource_location.is_local())
-        rl = resource_location::join(base_resource_location, utils::encoding::percent_encode(path));
     else
-        rl = resource_location::join(base_resource_location, path);
+        rl = resource_location::join(base_resource_location, utils::encoding::percent_encode(path));
 
     return rl.lexically_normal();
 }

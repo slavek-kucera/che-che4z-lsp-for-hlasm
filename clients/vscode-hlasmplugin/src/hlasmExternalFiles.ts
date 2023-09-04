@@ -27,6 +27,8 @@ interface ExternalRequest {
     id: number,
     op: ExternalRequestType,
     url: string,
+    // temporary solution - replace with VFS once available
+    subdir?: boolean,
 }
 
 interface ExternalReadFileResponse {
@@ -556,14 +558,17 @@ export class HLASMExternalFiles {
 
     private handleVFSDirMessage(uri: vscode.Uri, msg: ExternalRequest) {
         console.log('Dir requrest', msg.url);
+        const filter = msg.subdir
+            ? (type: vscode.FileType) => type === vscode.FileType.Directory || type === (vscode.FileType.Directory | vscode.FileType.SymbolicLink)
+            : (type: vscode.FileType) => type === vscode.FileType.File || type === (vscode.FileType.File | vscode.FileType.SymbolicLink);
         return new Promise<[string, vscode.FileType][]>((resolve, reject) => this.fs.readDirectory(uri).then(resolve, reject))
             .then(x => {
                 return {
                     id: msg.id,
                     data: {
                         member_urls: x
-                            .map(u => [vscode.Uri.joinPath(uri, u[0]), u[1]])
-                            .filter(u => u[1] === vscode.FileType.File || u[1] === (vscode.FileType.File | vscode.FileType.SymbolicLink))
+                            .map(u => [vscode.Uri.joinPath(uri, u[0]), u[1]] as [vscode.Uri, vscode.FileType])
+                            .filter(u => filter(u[1]))
                             .map(u => u[0].toString())
                     }
                 };
@@ -581,6 +586,9 @@ export class HLASMExternalFiles {
     private handleDirMessage(uri: vscode.Uri, msg: ExternalRequest) {
         if (uri.scheme !== this.magicScheme)
             return this.handleVFSDirMessage(uri, msg);
+
+        if (msg.subdir === true)
+            return Promise.resolve(this.generateError(msg.id, -5, 'Invalid request'));
 
         return this.handleMessage(uri, msg, this.getDir.bind(this), this.memberLists, (result, urlTransform) => {
             return {
