@@ -14,9 +14,7 @@
 
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import * as path from 'path';
 import * as helper from './testHelper';
-import { waitForDiagnostics } from './testHelper';
 import { EXTENSION_ID, activate } from '../../extension';
 import { ConfigurationProviderRegistration } from '../../hlasmExternalConfigurationProvider';
 
@@ -129,7 +127,7 @@ suite('Integration Test Suite', () => {
     test('Definition Macro test', async () => {
         const result: vscode.Location[] = await vscode.commands.executeCommand('vscode.executeDefinitionProvider', editor.document.uri, new vscode.Position(6, 2));
         assert.strictEqual(result.length, 1, 'Wrong ordinary symbol definition count');
-        assert.strictEqual(result[0].uri.fsPath, path.join(helper.getWorkspacePath(), 'libs', 'mac.asm'), 'Wrong ordinary symbol definition filename');
+        assert.strictEqual(result[0].uri.toString(), await helper.getWorkspaceFile('libs/mac.asm').then(x => x.toString()), 'Wrong ordinary symbol definition filename');
         assert.strictEqual(result[0].range.start.line, 1, 'Wrong ordinary symbol definition line');
         assert.strictEqual(result[0].range.start.character, 4, 'Wrong ordinary symbol definition column');
     }).timeout(10000).slow(1000);
@@ -158,7 +156,7 @@ suite('Integration Test Suite', () => {
     }).timeout(20000).slow(10000);
 
     async function openDocumentAndCheckDiags(workspace_file: string) {
-        const diagsChange = waitForDiagnostics(workspace_file, true);
+        const diagsChange = helper.waitForDiagnostics(workspace_file, true);
         const uri = (await helper.showDocument(workspace_file)).document.uri.toString();
 
         const diags = await diagsChange;
@@ -203,7 +201,7 @@ suite('Integration Test Suite', () => {
     }).timeout(10000).slow(2500);
 
     test('Verify remote files', async () => {
-        const diagsChange = waitForDiagnostics('remote.hlasm', true);
+        const diagsChange = helper.waitForDiagnostics('remote.hlasm', true);
         const uri = (await helper.showDocument('remote.hlasm')).document.uri.toString();
 
         const diags = await diagsChange;

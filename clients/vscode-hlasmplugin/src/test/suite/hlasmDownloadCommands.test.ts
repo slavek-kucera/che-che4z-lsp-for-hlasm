@@ -92,7 +92,7 @@ suite('HLASM Download data sets', () => {
         const io = getIoOps();
         const stages = getStageCounter();
 
-        assert.deepEqual(await downloadDependenciesWithClient(
+        assert.deepStrictEqual(await downloadDependenciesWithClient(
             client,
             [{ dsn: 'A.B', dirs: ['/dir1'] }],
             '//JOBNAME JOB 1',
@@ -103,14 +103,14 @@ suite('HLASM Download data sets', () => {
         );
 
         assert.equal(client.disposeCalls, 1);
-        assert.deepEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }]);
+        assert.deepStrictEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }]);
         assert.equal(client.jcls.length, 1);
         assert.ok(client.jcls[0].startsWith("//JOBNAME JOB 1"));
         assert.notEqual(client.jcls[0].indexOf("DSN=A.B"), -1);
         assert.equal(client.listCalls, 2);
-        assert.deepEqual(client.setListMaskCalls, ['JOBNAME']);
+        assert.deepStrictEqual(client.setListMaskCalls, ['JOBNAME']);
         assert.equal(io.copyCalls.length, 0);
-        assert.deepEqual(io.unterseCalls, ['/dir1']);
+        assert.deepStrictEqual(io.unterseCalls, ['/dir1']);
         assert.equal(stages.stages, 3);
     }).slow(2000);
 
@@ -121,7 +121,7 @@ suite('HLASM Download data sets', () => {
         const io = getIoOps();
         const stages = getStageCounter();
 
-        assert.deepEqual(await downloadDependenciesWithClient(
+        assert.deepStrictEqual(await downloadDependenciesWithClient(
             client,
             [{ dsn: 'A.B', dirs: ['/dir1'] }],
             '//JOBNAME? JOB 1',
@@ -132,14 +132,14 @@ suite('HLASM Download data sets', () => {
         );
 
         assert.equal(client.disposeCalls, 1);
-        assert.deepEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }]);
+        assert.deepStrictEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }]);
         assert.equal(client.jcls.length, 1);
         assert.ok(client.jcls[0].startsWith("//JOBNAME0 JOB 1"));
         assert.notEqual(client.jcls[0].indexOf("DSN=A.B"), -1);
         assert.equal(client.listCalls, 1);
-        assert.deepEqual(client.setListMaskCalls, ['JOBNAME*']);
+        assert.deepStrictEqual(client.setListMaskCalls, ['JOBNAME*']);
         assert.equal(io.copyCalls.length, 0);
-        assert.deepEqual(io.unterseCalls, ['/dir1']);
+        assert.deepStrictEqual(io.unterseCalls, ['/dir1']);
         assert.equal(stages.stages, 3);
     });
 
@@ -165,12 +165,12 @@ suite('HLASM Download data sets', () => {
         }
 
         assert.equal(client.disposeCalls, 1);
-        assert.deepEqual(client.downloadRequests, []);
+        assert.deepStrictEqual(client.downloadRequests, []);
         assert.equal(client.jcls.length, 0);
         assert.equal(client.listCalls, 0);
-        assert.deepEqual(client.setListMaskCalls, []);
+        assert.deepStrictEqual(client.setListMaskCalls, []);
         assert.equal(io.copyCalls.length, 0);
-        assert.deepEqual(io.unterseCalls, []);
+        assert.deepStrictEqual(io.unterseCalls, []);
         assert.equal(stages.stages, 0);
     });
 
@@ -186,7 +186,7 @@ suite('HLASM Download data sets', () => {
         const io = getIoOps();
         const stages = getStageCounter();
 
-        assert.deepEqual(await downloadDependenciesWithClient(
+        assert.deepStrictEqual(await downloadDependenciesWithClient(
             client,
             [
                 { dsn: 'A.B', dirs: ['/dir1'] },
@@ -200,16 +200,16 @@ suite('HLASM Download data sets', () => {
         );
 
         assert.equal(client.disposeCalls, 1);
-        assert.deepEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }, { id: "JOBID1", spoolFile: 6 }]);
+        assert.deepStrictEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }, { id: "JOBID1", spoolFile: 6 }]);
         assert.equal(client.jcls.length, 2);
         assert.ok(client.jcls[0].startsWith("//JOBNAME0 JOB 1"));
         assert.notEqual(client.jcls[0].indexOf("DSN=A.B"), -1);
         assert.ok(client.jcls[1].startsWith("//JOBNAME1 JOB 1"));
         assert.notEqual(client.jcls[1].indexOf("DSN=C.D"), -1);
         assert.equal(client.listCalls, 2);
-        assert.deepEqual(client.setListMaskCalls, ['JOBNAME*']);
-        assert.deepEqual(io.copyCalls, [{ source: '/dir2', target: '/dir3' }]);
-        assert.deepEqual(io.unterseCalls, ['/dir1', '/dir2']);
+        assert.deepStrictEqual(client.setListMaskCalls, ['JOBNAME*']);
+        assert.deepStrictEqual(io.copyCalls, [{ source: '/dir2', target: '/dir3' }]);
+        assert.deepStrictEqual(io.unterseCalls, ['/dir1', '/dir2']);
         assert.equal(stages.stages, 3 + 4);
     });
 
@@ -220,7 +220,7 @@ suite('HLASM Download data sets', () => {
         const io = getIoOps();
         const stages = getStageCounter();
 
-        assert.deepEqual(await downloadDependenciesWithClient(
+        assert.deepStrictEqual(await downloadDependenciesWithClient(
             client,
             [{ dsn: 'A.B', dirs: ['/dir1'] }],
             '//JOBNAME JOB 1',
@@ -231,12 +231,12 @@ suite('HLASM Download data sets', () => {
         );
 
         assert.equal(client.disposeCalls, 1);
-        assert.deepEqual(client.downloadRequests, []);
+        assert.deepStrictEqual(client.downloadRequests, []);
         assert.equal(client.jcls.length, 1);
         assert.ok(client.jcls[0].startsWith("//JOBNAME JOB 1"));
         assert.notEqual(client.jcls[0].indexOf("DSN=A.B"), -1);
         assert.equal(client.listCalls, 1);
-        assert.deepEqual(client.setListMaskCalls, ['JOBNAME']);
+        assert.deepStrictEqual(client.setListMaskCalls, ['JOBNAME']);
         assert.equal(io.copyCalls.length, 0);
         assert.equal(stages.stages, 1);
     });
@@ -248,16 +248,16 @@ suite('HLASM Download data sets', () => {
         assert.strictEqual(extractDsn("~/dir/MY.DATA.SET//", ws)?.dsn, "MY.DATA.SET");
 
         if (process.platform === "win32")
-            assert.deepEqual(extractDsn("C:\\dir\\my.data.set\\\\", ws), { dsn: "MY.DATA.SET", path: "c:/dir/my.data.set" });
-        assert.deepEqual(extractDsn("/home/dir/my.data.set///", ws), { dsn: "MY.DATA.SET", path: "/home/dir/my.data.set" });
+            assert.deepStrictEqual(extractDsn("C:\\dir\\my.data.set\\\\", ws), { dsn: "MY.DATA.SET", path: "c:/dir/my.data.set" });
+        assert.deepStrictEqual(extractDsn("/home/dir/my.data.set///", ws), { dsn: "MY.DATA.SET", path: "/home/dir/my.data.set" });
 
-        assert.deepEqual(extractDsn("dir\\my.data.set\\\\", ws), { dsn: "MY.DATA.SET", path: "/workspace/dir/my.data.set" });
+        assert.deepStrictEqual(extractDsn("dir\\my.data.set\\\\", ws), { dsn: "MY.DATA.SET", path: "/workspace/dir/my.data.set" });
     });
 
     test('Config to task conversion', () => {
         const ws = Uri.parse("file:///workspace");
 
-        assert.deepEqual(gatherDownloadList([{ workspaceUri: ws, config: { pgroups: [{ libs: ["ext/MY.DATASET", { path: "ext2/MY.DATASET2" }] }, { libs: ["ext2/MY.DATASET", { path: "ext/OTHER.DATASET" }] }] } }]),
+        assert.deepStrictEqual(gatherDownloadList([{ workspaceUri: ws, config: { pgroups: [{ libs: ["ext/MY.DATASET", { path: "ext2/MY.DATASET2" }] }, { libs: ["ext2/MY.DATASET", { path: "ext/OTHER.DATASET" }] }] } }]),
             [
                 {
                     dsn: "MY.DATASET",
@@ -277,21 +277,21 @@ suite('HLASM Download data sets', () => {
 
     test('Variable replacer', () => {
         const ws = Uri.parse("file:///workspace");
-        assert.deepEqual(replaceVariables([{ key: "${workspaceFolder}/${config:test}" }], k => k === 'test' ? 'replacement' : undefined, ws), [{ key: "file:///workspace/replacement" }]);
+        assert.deepStrictEqual(replaceVariables([{ key: "${workspaceFolder}/${config:test}" }], k => k === 'test' ? 'replacement' : undefined, ws), [{ key: "file:///workspace/replacement" }]);
     });
 
     test('Job card splitter', () => {
-        assert.deepEqual(adjustJobHeader('//ABC JOB'), ['//ABC JOB']);
-        assert.deepEqual(adjustJobHeader('//ABC JOB '), ['//ABC JOB']);
-        assert.deepEqual(adjustJobHeader('//ABC JOB 123456'), ['//ABC JOB 123456']);
-        assert.deepEqual(adjustJobHeader('//ABC JOB 123456 '), ['//ABC JOB 123456']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB'), ['//ABC JOB']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB '), ['//ABC JOB']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB 123456'), ['//ABC JOB 123456']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB 123456 '), ['//ABC JOB 123456']);
 
-        assert.deepEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100)), ['//ABC JOB']);
-        assert.deepEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100) + '123456'), ['//ABC JOB 123456']);
-        assert.deepEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100) + '123456,USER=USER01'), ['//ABC JOB 123456,USER=USER01']);
-        assert.deepEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100) + '(123456,\'Department\'),USER=USER01'), ['//ABC JOB (123456,\'Department\'),USER=USER01']);
-        assert.deepEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100) + '(123456,,,),USER=USER01'), ['//ABC JOB (123456,,,),USER=USER01']);
-        assert.deepEqual(adjustJobHeader('//ABC JOB (' + '1,'.repeat(50) + '\'A\'),USER=USER01 '), [
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100)), ['//ABC JOB']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100) + '123456'), ['//ABC JOB 123456']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100) + '123456,USER=USER01'), ['//ABC JOB 123456,USER=USER01']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100) + '(123456,\'Department\'),USER=USER01'), ['//ABC JOB (123456,\'Department\'),USER=USER01']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB' + ' '.repeat(100) + '(123456,,,),USER=USER01'), ['//ABC JOB (123456,,,),USER=USER01']);
+        assert.deepStrictEqual(adjustJobHeader('//ABC JOB (' + '1,'.repeat(50) + '\'A\'),USER=USER01 '), [
             '//ABC JOB (1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,',
             '// 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,\'A\'),USER=USER01'
         ]);
