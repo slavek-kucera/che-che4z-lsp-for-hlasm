@@ -153,7 +153,7 @@ std::optional<std::string> read_file(const std::string& file)
                 {
                     const content = require('fs').readFileSync(UTF8ToString($1));
                     const ptr = Module.read_file_prepare_buffer($0, content.length);
-                    content.copy(HEAPU8.slice(ptr, ptr + content.length));
+                    HEAPU8.set(content, ptr);
                 }
                 catch (e) {}
             },
