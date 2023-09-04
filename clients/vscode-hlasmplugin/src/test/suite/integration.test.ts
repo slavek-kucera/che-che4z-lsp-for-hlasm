@@ -56,7 +56,7 @@ suite('Integration Test Suite', () => {
         });
 
         diags = await diagnostic_event;
-        assert.equal(diags.length, 0);
+        assert.strictEqual(diags.length, 0);
     }).timeout(10000).slow(1000);
 
     // change 'open' file to create diagnostic

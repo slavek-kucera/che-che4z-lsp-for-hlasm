@@ -102,16 +102,16 @@ suite('HLASM Download data sets', () => {
             { failed: [], total: 1 }
         );
 
-        assert.equal(client.disposeCalls, 1);
+        assert.strictEqual(client.disposeCalls, 1);
         assert.deepStrictEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }]);
-        assert.equal(client.jcls.length, 1);
+        assert.strictEqual(client.jcls.length, 1);
         assert.ok(client.jcls[0].startsWith("//JOBNAME JOB 1"));
         assert.notEqual(client.jcls[0].indexOf("DSN=A.B"), -1);
-        assert.equal(client.listCalls, 2);
+        assert.strictEqual(client.listCalls, 2);
         assert.deepStrictEqual(client.setListMaskCalls, ['JOBNAME']);
-        assert.equal(io.copyCalls.length, 0);
+        assert.strictEqual(io.copyCalls.length, 0);
         assert.deepStrictEqual(io.unterseCalls, ['/dir1']);
-        assert.equal(stages.stages, 3);
+        assert.strictEqual(stages.stages, 3);
     }).slow(2000);
 
     test('Jobcard pattern', async () => {
@@ -131,16 +131,16 @@ suite('HLASM Download data sets', () => {
             { failed: [], total: 1 }
         );
 
-        assert.equal(client.disposeCalls, 1);
+        assert.strictEqual(client.disposeCalls, 1);
         assert.deepStrictEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }]);
-        assert.equal(client.jcls.length, 1);
+        assert.strictEqual(client.jcls.length, 1);
         assert.ok(client.jcls[0].startsWith("//JOBNAME0 JOB 1"));
         assert.notEqual(client.jcls[0].indexOf("DSN=A.B"), -1);
-        assert.equal(client.listCalls, 1);
+        assert.strictEqual(client.listCalls, 1);
         assert.deepStrictEqual(client.setListMaskCalls, ['JOBNAME*']);
-        assert.equal(io.copyCalls.length, 0);
+        assert.strictEqual(io.copyCalls.length, 0);
         assert.deepStrictEqual(io.unterseCalls, ['/dir1']);
-        assert.equal(stages.stages, 3);
+        assert.strictEqual(stages.stages, 3);
     });
 
     test('Cancelled', async () => {
@@ -164,14 +164,14 @@ suite('HLASM Download data sets', () => {
             assert.ok(isCancellationError(e));
         }
 
-        assert.equal(client.disposeCalls, 1);
+        assert.strictEqual(client.disposeCalls, 1);
         assert.deepStrictEqual(client.downloadRequests, []);
-        assert.equal(client.jcls.length, 0);
-        assert.equal(client.listCalls, 0);
+        assert.strictEqual(client.jcls.length, 0);
+        assert.strictEqual(client.listCalls, 0);
         assert.deepStrictEqual(client.setListMaskCalls, []);
-        assert.equal(io.copyCalls.length, 0);
+        assert.strictEqual(io.copyCalls.length, 0);
         assert.deepStrictEqual(io.unterseCalls, []);
-        assert.equal(stages.stages, 0);
+        assert.strictEqual(stages.stages, 0);
     });
 
 
@@ -199,18 +199,18 @@ suite('HLASM Download data sets', () => {
             { failed: [], total: 2 }
         );
 
-        assert.equal(client.disposeCalls, 1);
+        assert.strictEqual(client.disposeCalls, 1);
         assert.deepStrictEqual(client.downloadRequests, [{ id: "JOBID0", spoolFile: 3 }, { id: "JOBID1", spoolFile: 6 }]);
-        assert.equal(client.jcls.length, 2);
+        assert.strictEqual(client.jcls.length, 2);
         assert.ok(client.jcls[0].startsWith("//JOBNAME0 JOB 1"));
         assert.notEqual(client.jcls[0].indexOf("DSN=A.B"), -1);
         assert.ok(client.jcls[1].startsWith("//JOBNAME1 JOB 1"));
         assert.notEqual(client.jcls[1].indexOf("DSN=C.D"), -1);
-        assert.equal(client.listCalls, 2);
+        assert.strictEqual(client.listCalls, 2);
         assert.deepStrictEqual(client.setListMaskCalls, ['JOBNAME*']);
         assert.deepStrictEqual(io.copyCalls, [{ source: '/dir2', target: '/dir3' }]);
         assert.deepStrictEqual(io.unterseCalls, ['/dir1', '/dir2']);
-        assert.equal(stages.stages, 3 + 4);
+        assert.strictEqual(stages.stages, 3 + 4);
     });
 
     test('Failed job', async () => {
@@ -230,15 +230,15 @@ suite('HLASM Download data sets', () => {
             { failed: [{ dsn: 'A.B', dirs: ['/dir1'] }], total: 1 }
         );
 
-        assert.equal(client.disposeCalls, 1);
+        assert.strictEqual(client.disposeCalls, 1);
         assert.deepStrictEqual(client.downloadRequests, []);
-        assert.equal(client.jcls.length, 1);
+        assert.strictEqual(client.jcls.length, 1);
         assert.ok(client.jcls[0].startsWith("//JOBNAME JOB 1"));
         assert.notEqual(client.jcls[0].indexOf("DSN=A.B"), -1);
-        assert.equal(client.listCalls, 1);
+        assert.strictEqual(client.listCalls, 1);
         assert.deepStrictEqual(client.setListMaskCalls, ['JOBNAME']);
-        assert.equal(io.copyCalls.length, 0);
-        assert.equal(stages.stages, 1);
+        assert.strictEqual(io.copyCalls.length, 0);
+        assert.strictEqual(stages.stages, 1);
     });
 
     test('Data set name extractor', () => {

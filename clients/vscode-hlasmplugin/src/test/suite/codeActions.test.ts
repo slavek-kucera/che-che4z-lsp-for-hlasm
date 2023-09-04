@@ -61,7 +61,7 @@ suite('Code actions', () => {
 
         const codeActionsList = await queryCodeActions(document.uri, new vscode.Range(0, 10, 0, 15), 500);
 
-        assert.equal(codeActionsList.length, 4 + 3);
+        assert.strictEqual(codeActionsList.length, 4 + 3);
 
         await helper.closeAllEditors();
     }).timeout(10000).slow(5000);
@@ -76,7 +76,7 @@ suite('Code actions', () => {
 
         const codeActionsList = await queryCodeActions(document.uri, new vscode.Range(0, 10, 0, 15), 500);
 
-        assert.equal(codeActionsList.length, 1);
+        assert.strictEqual(codeActionsList.length, 1);
 
         await helper.closeAllEditors();
     }).timeout(10000).slow(5000);
@@ -90,7 +90,7 @@ suite('Code actions', () => {
         let codeActionsList = await queryCodeActions(configFileUri, new vscode.Range(0, 0, 0, 0), 500)
             .then(codeActionList => codeActionList.filter(x => x.command?.command === 'extension.hlasm-plugin.toggleAdvisoryConfigurationDiagnostics'));
 
-        assert.equal(codeActionsList.length, 1);
+        assert.strictEqual(codeActionsList.length, 1);
         assert.strictEqual(codeActionsList[0].command!.title, 'Show all configuration diagnostics');
 
         diags = await helper.waitForDiagnosticsChange(configRelPath, () => { vscode.commands.executeCommand(codeActionsList[0].command!.command, configFileUri, new vscode.Range(0, 0, 0, 0)); }, diagSource);
@@ -99,7 +99,7 @@ suite('Code actions', () => {
 
         codeActionsList = await queryCodeActions(configFileUri, new vscode.Range(0, 0, 0, 0), 500).then(codeActionList => codeActionList.filter(x => x.command?.command === 'extension.hlasm-plugin.toggleAdvisoryConfigurationDiagnostics'));
 
-        assert.equal(codeActionsList.length, 1);
+        assert.strictEqual(codeActionsList.length, 1);
         assert.strictEqual(codeActionsList[0].command!.title, 'Don\'t show advisory configuration diagnostics');
 
         diags = await helper.waitForDiagnosticsChange(configRelPath, () => { vscode.commands.executeCommand(codeActionsList[0].command!.command, configFileUri, new vscode.Range(0, 0, 0, 0)); }, diagSource);
