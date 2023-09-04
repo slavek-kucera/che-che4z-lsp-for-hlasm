@@ -20,6 +20,7 @@
 #    include <emscripten/bind.h>
 #else
 #    include <fstream>
+#    include <iostream>
 #endif
 
 namespace hlasm_plugin::utils::platform {
@@ -42,11 +43,20 @@ bool is_web()
 {
 #ifdef __EMSCRIPTEN__
     // clang-format off
-    static const bool web_flag = []() { return EM_ASM_INT({ return Module["web"] ?? typeof process === "undefined" ? 1 : 0; }); }();
+    static const bool web_flag = []() { return MAIN_THREAD_EM_ASM_INT({ return Module["web"] ?? typeof process === "undefined" ? 1 : 0; }); }();
     // clang-format on
     return web_flag;
 #else
     return false;
+#endif
+}
+
+void log(std::string_view s)
+{
+#ifdef __EMSCRIPTEN__
+    EM_ASM({ console.log(new TextDecoder().decode(HEAPU8.slice($0, $1))); }, s.data(), s.data() + s.size());
+#else
+    std::clog << s << '\n';
 #endif
 }
 
@@ -143,7 +153,7 @@ std::optional<std::string> read_file(const std::string& file)
                 {
                     const content = require('fs').readFileSync(UTF8ToString($1));
                     const ptr = Module.read_file_prepare_buffer($0, content.length);
-                    content.copy(new Uint8Array(Module.HEAPU8.buffer, ptr, content.length));
+                    content.copy(HEAPU8.slice(ptr, ptr + content.length));
                 }
                 catch (e) {}
             },
