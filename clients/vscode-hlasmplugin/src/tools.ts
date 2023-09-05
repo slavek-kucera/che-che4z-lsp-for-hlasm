@@ -12,11 +12,9 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
-import * as vscode from 'vscode';
 import * as zlib from 'zlib';
 import * as os from 'os';
 import * as crypto from "crypto";
-import * as path from 'path';
 
 export async function deflate(data: Uint8Array): Promise<Uint8Array> {
     return new Promise<Uint8Array>((resolve, reject) => {
