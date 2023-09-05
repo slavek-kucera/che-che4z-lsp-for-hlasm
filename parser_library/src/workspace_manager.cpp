@@ -107,6 +107,11 @@ public:
     static constexpr std::string_view allowed_scheme_list[] = {
         "file:", "untitled:", hlasm_external_scheme, "vscode-vfs:", "vscode-test-web:"
     };
+    static bool allowed_scheme(const resource_location& uri)
+    {
+        const auto matches_scheme = [u = uri.get_uri()](const auto& p) { return u.starts_with(p); };
+        return std::any_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), matches_scheme);
+    }
 
     static auto ws_path_match(auto& self, std::string_view unnormalized_uri)
     {
@@ -143,9 +148,7 @@ public:
 
         if (max_ows != nullptr)
             return std::pair(max_ows, std::move(uri));
-        else if (std::any_of(std::begin(allowed_scheme_list),
-                     std::end(allowed_scheme_list),
-                     [u = uri.get_uri()](const auto& p) { return u.starts_with(p); }))
+        else if (allowed_scheme(uri))
             return std::pair(&self.m_implicit_workspace, std::move(uri));
         else
             return std::pair(&self.m_quiet_implicit_workspace, std::move(uri));
@@ -875,9 +878,7 @@ private:
         if (document_loc.is_local() && !utils::platform::is_web())
             return utils::value_task<std::optional<std::string>>::from_value(utils::resource::load_text(document_loc));
 
-        const auto match_scheme = [&document_loc](auto scheme) { return document_loc.get_uri().starts_with(scheme); };
-        if (!m_external_file_requests || !m_vscode_extensions
-            || std::none_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), match_scheme))
+        if (!m_external_file_requests || !m_vscode_extensions || !allowed_scheme(document_loc))
             return utils::value_task<std::optional<std::string>>::from_value(std::nullopt);
 
         return load_text_external(document_loc);
@@ -949,14 +950,13 @@ private:
             return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
                 utils::path::list_directory_rc>>::from_value(utils::resource::list_directory_files(directory));
 
-        const auto match_scheme = [&directory](auto scheme) { return directory.get_uri().starts_with(scheme); };
-        if (!m_external_file_requests || !m_vscode_extensions
-            || std::none_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), match_scheme))
+        if (!m_external_file_requests || !m_vscode_extensions || !allowed_scheme(directory))
             return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
                 utils::path::list_directory_rc>>::from_value({ {}, utils::path::list_directory_rc::not_exists });
 
         return list_directory_files_external(directory, false);
     }
+
     [[nodiscard]] utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
         utils::path::list_directory_rc>>
     list_directory_subdirs_and_symlinks(const utils::resource::resource_location& directory) const override
@@ -966,9 +966,7 @@ private:
                 utils::path::list_directory_rc>>::
                 from_value(utils::resource::list_directory_subdirs_and_symlinks(directory));
 
-        const auto match_scheme = [&directory](auto scheme) { return directory.get_uri().starts_with(scheme); };
-        if (!m_external_file_requests || !m_vscode_extensions
-            || std::none_of(std::begin(allowed_scheme_list), std::end(allowed_scheme_list), match_scheme))
+        if (!m_external_file_requests || !m_vscode_extensions || !allowed_scheme(directory))
             return utils::value_task<std::pair<std::vector<std::pair<std::string, utils::resource::resource_location>>,
                 utils::path::list_directory_rc>>::from_value({ {}, utils::path::list_directory_rc::not_exists });
 
