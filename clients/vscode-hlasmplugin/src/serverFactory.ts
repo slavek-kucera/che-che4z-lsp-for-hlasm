@@ -31,7 +31,7 @@ const supportedNativePlatforms: Readonly<{ [key: string]: string }> = Object.fre
 export async function createLanguageServer(serverVariant: ServerVariant, clientOptions: vscodelc.LanguageClientOptions, extUri: vscode.Uri): Promise<vscodelc.BaseLanguageClient> {
     const serverOptions = await generateServerOption(serverVariant);
 
-    return new vscodelc.LanguageClient('HLASM plugin Language Server', serverOptions, clientOptions);
+    return new vscodelc.LanguageClient('HLASM extension Language Server', serverOptions, clientOptions);
 }
 
 async function generateServerOption(method: ServerVariant): Promise<vscodelc.ServerOptions> {

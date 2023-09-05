@@ -58,7 +58,7 @@ export async function createLanguageServer(_serverVariant: ServerVariant, client
 
     const worker = new Worker(URL.createObjectURL(new Blob([worker_script], { type: 'application/javascript' })));
 
-    return new vscodelc.LanguageClient(EXTENSION_ID, 'HLASM plugin Language Server', clientOptions, worker);
+    return new vscodelc.LanguageClient(EXTENSION_ID, 'HLASM extension Language Server', clientOptions, worker);
 }
 
 function decorateArgs(args: Array<string>): Array<string> {

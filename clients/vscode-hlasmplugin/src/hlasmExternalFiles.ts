@@ -559,8 +559,8 @@ export class HLASMExternalFiles {
     private handleVFSDirMessage(uri: vscode.Uri, msg: ExternalRequest) {
         console.log('Dir requrest', msg.url);
         const filter = msg.subdir
-            ? (type: vscode.FileType) => type === vscode.FileType.Directory || type === (vscode.FileType.Directory | vscode.FileType.SymbolicLink)
-            : (type: vscode.FileType) => type === vscode.FileType.File || type === (vscode.FileType.File | vscode.FileType.SymbolicLink);
+            ? (type: vscode.FileType) => (type & vscode.FileType.Directory) === vscode.FileType.Directory
+            : (type: vscode.FileType) => (type & vscode.FileType.File) === vscode.FileType.File;
         return new Promise<[string, vscode.FileType][]>((resolve, reject) => this.fs.readDirectory(uri).then(resolve, reject))
             .then(x => {
                 return {
