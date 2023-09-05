@@ -38,7 +38,7 @@ console.log('Test workspace ready')
 function recursiveCopySync(origin, dest) {
     if (fs.existsSync(origin)) {
         if (fs.statSync(origin).isDirectory()) {
-            fs.mkdirSync(dest);
+            fs.mkdirSync(dest, { recursive: true });
             fs.readdirSync(origin).forEach(file =>
                 recursiveCopySync(path.join(origin, file), path.join(dest, file)));
         }
