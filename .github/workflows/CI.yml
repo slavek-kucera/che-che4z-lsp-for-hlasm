@@ -241,7 +241,7 @@ jobs:
         run: ${{ env.XVFB }} npm run test:insiders
 
   VSIX-web:
-    name: Build Web
+    name: Test and VSIX (Web)
     needs: [build-matrix]
     runs-on: ubuntu-22.04
     steps:
