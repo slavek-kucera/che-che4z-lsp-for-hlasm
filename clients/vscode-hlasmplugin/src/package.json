@@ -1,8 +1,0 @@
-{
-  "browser": {
-    "./hlasmDownloadCommands": "./hlasmDownloadCommands.web.ts",
-    "./hlasmExternalFilesFtp": "./hlasmExternalFilesFtp.web.ts",
-    "./serverFactory": "./serverFactory.web.ts",
-    "./tools": "./tools.web.ts"
-  }
-}

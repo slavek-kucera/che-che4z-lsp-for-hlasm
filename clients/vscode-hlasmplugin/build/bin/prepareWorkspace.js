@@ -15,7 +15,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const workspace_dir = path.join(__dirname, '..', '..', 'lib/test/workspace/');
+const workspace_dir = path.join(__dirname, '..', '..', 'dist_test/workspace/');
 const workspace_vscode = path.join(workspace_dir, '.vscode');
 recursiveRemoveSync(workspace_dir);
 recursiveCopySync(path.join(__dirname, '..', '..', 'src/test/workspace/'), workspace_dir);

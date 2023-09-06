@@ -10,7 +10,7 @@
       "es2016",
       "WebWorker"
     ],
-    "outDir": "lib",
+    "outDir": "dist_test",
     "rootDir": "src",
     "alwaysStrict": true,
     "noEmitOnError": true,
@@ -22,6 +22,6 @@
   },
   "exclude": [
     "src/**/*.web.ts",
-    "lib/**"
+    "dist_test/**"
   ]
 }
