@@ -102,8 +102,9 @@ type Filename = string;
 type Fingerprint = string;
 type MemberName = string;
 type Content = string;
-type InvalidatedElement = {
-    sourceUri: string;
+type Instance = string;
+type ElementInfo = {
+    sourceUri?: string;
     environment: string;
     stage: string;
     system: string;
@@ -114,7 +115,7 @@ type InvalidatedElement = {
     element: string;
 };
 
-export interface E4E {
+interface E4E {
     listElements: (
         sourceUri: string,
         type: {
@@ -152,22 +153,13 @@ export interface E4E {
             member: string;
         }
     ) => Promise<Content | Error>;
-    isEndevorElement: (uri: string) => boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    getEndevorElementInfo: (
+        uri: string
+    ) => Promise<[ElementInfo, Instance] | Error>;
     getConfiguration: (
-        sourceUri: string,
-        type: {
-            environment: string;
-            stage: '1' | '2';
-            system: string;
-            subsystem: string;
-            type: string;
-            elementName: string;
-            printProc?: boolean;
-            trace?: boolean;
-        }
+        sourceUri: string
     ) => Promise<E4EExternalConfigurationResponse | Error>;
-    getElementInvalidateEmitter: () => vscode.EventEmitter<InvalidatedElement[]>;
+    getElementInvalidateEmitter: () => vscode.EventEmitter<ElementInfo[]>;
 }
 
 const nameof = <T>(name: keyof T) => name;
@@ -178,7 +170,7 @@ function validateE4E(e4e: any): e4e is E4E {
         nameof<E4E>('getElement') in e4e &&
         nameof<E4E>('listMembers') in e4e &&
         nameof<E4E>('getMember') in e4e &&
-        nameof<E4E>('isEndevorElement') in e4e &&
+        nameof<E4E>('getEndevorElementInfo') in e4e &&
         nameof<E4E>('getConfiguration') in e4e &&
         nameof<E4E>('getElementInvalidateEmitter') in e4e;
     if (!valid)
@@ -285,14 +277,38 @@ function translatePreprocessors(input: undefined | TypeOrArray<{
 
 function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
-    const defaultProfile = 'defaultEndevorProfile';
-    const getProfile = (profile: string) => profile ? profile : defaultProfile;
+    const getProfile = async (profile: string) => {
+        if (!profile) return undefined;
+        const p = await e4e.getEndevorElementInfo(profile);
+        if (p instanceof Error) throw p;
+        return p[1];
+    }
+
+    const invalidationHints = new Map<string, { serverId: string | undefined, paths: string[] }[]>();
+    const addInvalidationHint = (server: string | undefined, path: string, type: string, element: string | undefined = undefined) => {
+        const key = element ? `${type}/${element}` : type;
+        let ar = invalidationHints.get(key);
+        if (!ar) {
+            ar = [];
+            invalidationHints.set(key, ar);
+        }
+        for (const { serverId: s, paths: p } of ar) {
+            if (s !== server) continue;
+            if (p.indexOf(path) === -1)
+                p.push(path);
+            return;
+        }
+        ar.push({ serverId: server, paths: [path] });
+    };
 
     const extFiles = ext.registerExternalFileClient<string, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
         parseArgs: async (p: string, purpose: ExternalRequestType, query?: string) => {
             const args = p.split('/').slice(1).map(decodeURIComponent);
             if (purpose === ExternalRequestType.list_directory && args.length === 7) {
-                const [profile, use_map, environment, stage, system, subsystem, type] = args;
+                const [profile_, use_map, environment, stage, system, subsystem, type] = args;
+                const profile = await getProfile(profile_);
+                const path = `/ ${encodeURIComponent(use_map)} / ${encodeURIComponent(environment)} / ${encodeURIComponent(stage)} / ${encodeURIComponent(system)} / ${encodeURIComponent(subsystem)} / ${encodeURIComponent(type)}`;
+                addInvalidationHint(profile, path, type);
                 return {
                     details: {
                         use_map,
@@ -301,32 +317,36 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         system,
                         subsystem,
                         type,
-                        normalizedPath: () => `/ ${encodeURIComponent(use_map)} / ${encodeURIComponent(environment)} / ${encodeURIComponent(stage)} / ${encodeURIComponent(system)} / ${encodeURIComponent(subsystem)} / ${encodeURIComponent(type)}`,
+                        normalizedPath: () => path,
                         toDisplayString: () => `${use_map} / ${environment} / ${stage} / ${system} / ${subsystem} / ${type}`,
-                        // serverId: () => getProfile(profile),
+                        serverId: () => profile,
                     },
-                    server: getProfile(profile),
+                    server: profile ?? '',
                 };
             }
             if (purpose === ExternalRequestType.list_directory && args.length === 2) {
-                const [profile, dataset] = args;
+                const [profile_, dataset] = args;
+                const profile = await getProfile(profile_);
                 return {
                     details: {
                         dataset,
                         normalizedPath: () => `/ ${encodeURIComponent(dataset)}`,
                         toDisplayString: () => `${dataset}`,
-                        // serverId: () => getProfile(profile),
+                        serverId: () => profile,
                     },
-                    server: getProfile(profile),
+                    server: profile ?? '',
                 };
             }
             if (purpose === ExternalRequestType.read_file && args.length === 8) {
-                const [profile, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
+                const [profile_, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
+                const profile = await getProfile(profile_);
 
                 const [element] = element_hlasm.split('.');
                 if (element.length === 0) return null;
                 const fingerprint = query?.match(/^([a-zA-Z0-9]+)$/)?.[1];
                 const q = fingerprint ? '?' + query : '';
+                const path = `/ ${encodeURIComponent(use_map)} / ${encodeURIComponent(environment)} / ${encodeURIComponent(stage)} / ${encodeURIComponent(system)} / ${encodeURIComponent(subsystem)} / ${encodeURIComponent(type)} / ${encodeURIComponent(element)}.hlasm${q}`;
+                addInvalidationHint(profile, path, type, element);
                 return {
                     details: {
                         use_map,
@@ -337,15 +357,16 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         type,
                         element,
                         fingerprint,
-                        normalizedPath: () => `/ ${encodeURIComponent(use_map)} / ${encodeURIComponent(environment)} / ${encodeURIComponent(stage)} / ${encodeURIComponent(system)} / ${encodeURIComponent(subsystem)} / ${encodeURIComponent(type)} / ${encodeURIComponent(element)}.hlasm${q}`,
+                        normalizedPath: () => path,
                         toDisplayString: () => `${use_map} / ${environment} / ${stage} / ${system} / ${subsystem} / ${type} / ${element}`,
-                        serverId: () => getProfile(profile),
+                        serverId: () => profile,
                     },
-                    server: getProfile(profile),
+                    server: profile ?? '',
                 };
             }
             if (purpose === ExternalRequestType.read_file && args.length === 3) {
-                const [profile, dataset, memeber_hlasm] = args;
+                const [profile_, dataset, memeber_hlasm] = args;
+                const profile = await getProfile(profile_);
 
                 const [member] = memeber_hlasm.split('.');
                 if (member.length === 0) return null;
@@ -355,9 +376,9 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         member,
                         normalizedPath: () => `/ ${encodeURIComponent(dataset)} / ${encodeURIComponent(member)}.hlasm`,
                         toDisplayString: () => `${dataset}(${member})`,
-                        serverId: () => getProfile(profile),
+                        serverId: () => profile,
                     },
-                    server: getProfile(profile),
+                    server: profile ?? '',
                 };
             }
 
@@ -408,16 +429,10 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     });
 
     const cp = ext.registerExternalConfigurationProvider(async (uri: vscode.Uri) => {
-        if (!e4e.isEndevorElement(uri.toString())) return null;
+        const info = await e4e.getEndevorElementInfo(uri.toString());
+        if (info instanceof Error) return null;
 
-        const result = await e4e.getConfiguration(uri.toString(), {
-            environment: 'DEV',
-            stage: '1',
-            subsystem: 'KUCSL02',
-            system: 'DBT200',
-            type: 'ASMPGM',
-            elementName: 'NGRABP2',
-        });
+        const result = await e4e.getConfiguration(uri.toString());
         console.log('Have results', result);
         if (result instanceof Error) throw result;
         const candidate = result.pgroups.find(x => x.name === result.pgms[0].pgroup);
@@ -436,7 +451,14 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     });
 
     e4e.getElementInvalidateEmitter().event((elements) => {
-        Promise.all(elements.map(e => cp.invalidate(vscode.Uri.parse(e.sourceUri)))).catch(() => { });
+        for (const e of elements) {
+            if (e.sourceUri)
+                cp.invalidate(vscode.Uri.parse(e.sourceUri));
+            else {
+                // This has issues, but for now it is good enough
+                invalidationHints.get(e.element ? `${e.type}/${e.element}` : e.type)?.forEach(e => invalidationEventEmmiter.fire(e));
+            }
+        }
     });
 
     return { dispose: () => { extFiles.dispose(); cp.dispose(); } };
