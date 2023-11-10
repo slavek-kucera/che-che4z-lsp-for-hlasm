@@ -176,7 +176,7 @@ function validateE4E(e4e: any): e4e is E4E {
         nameof<E4E>('getConfiguration') in e4e &&
         nameof<E4E>('getElementInvalidateEmitter') in e4e;
     if (!valid)
-        vscode.window.showErrorMessage('Bad E4E interface!!!');
+        vscode.window.showErrorMessage('Explorer for Endevor interface is incompatible');
     return valid;
 }
 
