@@ -454,15 +454,18 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     });
 
     e4e.getElementInvalidateEmitter().event((elements) => {
+        const unique = new Set<string>();
         for (const e of elements) {
             if (e.sourceUri)
                 cp.invalidate(vscode.Uri.parse(e.sourceUri));
-            // This has issues, but for now it is good enough
             if (e.type)
-                invalidationHints.get(e.type)?.forEach(e => invalidationEventEmmiter.fire(e));
+                unique.add(e.type);
             if (e.type && e.element)
-                invalidationHints.get(`${e.type}/${e.element}`)?.forEach(e => invalidationEventEmmiter.fire(e));
+                unique.add(`${e.type}/${e.element}`);
         }
+        // This has issues, but for now it is good enough
+        for (const x of unique.values())
+            invalidationHints.get(x)?.forEach(e => invalidationEventEmmiter.fire(e));
     });
 
     return { dispose: () => { extFiles.dispose(); cp.dispose(); } };
