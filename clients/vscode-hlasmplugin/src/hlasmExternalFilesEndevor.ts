@@ -309,7 +309,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
             if (purpose === ExternalRequestType.list_directory && args.length === 7) {
                 const [profile_, use_map, environment, stage, system, subsystem, type] = args;
                 const profile = await getProfile(profile_);
-                const path = `/ ${encodeURIComponent(use_map)} / ${encodeURIComponent(environment)} / ${encodeURIComponent(stage)} / ${encodeURIComponent(system)} / ${encodeURIComponent(subsystem)} / ${encodeURIComponent(type)}`;
+                const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`;
                 addInvalidationHint(profile, path, type);
                 return {
                     details: {
@@ -320,7 +320,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         subsystem,
                         type,
                         normalizedPath: () => path,
-                        toDisplayString: () => `${use_map} / ${environment} / ${stage} / ${system} / ${subsystem} / ${type}`,
+                        toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
                         serverId: () => profile,
                     },
                     server: profile ?? '',
@@ -332,7 +332,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                 return {
                     details: {
                         dataset,
-                        normalizedPath: () => `/ ${encodeURIComponent(dataset)}`,
+                        normalizedPath: () => `/${encodeURIComponent(dataset)}`,
                         toDisplayString: () => `${dataset}`,
                         serverId: () => profile,
                     },
@@ -347,7 +347,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                 if (element.length === 0) return null;
                 const fingerprint = query?.match(/^([a-zA-Z0-9]+)$/)?.[1];
                 const q = fingerprint ? '?' + query : '';
-                const path = `/ ${encodeURIComponent(use_map)} / ${encodeURIComponent(environment)} / ${encodeURIComponent(stage)} / ${encodeURIComponent(system)} / ${encodeURIComponent(subsystem)} / ${encodeURIComponent(type)} / ${encodeURIComponent(element)}.hlasm${q}`;
+                const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`;
                 addInvalidationHint(profile, path, type, element);
                 return {
                     details: {
@@ -360,7 +360,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         element,
                         fingerprint,
                         normalizedPath: () => path,
-                        toDisplayString: () => `${use_map} / ${environment} / ${stage} / ${system} / ${subsystem} / ${type} / ${element}`,
+                        toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
                         serverId: () => profile,
                     },
                     server: profile ?? '',
@@ -376,7 +376,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                     details: {
                         dataset,
                         member,
-                        normalizedPath: () => `/ ${encodeURIComponent(dataset)} / ${encodeURIComponent(member)}.hlasm`,
+                        normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
                         toDisplayString: () => `${dataset}(${member})`,
                         serverId: () => profile,
                     },
@@ -397,14 +397,14 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                     subsystem: type_spec.subsystem,
                     type: type_spec.type
                 }).then(
-                    r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/ ${profile}${type_spec.normalizedPath()} / ${encodeURIComponent(file)}.hlasm ? ${fingerprint.toString()}`) ?? null
+                    r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm ? ${fingerprint.toString()}`) ?? null
                 );
             }
             else
                 return e4e.listMembers(Buffer.from(profile, 'hex').toString(), {
                     dataset: type_spec.dataset
                 }).then(
-                    r => r instanceof Error ? Promise.reject(r) : r?.map((member) => `/ ${profile}${type_spec.normalizedPath()} / ${encodeURIComponent(member)}.hlasm`) ?? null
+                    r => r instanceof Error ? Promise.reject(r) : r?.map((member) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(member)}.hlasm`) ?? null
                 );
         },
 
