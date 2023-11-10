@@ -153,6 +153,7 @@ interface E4E {
             member: string;
         }
     ) => Promise<Content | Error>;
+    isEndevorElement: (uri: string) => boolean;
     getEndevorElementInfo: (
         uri: string
     ) => Promise<[ElementInfo, Instance] | Error>;
@@ -170,6 +171,7 @@ function validateE4E(e4e: any): e4e is E4E {
         nameof<E4E>('getElement') in e4e &&
         nameof<E4E>('listMembers') in e4e &&
         nameof<E4E>('getMember') in e4e &&
+        nameof<E4E>('isEndevorElement') in e4e &&
         nameof<E4E>('getEndevorElementInfo') in e4e &&
         nameof<E4E>('getConfiguration') in e4e &&
         nameof<E4E>('getElementInvalidateEmitter') in e4e;
@@ -429,11 +431,12 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     });
 
     const cp = ext.registerExternalConfigurationProvider(async (uri: vscode.Uri) => {
-        const info = await e4e.getEndevorElementInfo(uri.toString());
-        if (info instanceof Error) return null;
+        const uriString = uri.toString();
+        if (!e4e.isEndevorElement(uriString)) return null;
+        const info = await e4e.getEndevorElementInfo(uriString);
+        if (info instanceof Error) throw info;
 
-        const result = await e4e.getConfiguration(uri.toString());
-        console.log('Have results', result);
+        const result = await e4e.getConfiguration(uriString);
         if (result instanceof Error) throw result;
         const candidate = result.pgroups.find(x => x.name === result.pgms[0].pgroup);
         if (!candidate) throw Error('Invalid configuration');
@@ -454,10 +457,8 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         for (const e of elements) {
             if (e.sourceUri)
                 cp.invalidate(vscode.Uri.parse(e.sourceUri));
-            else {
-                // This has issues, but for now it is good enough
-                invalidationHints.get(e.element ? `${e.type}/${e.element}` : e.type)?.forEach(e => invalidationEventEmmiter.fire(e));
-            }
+            // This has issues, but for now it is good enough
+            invalidationHints.get(e.element ? `${e.type}/${e.element}` : e.type)?.forEach(e => invalidationEventEmmiter.fire(e));
         }
     });
 
