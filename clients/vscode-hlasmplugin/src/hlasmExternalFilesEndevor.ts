@@ -458,7 +458,10 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
             if (e.sourceUri)
                 cp.invalidate(vscode.Uri.parse(e.sourceUri));
             // This has issues, but for now it is good enough
-            invalidationHints.get(e.element ? `${e.type}/${e.element}` : e.type)?.forEach(e => invalidationEventEmmiter.fire(e));
+            if (e.type)
+                invalidationHints.get(e.type)?.forEach(e => invalidationEventEmmiter.fire(e));
+            if (e.type && e.element)
+                invalidationHints.get(`${e.type}/${e.element}`)?.forEach(e => invalidationEventEmmiter.fire(e));
         }
     });
 
