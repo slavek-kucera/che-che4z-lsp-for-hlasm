@@ -281,7 +281,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
     const getProfile = async (profile: string) => {
         if (!profile) return undefined;
-        const p = await e4e.getEndevorElementInfo(profile);
+        const p = await e4e.getEndevorElementInfo(Buffer.from(profile, 'hex').toString());
         if (p instanceof Error) throw p;
         return p[1];
     }
@@ -323,7 +323,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
                         serverId: () => profile,
                     },
-                    server: profile ?? '',
+                    server: profile_,
                 };
             }
             if (purpose === ExternalRequestType.list_directory && args.length === 2) {
@@ -336,7 +336,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         toDisplayString: () => `${dataset}`,
                         serverId: () => profile,
                     },
-                    server: profile ?? '',
+                    server: profile_,
                 };
             }
             if (purpose === ExternalRequestType.read_file && args.length === 8) {
@@ -363,7 +363,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
                         serverId: () => profile,
                     },
-                    server: profile ?? '',
+                    server: profile_,
                 };
             }
             if (purpose === ExternalRequestType.read_file && args.length === 3) {
@@ -380,7 +380,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         toDisplayString: () => `${dataset}(${member})`,
                         serverId: () => profile,
                     },
-                    server: profile ?? '',
+                    server: profile_,
                 };
             }
 
@@ -397,7 +397,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                     subsystem: type_spec.subsystem,
                     type: type_spec.type
                 }).then(
-                    r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm ? ${fingerprint.toString()}`) ?? null
+                    r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null
                 );
             }
             else
@@ -440,6 +440,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         if (result instanceof Error) throw result;
         const candidate = result.pgroups.find(x => x.name === result.pgms[0].pgroup);
         if (!candidate) throw Error('Invalid configuration');
+        const profile = Buffer.from(uriString, 'utf-8').toString('hex'); // TODO:
         return {
             configuration: {
                 name: candidate.name,
