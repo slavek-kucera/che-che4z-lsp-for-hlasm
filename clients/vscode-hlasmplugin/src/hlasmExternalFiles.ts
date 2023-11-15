@@ -114,7 +114,7 @@ function not_exists_json(normalizedPath: string) {
 }
 
 function readDefalatedJson(fs: vscode.FileSystem, uri: vscode.Uri) {
-    return new Promise((res, rej) => fs.readFile(uri).then(inflate).then(x => res(JSON.parse(textDecode(x))), rej));
+    return new Promise((res, rej) => fs.readFile(uri).then(inflate).then(x => JSON.parse(textDecode(x))).then(res, rej));
 }
 
 function getNormalizedPathFromCachedValue(o: any): string | undefined {
