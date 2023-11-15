@@ -286,23 +286,6 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         return p[1];
     }
 
-    const invalidationHints = new Map<string, { serverId: string | undefined, paths: string[] }[]>();
-    const addInvalidationHint = (server: string | undefined, path: string, type: string, element: string | undefined = undefined) => {
-        const key = element ? `${type}/${element}` : type;
-        let ar = invalidationHints.get(key);
-        if (!ar) {
-            ar = [];
-            invalidationHints.set(key, ar);
-        }
-        for (const { serverId: s, paths: p } of ar) {
-            if (s !== server) continue;
-            if (p.indexOf(path) === -1)
-                p.push(path);
-            return;
-        }
-        ar.push({ serverId: server, paths: [path] });
-    };
-
     const extFiles = ext.registerExternalFileClient<string, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
         parseArgs: async (p: string, purpose: ExternalRequestType, query?: string) => {
             const args = p.split('/').slice(1).map(decodeURIComponent);
@@ -310,7 +293,6 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                 const [profile_, use_map, environment, stage, system, subsystem, type] = args;
                 const profile = await getProfile(profile_);
                 const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`;
-                addInvalidationHint(profile, path, type);
                 return {
                     details: {
                         use_map,
@@ -348,7 +330,6 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                 const fingerprint = query?.match(/^([a-zA-Z0-9]+)$/)?.[1];
                 const q = fingerprint ? '?' + query : '';
                 const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`;
-                addInvalidationHint(profile, path, type, element);
                 return {
                     details: {
                         use_map,
@@ -454,19 +435,32 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         };
     });
 
+    const typeExtract = /\/([^/]+)$/;
+    const elementExtract = /\/([^/]+\/[^/]+\.hlasm)/;
+
     e4e.getElementInvalidateEmitter().event((elements) => {
-        const unique = new Set<string>();
+        const uniqueType = new Set<string>();
+        const uniqueElement = new Set<string>();
         for (const e of elements) {
             if (e.sourceUri)
                 cp.invalidate(vscode.Uri.parse(e.sourceUri));
             if (e.type)
-                unique.add(e.type);
+                uniqueType.add(encodeURIComponent(e.type).toLowerCase());
             if (e.type && e.element)
-                unique.add(`${e.type}/${e.element}`);
+                uniqueElement.add(`${encodeURIComponent(e.type)}/${encodeURIComponent(e.element)}.hlasm`.toLowerCase());
         }
-        // This has issues, but for now it is good enough
-        for (const x of unique.values())
-            invalidationHints.get(x)?.forEach(e => invalidationEventEmmiter.fire(e));
+
+        invalidationEventEmmiter.fire((p) => {
+            const typeInfo = typeExtract.exec(p);
+            if (typeInfo)
+                return uniqueType.has(typeInfo[1].toLowerCase());
+
+            const eleInfo = elementExtract.exec(p);
+            if (eleInfo)
+                return uniqueElement.has(eleInfo[1].toLowerCase());
+
+            return false;
+        })
     });
 
     return { dispose: () => { extFiles.dispose(); cp.dispose(); } };
