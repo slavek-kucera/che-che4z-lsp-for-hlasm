@@ -685,13 +685,17 @@ export class HLASMExternalFiles {
             return;
         }
 
-        for (const key of [...this.memberContent.keys()])
-            if (this.memberContent.get(key)?.service === service)
-                this.memberContent.delete(key);
+        const toDelete = [];
+        for (const [k, v] of this.memberContent.entries())
+            if (v.service === service)
+                toDelete.push(k);
+        toDelete.forEach(k => this.memberContent.delete(k));
 
-        for (const key of [...this.memberLists.keys()])
-            if (this.memberContent.get(key)?.service === service)
-                this.memberContent.delete(key);
+        toDelete.length = 0;
+        for (const [k, v] of this.memberLists.entries())
+            if (v.service === service)
+                toDelete.push(k);
+        toDelete.forEach(k => this.memberLists.delete(k));
     }
 
     public async clearCacheByPredicate(service: string, pathPredicate: (path: string) => boolean) {
