@@ -303,7 +303,6 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         type,
                         normalizedPath: () => path,
                         toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
-                        serverId: () => profile,
                     },
                     server: profile_,
                 };
@@ -316,7 +315,6 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
                         dataset,
                         normalizedPath: () => `/${encodeURIComponent(dataset)}`,
                         toDisplayString: () => `${dataset}`,
-                        serverId: () => profile,
                     },
                     server: profile_,
                 };
