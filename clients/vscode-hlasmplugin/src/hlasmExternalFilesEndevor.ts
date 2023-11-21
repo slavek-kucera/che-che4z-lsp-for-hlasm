@@ -277,6 +277,79 @@ function translatePreprocessors(input: undefined | TypeOrArray<{
     return result;
 }
 
+function parseEndevorType(profile: string, args: string[/*6*/]) {
+    const [use_map, environment, stage, system, subsystem, type] = args;
+    const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`;
+    return {
+        details: {
+            use_map,
+            environment,
+            stage,
+            system,
+            subsystem,
+            type,
+            normalizedPath: () => path,
+            toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
+        },
+        server: profile,
+    };
+}
+
+function parserEndevorElement(profile: string, serverId: string | undefined, args: string[/*7*/], query: string | undefined) {
+    const [use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
+
+    const [element] = element_hlasm.split('.');
+    if (element.length === 0) return null;
+    const fingerprint = query?.match(/^([a-zA-Z0-9]+)$/)?.[1];
+    const q = fingerprint ? '?' + query : '';
+    const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`;
+    return {
+        details: {
+            use_map,
+            environment,
+            stage,
+            system,
+            subsystem,
+            type,
+            element,
+            fingerprint,
+            normalizedPath: () => path,
+            toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
+            serverId: () => serverId,
+        },
+        server: profile,
+    };
+}
+
+function parseDataset(server: string, args: string[/*1*/]) {
+    const [dataset] = args;
+    return {
+        details: {
+            dataset,
+            normalizedPath: () => `/${encodeURIComponent(dataset)}`,
+            toDisplayString: () => `${dataset}`,
+        },
+        server,
+    };
+
+}
+
+function parseMember(server: string, serverId: string | undefined, args: string[/*2*/]) {
+    const [dataset, memeber_hlasm] = args;
+    const [member] = memeber_hlasm.split('.');
+    if (member.length === 0) return null;
+    return {
+        details: {
+            dataset,
+            member,
+            normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
+            toDisplayString: () => `${dataset}(${member})`,
+            serverId: () => serverId,
+        },
+        server,
+    };
+}
+
 function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
     const getProfile = async (profile: string) => {
@@ -289,79 +362,18 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const extFiles = ext.registerExternalFileClient<string, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
         parseArgs: async (p: string, purpose: ExternalRequestType, query?: string) => {
             const args = p.split('/').slice(1).map(decodeURIComponent);
-            if (purpose === ExternalRequestType.list_directory && args.length === 7) {
-                const [profile_, use_map, environment, stage, system, subsystem, type] = args;
-                const profile = await getProfile(profile_);
-                const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`;
-                return {
-                    details: {
-                        use_map,
-                        environment,
-                        stage,
-                        system,
-                        subsystem,
-                        type,
-                        normalizedPath: () => path,
-                        toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
-                    },
-                    server: profile_,
-                };
-            }
-            if (purpose === ExternalRequestType.list_directory && args.length === 2) {
-                const [profile_, dataset] = args;
-                const profile = await getProfile(profile_);
-                return {
-                    details: {
-                        dataset,
-                        normalizedPath: () => `/${encodeURIComponent(dataset)}`,
-                        toDisplayString: () => `${dataset}`,
-                    },
-                    server: profile_,
-                };
-            }
-            if (purpose === ExternalRequestType.read_file && args.length === 8) {
-                const [profile_, use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
-                const profile = await getProfile(profile_);
+            // const profile = await getProfile(profile_);
+            if (purpose === ExternalRequestType.list_directory && args.length === 7)
+                return parseEndevorType(args[0], args.slice(1));
 
-                const [element] = element_hlasm.split('.');
-                if (element.length === 0) return null;
-                const fingerprint = query?.match(/^([a-zA-Z0-9]+)$/)?.[1];
-                const q = fingerprint ? '?' + query : '';
-                const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}/${encodeURIComponent(element)}.hlasm${q}`;
-                return {
-                    details: {
-                        use_map,
-                        environment,
-                        stage,
-                        system,
-                        subsystem,
-                        type,
-                        element,
-                        fingerprint,
-                        normalizedPath: () => path,
-                        toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
-                        serverId: () => profile,
-                    },
-                    server: profile_,
-                };
-            }
-            if (purpose === ExternalRequestType.read_file && args.length === 3) {
-                const [profile_, dataset, memeber_hlasm] = args;
-                const profile = await getProfile(profile_);
+            if (purpose === ExternalRequestType.list_directory && args.length === 2)
+                return parseDataset(args[0], args.slice(1));
 
-                const [member] = memeber_hlasm.split('.');
-                if (member.length === 0) return null;
-                return {
-                    details: {
-                        dataset,
-                        member,
-                        normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
-                        toDisplayString: () => `${dataset}(${member})`,
-                        serverId: () => profile,
-                    },
-                    server: profile_,
-                };
-            }
+            if (purpose === ExternalRequestType.read_file && args.length === 8)
+                return parserEndevorElement(args[0], await getProfile(args[0]), args.slice(1), query);
+
+            if (purpose === ExternalRequestType.read_file && args.length === 3)
+                return parseMember(args[0], await getProfile(args[0]), args.slice(1));
 
             return null;
         },
