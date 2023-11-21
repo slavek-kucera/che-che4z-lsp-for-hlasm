@@ -350,11 +350,54 @@ function parseMember(server: string, serverId: string | undefined, args: string[
     };
 }
 
+function parseProfile(profile: string) { return Buffer.from(profile, 'hex').toString(); }
+
+function listEndevorElements(e4e: E4E, type_spec: EndevorType, profile: string) {
+    return e4e.listElements(parseProfile(profile), {
+        use_map: type_spec.use_map === "map",
+        environment: type_spec.environment,
+        stage: type_spec.stage,
+        system: type_spec.system,
+        subsystem: type_spec.subsystem,
+        type: type_spec.type
+    }).then(
+        r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null
+    );
+}
+
+function readEndevorElement(e4e: E4E, file_spec: EndevorElement, profile: string) {
+    return e4e.getElement(parseProfile(profile), {
+        use_map: file_spec.use_map === "map",
+        environment: file_spec.environment,
+        stage: file_spec.stage,
+        system: file_spec.system,
+        subsystem: file_spec.subsystem,
+        type: file_spec.type,
+        element: file_spec.element,
+        fingerprint: file_spec.fingerprint,
+    }).then(r => r instanceof Error ? Promise.reject(r) : r[0]);
+}
+
+function listEndevorMembers(e4e: E4E, type_spec: EndevorDataset, profile: string) {
+    return e4e.listMembers(parseProfile(profile), {
+        dataset: type_spec.dataset
+    }).then(
+        r => r instanceof Error ? Promise.reject(r) : r?.map((member) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(member)}.hlasm`) ?? null
+    );
+}
+
+function readEndevorMember(e4e: E4E, file_spec: EndevorMember, profile: string) {
+    return e4e.getMember(parseProfile(profile), {
+        dataset: file_spec.dataset,
+        member: file_spec.member,
+    }).then(r => r instanceof Error ? Promise.reject(r) : r);
+}
+
 function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
     const getProfile = async (profile: string) => {
         if (!profile) return undefined;
-        const p = await e4e.getEndevorElementInfo(Buffer.from(profile, 'hex').toString());
+        const p = await e4e.getEndevorElementInfo(parseProfile(profile));
         if (p instanceof Error) throw p;
         return p[1];
     }
@@ -379,43 +422,17 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
         },
 
         listMembers: (type_spec, profile: string) => {
-            if ('use_map' in type_spec) {
-                return e4e.listElements(Buffer.from(profile, 'hex').toString(), {
-                    use_map: type_spec.use_map === "map",
-                    environment: type_spec.environment,
-                    stage: type_spec.stage,
-                    system: type_spec.system,
-                    subsystem: type_spec.subsystem,
-                    type: type_spec.type
-                }).then(
-                    r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null
-                );
-            }
+            if ('use_map' in type_spec)
+                return listEndevorElements(e4e, type_spec, profile);
             else
-                return e4e.listMembers(Buffer.from(profile, 'hex').toString(), {
-                    dataset: type_spec.dataset
-                }).then(
-                    r => r instanceof Error ? Promise.reject(r) : r?.map((member) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(member)}.hlasm`) ?? null
-                );
+                return listEndevorMembers(e4e, type_spec, profile);
         },
 
         readMember: async (file_spec, profile: string) => {
             if ('use_map' in file_spec)
-                return e4e.getElement(Buffer.from(profile, 'hex').toString(), {
-                    use_map: file_spec.use_map === "map",
-                    environment: file_spec.environment,
-                    stage: file_spec.stage,
-                    system: file_spec.system,
-                    subsystem: file_spec.subsystem,
-                    type: file_spec.type,
-                    element: file_spec.element,
-                    fingerprint: file_spec.fingerprint,
-                }).then(r => r instanceof Error ? Promise.reject(r) : r[0]);
+                return readEndevorElement(e4e, file_spec, profile);
             else
-                return e4e.getMember(Buffer.from(profile, 'hex').toString(), {
-                    dataset: file_spec.dataset,
-                    member: file_spec.member,
-                }).then(r => r instanceof Error ? Promise.reject(r) : r);
+                return readEndevorMember(e4e, file_spec, profile);
         },
 
         invalidate: invalidationEventEmmiter.event,
