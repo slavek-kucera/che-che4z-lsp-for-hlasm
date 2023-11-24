@@ -102,7 +102,12 @@ type Filename = string;
 type Fingerprint = string;
 type MemberName = string;
 type Content = string;
-type Instance = string;
+
+type ResolvedProfile = { profile: string; instance: string };
+type ProfileOptions = (ResolvedProfile & {
+    description?: string /* show in a selection pop-up? */;
+})[];
+
 type ElementInfo = {
     sourceUri?: string;
     environment: string;
@@ -110,14 +115,21 @@ type ElementInfo = {
     system: string;
     subsystem: string;
     type: string;
-    processorGroup?: string;
-    fingerprint?: string;
     element: string;
+    fingerprint?: string;
 };
 
-interface E4E {
+export interface E4E {
+    isEndevorElement: (uri: string) => boolean;
+    getProfileInfo: {
+        (uri: string): Promise<ResolvedProfile | Error>;
+    } & {
+        (partialConfig: Partial<ResolvedProfile>): Promise<
+            ResolvedProfile | ProfileOptions | Error
+        >;
+    };
     listElements: (
-        sourceUri: string,
+        profile: ResolvedProfile,
         type: {
             use_map: boolean;
             environment: string;
@@ -128,7 +140,7 @@ interface E4E {
         }
     ) => Promise<[Filename, Fingerprint][] | Error>;
     getElement: (
-        sourceUri: string,
+        profile: ResolvedProfile,
         type: {
             use_map: boolean;
             environment: string;
@@ -141,26 +153,22 @@ interface E4E {
         }
     ) => Promise<[Content, Fingerprint] | Error>;
     listMembers: (
-        sourceUri: string,
+        profile: ResolvedProfile,
         type: {
             dataset: string;
         }
     ) => Promise<MemberName[] | Error>;
     getMember: (
-        sourceUri: string,
+        profile: ResolvedProfile,
         type: {
             dataset: string;
             member: string;
         }
     ) => Promise<Content | Error>;
-    isEndevorElement: (uri: string) => boolean;
-    getEndevorElementInfo: (
-        uri: string
-    ) => Promise<[ElementInfo, Instance] | Error>;
     getConfiguration: (
         sourceUri: string
     ) => Promise<E4EExternalConfigurationResponse | Error>;
-    getElementInvalidateEmitter: () => vscode.EventEmitter<ElementInfo[]>;
+    getElementInvalidateEmitter: vscode.Event<ElementInfo[]>;
 }
 
 const nameof = <T>(name: keyof T) => name;
@@ -172,7 +180,7 @@ function validateE4E(e4e: any): e4e is E4E {
         nameof<E4E>('listMembers') in e4e &&
         nameof<E4E>('getMember') in e4e &&
         nameof<E4E>('isEndevorElement') in e4e &&
-        nameof<E4E>('getEndevorElementInfo') in e4e &&
+        nameof<E4E>('getProfileInfo') in e4e &&
         nameof<E4E>('getConfiguration') in e4e &&
         nameof<E4E>('getElementInvalidateEmitter') in e4e;
     if (!valid)
@@ -277,7 +285,12 @@ function translatePreprocessors(input: undefined | TypeOrArray<{
     return result;
 }
 
-function parseEndevorType(profile: string, args: string[/*6*/]) {
+function translateLibs(x: string | { dataset: string; optional?: boolean | undefined; profile?: string | undefined; } | { environment: string; stage: string; system: string; subsystem: string; type: string; use_map?: boolean | undefined; optional?: boolean | undefined; profile?: string | undefined; }, profile: string): any {
+    if (typeof x === 'string') return x;
+    return { ...x, profile };
+}
+
+function parseEndevorType(server: ResolvedProfile, args: string[/*6*/]) {
     const [use_map, environment, stage, system, subsystem, type] = args;
     const path = `/${encodeURIComponent(use_map)}/${encodeURIComponent(environment)}/${encodeURIComponent(stage)}/${encodeURIComponent(system)}/${encodeURIComponent(subsystem)}/${encodeURIComponent(type)}`;
     return {
@@ -291,11 +304,11 @@ function parseEndevorType(profile: string, args: string[/*6*/]) {
             normalizedPath: () => path,
             toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}`,
         },
-        server: profile,
+        server
     };
 }
 
-function parserEndevorElement(profile: string, serverId: string | undefined, args: string[/*7*/], query: string | undefined) {
+function parserEndevorElement(server: ResolvedProfile, args: string[/*7*/], query: string | undefined) {
     const [use_map, environment, stage, system, subsystem, type, element_hlasm] = args;
 
     const [element] = element_hlasm.split('.');
@@ -315,13 +328,13 @@ function parserEndevorElement(profile: string, serverId: string | undefined, arg
             fingerprint,
             normalizedPath: () => path,
             toDisplayString: () => `${use_map}/${environment}/${stage}/${system}/${subsystem}/${type}/${element}`,
-            serverId: () => serverId,
+            serverId: () => server.instance,
         },
-        server: profile,
+        server
     };
 }
 
-function parseDataset(server: string, args: string[/*1*/]) {
+function parseDataset(server: ResolvedProfile, args: string[/*1*/]) {
     const [dataset] = args;
     return {
         details: {
@@ -334,7 +347,7 @@ function parseDataset(server: string, args: string[/*1*/]) {
 
 }
 
-function parseMember(server: string, serverId: string | undefined, args: string[/*2*/]) {
+function parseMember(server: ResolvedProfile, args: string[/*2*/]) {
     const [dataset, memeber_hlasm] = args;
     const [member] = memeber_hlasm.split('.');
     if (member.length === 0) return null;
@@ -344,16 +357,18 @@ function parseMember(server: string, serverId: string | undefined, args: string[
             member,
             normalizedPath: () => `/${encodeURIComponent(dataset)}/${encodeURIComponent(member)}.hlasm`,
             toDisplayString: () => `${dataset}(${member})`,
-            serverId: () => serverId,
+            serverId: () => server.instance,
         },
         server,
     };
 }
 
-function parseProfile(profile: string) { return Buffer.from(profile, 'hex').toString(); }
+function profileAsString(profile: ResolvedProfile) {
+    return `${profile.instance}@${profile.profile}`;
+}
 
-function listEndevorElements(e4e: E4E, type_spec: EndevorType, profile: string) {
-    return e4e.listElements(parseProfile(profile), {
+function listEndevorElements(e4e: E4E, type_spec: EndevorType, profile: ResolvedProfile) {
+    return e4e.listElements(profile, {
         use_map: type_spec.use_map === "map",
         environment: type_spec.environment,
         stage: type_spec.stage,
@@ -361,12 +376,12 @@ function listEndevorElements(e4e: E4E, type_spec: EndevorType, profile: string) 
         subsystem: type_spec.subsystem,
         type: type_spec.type
     }).then(
-        r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null
+        r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${profileAsString(profile)}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null
     );
 }
 
-function readEndevorElement(e4e: E4E, file_spec: EndevorElement, profile: string) {
-    return e4e.getElement(parseProfile(profile), {
+function readEndevorElement(e4e: E4E, file_spec: EndevorElement, profile: ResolvedProfile) {
+    return e4e.getElement(profile, {
         use_map: file_spec.use_map === "map",
         environment: file_spec.environment,
         stage: file_spec.stage,
@@ -378,57 +393,71 @@ function readEndevorElement(e4e: E4E, file_spec: EndevorElement, profile: string
     }).then(r => r instanceof Error ? Promise.reject(r) : r[0]);
 }
 
-function listEndevorMembers(e4e: E4E, type_spec: EndevorDataset, profile: string) {
-    return e4e.listMembers(parseProfile(profile), {
+function listEndevorMembers(e4e: E4E, type_spec: EndevorDataset, profile: ResolvedProfile) {
+    return e4e.listMembers(profile, {
         dataset: type_spec.dataset
     }).then(
-        r => r instanceof Error ? Promise.reject(r) : r?.map((member) => `/${profile}${type_spec.normalizedPath()}/${encodeURIComponent(member)}.hlasm`) ?? null
+        r => r instanceof Error ? Promise.reject(r) : r?.map((member) => `/${profileAsString(profile)}${type_spec.normalizedPath()}/${encodeURIComponent(member)}.hlasm`) ?? null
     );
 }
 
-function readEndevorMember(e4e: E4E, file_spec: EndevorMember, profile: string) {
-    return e4e.getMember(parseProfile(profile), {
+function readEndevorMember(e4e: E4E, file_spec: EndevorMember, profile: ResolvedProfile) {
+    return e4e.getMember(profile, {
         dataset: file_spec.dataset,
         member: file_spec.member,
     }).then(r => r instanceof Error ? Promise.reject(r) : r);
 }
 
+function whitespaceAsUndefined(s: string) {
+    for (const c of s)
+        if (c !== ' ') return s;
+    return undefined;
+}
+
 function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
     const getProfile = async (profile: string) => {
-        if (!profile) return undefined;
-        const p = await e4e.getEndevorElementInfo(parseProfile(profile));
+        const at = profile.split('@');
+        const p = await e4e.getProfileInfo({
+            instance: whitespaceAsUndefined(at[0]), profile: whitespaceAsUndefined(at.slice(1).join('@'))
+        });
         if (p instanceof Error) throw p;
-        return p[1];
+        if (Array.isArray(p)) {
+            if (p.length === 0) throw Error('No matching E4E configuration found');
+            return p[0];
+        }
+        return p;
     }
 
-    const extFiles = ext.registerExternalFileClient<string, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
+    const extFiles = ext.registerExternalFileClient<ResolvedProfile, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
         parseArgs: async (p: string, purpose: ExternalRequestType, query?: string) => {
             const args = p.split('/').slice(1).map(decodeURIComponent);
-            // const profile = await getProfile(profile_);
+            if (args.length === 0) return null;
+            const profile = await getProfile(args[0]);
+
             if (purpose === ExternalRequestType.list_directory && args.length === 7)
-                return parseEndevorType(args[0], args.slice(1));
+                return parseEndevorType(profile, args.slice(1));
 
             if (purpose === ExternalRequestType.list_directory && args.length === 2)
-                return parseDataset(args[0], args.slice(1));
+                return parseDataset(profile, args.slice(1));
 
             if (purpose === ExternalRequestType.read_file && args.length === 8)
-                return parserEndevorElement(args[0], await getProfile(args[0]), args.slice(1), query);
+                return parserEndevorElement(profile, args.slice(1), query);
 
             if (purpose === ExternalRequestType.read_file && args.length === 3)
-                return parseMember(args[0], await getProfile(args[0]), args.slice(1));
+                return parseMember(profile, args.slice(1));
 
             return null;
         },
 
-        listMembers: (type_spec, profile: string) => {
+        listMembers: (type_spec, profile: ResolvedProfile) => {
             if ('use_map' in type_spec)
                 return listEndevorElements(e4e, type_spec, profile);
             else
                 return listEndevorMembers(e4e, type_spec, profile);
         },
 
-        readMember: async (file_spec, profile: string) => {
+        readMember: async (file_spec, profile: ResolvedProfile) => {
             if ('use_map' in file_spec)
                 return readEndevorElement(e4e, file_spec, profile);
             else
@@ -441,18 +470,18 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const cp = ext.registerExternalConfigurationProvider(async (uri: vscode.Uri) => {
         const uriString = uri.toString();
         if (!e4e.isEndevorElement(uriString)) return null;
-        const info = await e4e.getEndevorElementInfo(uriString);
-        if (info instanceof Error) throw info;
+        const profile = await e4e.getProfileInfo(uriString);
+        if (profile instanceof Error) throw profile;
 
         const result = await e4e.getConfiguration(uriString);
         if (result instanceof Error) throw result;
         const candidate = result.pgroups.find(x => x.name === result.pgms[0].pgroup);
         if (!candidate) throw Error('Invalid configuration');
-        const profile = Buffer.from(uriString, 'utf-8').toString('hex'); // TODO:
+        const profileAsString = `${profile.instance}@${profile.profile}`;
         return {
             configuration: {
                 name: candidate.name,
-                libs: candidate.libs,
+                libs: candidate.libs.map(x => translateLibs(x, profileAsString)),
                 asm_options: {
                     ...translateAsmOptions(candidate.options),
                     ...translateAsmOptions(result.pgms[0].options),
@@ -465,7 +494,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const typeExtract = /\/([^/]+)$/;
     const elementExtract = /\/([^/]+\/[^/]+\.hlasm)/;
 
-    e4e.getElementInvalidateEmitter().event((elements) => {
+    e4e.getElementInvalidateEmitter((elements) => {
         const uniqueType = new Set<string>();
         const uniqueElement = new Set<string>();
         for (const e of elements) {
