@@ -524,7 +524,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
 
 function findE4EAndRegister(ext: HlasmExtension, subscriptions: vscode.Disposable[]) {
     return !!vscode.extensions.getExtension('broadcommfd.explorer-for-endevor')?.activate()
-        .then(e4e => validateE4E(e4e) && subscriptions.push(performRegistration(ext, e4e)))
+        .then(e4e => e4e && validateE4E(e4e) && subscriptions.push(performRegistration(ext, e4e)))
         .then(undefined, e => vscode.window.showErrorMessage("Explorer for Endevor integration failed", e));
 }
 
