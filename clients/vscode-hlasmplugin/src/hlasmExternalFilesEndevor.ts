@@ -184,7 +184,7 @@ function validateE4E(e4e: any): e4e is E4E {
         nameof<E4E>('getConfiguration') in e4e &&
         nameof<E4E>('getElementInvalidateEmitter') in e4e;
     if (!valid)
-        vscode.window.showErrorMessage('Explorer for Endevor interface is incompatible');
+        throw Error('incompatible interface');
     return valid;
 }
 
@@ -522,16 +522,16 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     return { dispose: () => { extFiles.dispose(); cp.dispose(); } };
 }
 
-function findE4EAndRegister(ext: HlasmExtension, subscriptions: vscode.Disposable[]) {
+function findE4EAndRegister(ext: HlasmExtension, subscriptions: vscode.Disposable[], outputChannel: vscode.OutputChannel) {
     return !!vscode.extensions.getExtension('broadcommfd.explorer-for-endevor')?.activate()
         .then(e4e => e4e && validateE4E(e4e) && subscriptions.push(performRegistration(ext, e4e)))
-        .then(undefined, e => vscode.window.showErrorMessage("Explorer for Endevor integration failed", e));
+        .then(undefined, e => outputChannel.appendLine(`ERROR: Explorer for Endevor integration failed - ${e?.message ?? e}`));
 }
 
-export function handleE4EIntegration(ext: HlasmExtension, subscriptions: vscode.Disposable[]) {
-    if (findE4EAndRegister(ext, subscriptions)) return;
+export function handleE4EIntegration(ext: HlasmExtension, subscriptions: vscode.Disposable[], outputChannel: vscode.OutputChannel) {
+    if (findE4EAndRegister(ext, subscriptions, outputChannel)) return;
     let listener: vscode.Disposable | null = vscode.extensions.onDidChange(() => {
-        if (!findE4EAndRegister(ext, subscriptions)) return;
+        if (!findE4EAndRegister(ext, subscriptions, outputChannel)) return;
         listener?.dispose();
         listener = null;
     });
