@@ -177,7 +177,7 @@ jobs:
           - os: windows-2022
             native: win32
             artifacts-ext: .exe
-          - os: macos-12
+          - os: macos-13
             native: darwin
     container: ${{ matrix.container }}
     steps:
