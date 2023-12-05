@@ -20,6 +20,7 @@ on:
       - master
       - development
       - release-next
+      - test-macos13
   pull_request:
     branches:
       - master
@@ -246,6 +247,9 @@ jobs:
             native: win32
             chmod: false
           - os: macos-12
+            native: darwin
+            chmod: true
+          - os: macos-13
             native: darwin
             chmod: true
 
