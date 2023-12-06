@@ -56,15 +56,16 @@ endif()
 
 if(APPLE)
   if(WITH_STATIC_CRT)
+    file(GLOB_RECURSE libcpp_file "${LLVM_PATH}/lib/**/libc++.a")
+    file(GLOB_RECURSE libcppabi_file "${LLVM_PATH}/lib/**/libc++abi.a")
+
     message(STATUS "Using libc++ in ${libcpp_file}" )
 
     file(MAKE_DIRECTORY "${GLOBAL_OUTPUT_PATH}/libcxx")
-    file(GLOB_RECURSE libcpp_file "${LLVM_PATH}/lib/**/libc++.a")
-    file(GLOB_RECURSE libcppabi_file "${LLVM_PATH}/lib/**/libc++abi.a")
     file(COPY_FILE "${libcpp_file}" "${GLOBAL_OUTPUT_PATH}/libcxx/libc++.a")
     file(COPY_FILE "${libcppabi_file}" "${GLOBAL_OUTPUT_PATH}/libcxx/libc++abi.a")
 
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++ '-L${GLOBAL_OUTPUT_PATH}/libcxx' -hidden-lc++ -hidden-lc++abi")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib++ '-L${GLOBAL_OUTPUT_PATH}/libcxx' -hidden-lc++ -hidden-lc++abi")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostdlib++ '-L${GLOBAL_OUTPUT_PATH}/libcxx' -Wl,-hidden-lc++ -Wl,-hidden-lc++abi")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -nostdlib++ '-L${GLOBAL_OUTPUT_PATH}/libcxx' -Wl,-hidden-lc++ -Wl,-hidden-lc++abi")
   endif()
 endif()
