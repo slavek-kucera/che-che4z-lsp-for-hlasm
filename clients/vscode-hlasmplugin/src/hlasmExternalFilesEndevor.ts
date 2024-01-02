@@ -104,9 +104,6 @@ type MemberName = string;
 type Content = string;
 
 type ResolvedProfile = { profile: string; instance: string };
-type ProfileOptions = (ResolvedProfile & {
-    description?: string /* show in a selection pop-up? */;
-})[];
 
 type ElementInfo = {
     sourceUri?: string;
@@ -121,13 +118,9 @@ type ElementInfo = {
 
 export interface E4E {
     isEndevorElement: (uri: string) => boolean;
-    getProfileInfo: {
-        (uri: string): Promise<ResolvedProfile | Error>;
-    } & {
-        (partialConfig: Partial<ResolvedProfile>): Promise<
-            ResolvedProfile | ProfileOptions | Error
-        >;
-    };
+    getProfileInfo: (
+        uriStringOrPartialProfile: Partial<ResolvedProfile> | string
+    ) => Promise<ResolvedProfile | Error>;
     listElements: (
         profile: ResolvedProfile,
         type: {
@@ -168,7 +161,7 @@ export interface E4E {
     getConfiguration: (
         sourceUri: string
     ) => Promise<E4EExternalConfigurationResponse | Error>;
-    getElementInvalidateEmitter: vscode.Event<ElementInfo[]>;
+    onDidChangeElement: vscode.Event<ElementInfo[]>;
 }
 
 const nameof = <T>(name: keyof T) => name;
@@ -182,7 +175,7 @@ function validateE4E(e4e: any): e4e is E4E {
         nameof<E4E>('isEndevorElement') in e4e &&
         nameof<E4E>('getProfileInfo') in e4e &&
         nameof<E4E>('getConfiguration') in e4e &&
-        nameof<E4E>('getElementInvalidateEmitter') in e4e;
+        nameof<E4E>('onDidChangeElement') in e4e;
     if (!valid)
         throw Error('incompatible interface');
     return valid;
@@ -414,26 +407,24 @@ function whitespaceAsUndefined(s: string) {
     return undefined;
 }
 
+function asPartialProfile(s: string): Partial<ResolvedProfile> {
+    const idx = s.indexOf('@');
+    if (idx === -1)
+        return { instance: whitespaceAsUndefined(s), profile: undefined };
+    else
+        return { instance: whitespaceAsUndefined(s.substring(0, idx)), profile: whitespaceAsUndefined(s.substring(idx + 1)) };
+}
+
 function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const invalidationEventEmmiter = new vscode.EventEmitter<ExternalFilesInvalidationdata | undefined>();
-    const getProfile = async (profile: string) => {
-        const at = profile.split('@');
-        const p = await e4e.getProfileInfo({
-            instance: whitespaceAsUndefined(at[0]), profile: whitespaceAsUndefined(at.slice(1).join('@'))
-        });
-        if (p instanceof Error) throw p;
-        if (Array.isArray(p)) {
-            if (p.length === 0) throw Error('No matching E4E configuration found');
-            return p[0];
-        }
-        return p;
-    }
 
     const extFiles = ext.registerExternalFileClient<ResolvedProfile, EndevorElement | EndevorMember, EndevorType | EndevorDataset>('ENDEVOR', {
         parseArgs: async (p: string, purpose: ExternalRequestType, query?: string) => {
             const args = p.split('/').slice(1).map(decodeURIComponent);
             if (args.length === 0) return null;
-            const profile = await getProfile(args[0]);
+
+            const profile = await e4e.getProfileInfo(asPartialProfile(args[0]));
+            if (profile instanceof Error) throw p;
 
             if (purpose === ExternalRequestType.list_directory && args.length === 7)
                 return parseEndevorType(profile, args.slice(1));
@@ -494,7 +485,7 @@ function performRegistration(ext: HlasmExtension, e4e: E4E) {
     const typeExtract = /\/([^/]+)$/;
     const elementExtract = /\/([^/]+\/[^/]+\.hlasm)/;
 
-    e4e.getElementInvalidateEmitter((elements) => {
+    e4e.onDidChangeElement((elements) => {
         const uniqueType = new Set<string>();
         const uniqueElement = new Set<string>();
         for (const e of elements) {
