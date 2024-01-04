@@ -20,6 +20,7 @@ on:
       - master
       - development
       - release-next
+      - build_feat_e4e_integration
   pull_request:
     branches:
       - master
