@@ -283,11 +283,33 @@ function translatePreprocessors(input: undefined | TypeOrArray<{
     return result;
 }
 
+let codedProfilesUniqueId = 0;
+const codedProfiles = new Map<string, string>();
+
+function encodeProfile(profile: string): string {
+    if (!profile.includes('/')) return profile;
+
+    if (codedProfiles.has(profile))
+        profile = codedProfiles.get(profile)!;
+    else {
+        const newName = '=' + codedProfilesUniqueId++;
+        codedProfiles.set(newName, profile);
+        codedProfiles.set(profile, newName);
+        profile = newName;
+    }
+    return profile;
+}
+function decodeProfile(profile: string): string {
+    if (profile.startsWith('='))
+        return codedProfiles.get(profile)!;
+    return profile;
+}
+
 function translateLibs(x: string, profile: string): string;
 function translateLibs<T extends object>(x: T, profile: string): T & { profile: string };
 function translateLibs(x: string | object, profile: string) {
     if (typeof x === 'string') return x;
-    return { ...x, profile };
+    return { ...x, profile: encodeProfile(profile) };
 }
 
 function parseEndevorType(server: ResolvedProfile, args: string[/*6*/]) {
@@ -376,7 +398,7 @@ function listEndevorElements(e4e: E4E, type_spec: EndevorType, profile: Resolved
         subsystem: type_spec.subsystem,
         type: type_spec.type
     }).then(
-        r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${encodeURIComponent(profileAsString(profile))}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null
+        r => r instanceof Error ? Promise.reject(r) : r?.map(([file, fingerprint]) => `/${encodeURIComponent(encodeProfile(profileAsString(profile)))}${type_spec.normalizedPath()}/${encodeURIComponent(file)}.hlasm?${fingerprint.toString()}`) ?? null
     );
 }
 
@@ -397,7 +419,7 @@ function listEndevorMembers(e4e: E4E, type_spec: EndevorDataset, profile: Resolv
     return e4e.listMembers(profile, {
         dataset: type_spec.dataset
     }).then(
-        r => r instanceof Error ? Promise.reject(r) : r?.map((member) => `/${encodeURIComponent(profileAsString(profile))}${type_spec.normalizedPath()}/${encodeURIComponent(member)}.hlasm`) ?? null
+        r => r instanceof Error ? Promise.reject(r) : r?.map((member) => `/${encodeURIComponent(encodeProfile(profileAsString(profile)))}${type_spec.normalizedPath()}/${encodeURIComponent(member)}.hlasm`) ?? null
     );
 }
 
@@ -415,6 +437,7 @@ function whitespaceAsUndefined(s: string) {
 }
 
 function asPartialProfile(s: string): Partial<ResolvedProfile> {
+    s = decodeProfile(s);
     const idx = s.indexOf('@');
     if (idx === -1)
         return { instance: whitespaceAsUndefined(s), profile: undefined };
