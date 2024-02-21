@@ -346,10 +346,10 @@ jobs:
         with:
           name: language_server_wasm
           path: ${{ env.CLIENT_DIR }}/bin/wasm/
-      - name: Download MacOS language server
+      - name: Download MacOS language server (x64)
         uses: actions/download-artifact@v4
         with:
-          name: language_server_darwin_x64 (x64)
+          name: language_server_darwin_x64
           path: ${{ env.CLIENT_DIR }}/bin/darwin_x64/
       - name: Download MacOS language server (ARM64)
         uses: actions/download-artifact@v4
