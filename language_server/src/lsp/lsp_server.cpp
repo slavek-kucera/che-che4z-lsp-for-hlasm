@@ -151,6 +151,8 @@ void server::message_received(const nlohmann::json& message)
         {
             LOG_ERROR(e.what());
             send_telemetry_error("lsp_server/method_unknown_error");
+            if (id)
+                respond_error(id.value(), method_found.value().get<std::string>(), -1, e.what(), {});
         }
     }
 }
