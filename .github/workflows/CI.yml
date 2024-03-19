@@ -20,6 +20,7 @@ on:
       - master
       - development
       - release-next
+      - ci_s390x_build
   pull_request:
     branches:
       - master
@@ -183,14 +184,32 @@ jobs:
           path: toolchain.tar.gz
           key: ${{ hashFiles('scripts/toolchain.linux_arm64.sh') }}
           lookup-only: true
-      - name: Build image
+      - name: Build toolchain
         if: steps.cache.outputs.cache-hit != 'true'
         run: ./scripts/toolchain.linux_arm64.sh
+
+  s390x-linux-musl:
+    name: Build Linux S390X toolchain
+    runs-on: ubuntu-22.04
+    container: alpine:3.19
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install TAR
+        run: apk add tar
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: toolchain.tar.gz
+          key: ${{ hashFiles('scripts/toolchain.linux_s390x.sh') }}
+          lookup-only: true
+      - name: Build toolchain
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./scripts/toolchain.linux_s390x.sh
 
   build-matrix:
     name: Build
     runs-on: ${{ matrix.os }}
-    needs: [generate_grammar, aarch64-linux-musl]
+    needs: [generate_grammar, aarch64-linux-musl, s390x-linux-musl]
     strategy:
       matrix:
         include:
@@ -203,6 +222,11 @@ jobs:
             native: linux_arm64
             container: alpine:3.19
             dbg-strip: aarch64-linux-musl-objcopy --only-keep-debug language_server language_server.dbg && aarch64-linux-musl-objcopy --strip-unneeded language_server && aarch64-linux-musl-objcopy --add-gnu-debuglink=language_server.dbg language_server
+            dbg-pattern: build/bin/language_server.dbg
+          - os: ubuntu-22.04
+            native: linux_s390x
+            container: alpine:3.19
+            dbg-strip: s390x-linux-musl-objcopy --only-keep-debug language_server language_server.dbg && s390x-linux-musl-objcopy --strip-unneeded language_server && s390x-linux-musl-objcopy --add-gnu-debuglink=language_server.dbg language_server
             dbg-pattern: build/bin/language_server.dbg
           - os: ubuntu-22.04
             native: wasm
@@ -298,6 +322,9 @@ jobs:
             chmod: true
           - os: ubuntu-22.04
             native: linux_arm64
+            chmod: true
+          - os: ubuntu-22.04
+            native: linux_s390x
             chmod: true
           - os: windows-2022
             native: win32_x64
@@ -407,6 +434,11 @@ jobs:
         with:
           name: language_server_linux_arm64
           path: ${{ env.CLIENT_DIR }}/bin/linux_arm64/
+      - name: Download linux language server (s390x)
+        uses: actions/download-artifact@v4
+        with:
+          name: language_server_linux_s390x
+          path: ${{ env.CLIENT_DIR }}/bin/linux_s390x/
       - name: Download wasm language server
         uses: actions/download-artifact@v4
         with:
@@ -432,6 +464,7 @@ jobs:
           chmod +x ${{ env.CLIENT_DIR }}/bin/darwin_arm64/language_server
           chmod +x ${{ env.CLIENT_DIR }}/bin/linux_x64/language_server
           chmod +x ${{ env.CLIENT_DIR }}/bin/linux_arm64/language_server
+          chmod +x ${{ env.CLIENT_DIR }}/bin/linux_s390x/language_server
       - name: NPM CI
         run: npm ci
         working-directory: ${{ env.CLIENT_DIR }}
