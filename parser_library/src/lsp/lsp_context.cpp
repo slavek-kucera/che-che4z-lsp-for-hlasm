@@ -228,7 +228,7 @@ std::vector<document_symbol_item> lsp_context::document_symbol(
         it = next;
     }
 
-    for (auto it = std::find_if(result.begin(), result.end(), is_title); it != result.end();)
+    for (auto it = std::ranges::find_if(result, is_title); it != result.end();)
     {
         auto next = std::next(it);
 
@@ -655,8 +655,7 @@ std::optional<location> lsp_context::find_definition_location(const symbol_occur
             const vardef_storage& var_syms =
                 macro_scope_i ? macro_scope_i->var_definitions : m_opencode->variable_definitions;
 
-            auto sym = std::find_if(
-                var_syms.begin(), var_syms.end(), [&occ](const auto& var) { return var.name == occ.name; });
+            auto sym = std::ranges::find(var_syms, occ.name, &variable_symbol_definition::name);
 
             if (sym != var_syms.end())
             {
@@ -766,9 +765,8 @@ std::string lsp_context::find_hover(const symbol_occurrence& occ,
             const vardef_storage& var_syms =
                 macro_scope_i ? macro_scope_i->var_definitions : m_opencode->variable_definitions;
 
-            auto sym =
-                std::find_if(var_syms.begin(), var_syms.end(), [&](const auto& var) { return var.name == occ.name; });
-            if (sym != var_syms.end())
+            if (const auto sym = std::ranges::find(var_syms, occ.name, &variable_symbol_definition::name);
+                sym != var_syms.end())
                 return hover_text(*sym);
             break;
         }

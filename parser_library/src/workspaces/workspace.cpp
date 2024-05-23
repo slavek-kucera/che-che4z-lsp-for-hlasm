@@ -402,8 +402,8 @@ void generate_merged_fade_messages(const resource_location& rl,
 
     const auto& uri = rl.get_uri();
 
-    const auto it_b = std::find_if(
-        line_details_it_b, line_details_it_e, [](const processing::line_detail& e) { return e.contains_statement; });
+    const auto it_b =
+        std::ranges::find_if(line_details_it_b, line_details_it_e, &processing::line_detail::contains_statement);
     auto faded_line_it = std::find_if(it_b, line_details_it_e, faded_line_predicate);
 
     while (faded_line_it != line_details_it_e)
@@ -869,8 +869,7 @@ utils::task workspace::did_change_watched_files(
                 continue;
 
             auto loc = comp.m_file->get_location();
-            const auto* pg = &get_proc_grp(loc);
-            if (std::find(refreshed->begin(), refreshed->end(), pg) != refreshed->end())
+            if (std::ranges::find(*refreshed, &get_proc_grp(loc)) != refreshed->end())
                 m_parsing_pending.emplace(std::move(loc));
         }
     }

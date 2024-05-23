@@ -19,6 +19,7 @@
 #include "assembler_options.h"
 #include "instruction_set_version.h"
 #include "nlohmann/json.hpp"
+#include "utils/projectors.h"
 
 namespace hlasm_plugin::parser_library::config {
 
@@ -345,9 +346,7 @@ constexpr const auto preprocessor_list = preprocessor_list_generator<decltype(pr
 
 constexpr auto find_preprocessor_deserializer(std::string_view name)
 {
-    auto it = std::find_if(std::begin(preprocessor_list), std::end(preprocessor_list), [&name](const auto& entry) {
-        return entry.first == name;
-    });
+    auto it = std::ranges::find(preprocessor_list, name, utils::first_element);
     return it != std::end(preprocessor_list) ? it->second : nullptr;
 }
 

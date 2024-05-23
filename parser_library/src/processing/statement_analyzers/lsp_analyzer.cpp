@@ -458,14 +458,12 @@ void lsp_analyzer::add_var_def(const semantics::variable_symbol* var, context::S
     if (var->created)
         return;
 
-    if (std::find_if(opencode_var_defs_.begin(),
-            opencode_var_defs_.end(),
-            [&](const auto& def) { return def.name == var->access_basic()->name; })
-        != opencode_var_defs_.end())
+    const auto& name = var->access_basic()->name;
+
+    if (std::ranges::find(opencode_var_defs_, name, &lsp::variable_symbol_definition::name) != opencode_var_defs_.end())
         return;
 
-    opencode_var_defs_.emplace_back(
-        var->access_basic()->name, type, global, hlasm_ctx_.current_statement_source(), var->symbol_range.start);
+    opencode_var_defs_.emplace_back(name, type, global, hlasm_ctx_.current_statement_source(), var->symbol_range.start);
 }
 
 void lsp_analyzer::add_copy_operand(context::id_index name, const range& operand_range, const collection_info_t& ci)

@@ -166,8 +166,7 @@ library_local::files_collection_t library_local::load_files(
             if (auto off = file.find_first_of('.', 1); off != std::string::npos)
                 file.erase(off);
         }
-        else if (auto ext = std::find_if(
-                     m_extensions.begin(), m_extensions.end(), [&f = file](const auto& e) { return f.ends_with(e); });
+        else if (auto ext = std::ranges::find_if(m_extensions, [&f = file](const auto& e) { return f.ends_with(e); });
                  ext != m_extensions.end())
 
             file.erase(file.size() - ext->size());

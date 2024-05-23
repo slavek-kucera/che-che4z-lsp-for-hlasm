@@ -206,8 +206,7 @@ using_collection::resolved_entry using_collection::using_drop_definition::resolv
 
     std::array<std::pair<std::optional<qualified_address>, range>, reg_set_size> bases_;
     std::ranges::transform(m_base, bases_.begin(), [&coll](auto base) { return abs_or_reloc(coll, base, true); });
-    const auto bases =
-        std::span(bases_).first(std::find(m_base.begin(), m_base.end(), index_t<mach_expression>()) - m_base.begin());
+    const auto bases = std::span(bases_).first(std::ranges::find(m_base, index_t<mach_expression>()) - m_base.begin());
 
     std::optional<offset_t> len;
     if (e.has_value())
@@ -294,7 +293,7 @@ using_collection::resolved_entry using_collection::using_drop_definition::resolv
 
     constexpr index_t<mach_expression> empty;
 
-    for (const auto& expr : std::span(m_base.begin(), std::find(m_base.begin(), m_base.end(), empty)))
+    for (const auto& expr : std::span(m_base.begin(), std::ranges::find(m_base, empty)))
     {
         auto [v, rng] = reg_or_label(coll, expr);
         std::visit([&transform, &rng = rng](auto value) { transform(value, rng); }, v);

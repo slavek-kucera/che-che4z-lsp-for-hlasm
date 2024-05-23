@@ -335,7 +335,7 @@ bool macrodef_processor::test_varsym_validity(const semantics::variable_symbol* 
 
     auto var_id = var->access_basic()->name;
 
-    if (std::find(param_names.begin(), param_names.end(), var_id) != param_names.end())
+    if (std::ranges::find(param_names, var_id) != param_names.end())
     {
         add_diagnostic(diagnostic_op::error_E011("Symbolic parameter", op_range));
         if (add_empty)
@@ -470,17 +470,14 @@ void macrodef_processor::add_SET_sym_to_res(
     if (var->created)
         return;
 
-    if (std::find_if(result_.variable_symbols.begin(),
-            result_.variable_symbols.end(),
-            [&](const auto& def) { return def.name == var->access_basic()->name; })
+    const auto& name = var->access_basic()->name;
+
+    if (std::ranges::find(result_.variable_symbols, name, &lsp::variable_symbol_definition::name)
         != result_.variable_symbols.end())
         return;
 
-    result_.variable_symbols.emplace_back(var->access_basic()->name,
-        set_type,
-        global,
-        context::statement_id { result_.definition.size() },
-        var->symbol_range.start);
+    result_.variable_symbols.emplace_back(
+        name, set_type, global, context::statement_id { result_.definition.size() }, var->symbol_range.start);
 }
 
 void macrodef_processor::process_sequence_symbol(const semantics::label_si& label)

@@ -253,7 +253,7 @@ context::SET_t ca_function::D2A(std::string_view param, diagnostic_adder& add_di
     if (param.empty())
         return 0;
 
-    auto it = std::find_if(param.begin(), param.end(), [](int c) { return c != '-' && c != '+'; });
+    auto it = std::ranges::find_if(param, [](int c) { return c != '-' && c != '+'; });
 
     if (it - param.begin() > 1)
         RET_ERRPARM;
@@ -641,7 +641,7 @@ context::SET_t ca_function::SYSATTRP(const context::C_t&) { return context::SET_
 
 context::SET_t ca_function::UPPER(context::C_t param)
 {
-    std::transform(param.begin(), param.end(), param.begin(), [](unsigned char c) { return (char)toupper(c); });
+    std::ranges::transform(param, param.begin(), [](unsigned char c) { return (char)toupper(c); });
     return param;
 }
 

@@ -27,6 +27,7 @@
 #include "lsp/lsp_context.h"
 #include "lsp/macro_info.h"
 #include "text_data_view.h"
+#include "utils/projectors.h"
 #include "utils/string_operations.h"
 #include "utils/unicode_text.h"
 
@@ -340,7 +341,7 @@ std::vector<completion_item> generate_completion(const completion_list_instructi
         suggestions.emplace_back(s, false);
 
     const auto locate_suggestion = [&s = suggestions](std::string_view text) {
-        auto it = std::find_if(s.begin(), s.end(), [text](const auto& e) { return e.first == text; });
+        auto it = std::ranges::find(s, text, utils::first_element);
         return it == s.end() ? nullptr : std::to_address(it);
     };
 

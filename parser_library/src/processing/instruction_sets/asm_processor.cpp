@@ -810,9 +810,7 @@ bool asm_processor::common_copy_postprocess(
 
     auto whole_copy_stack = hlasm_ctx.whole_copy_stack();
 
-    auto cycle_tmp = std::find(whole_copy_stack.begin(), whole_copy_stack.end(), data.name);
-
-    if (cycle_tmp != whole_copy_stack.end())
+    if (std::ranges::find(whole_copy_stack, data.name) != whole_copy_stack.end())
     {
         if (diagnoser)
             diagnoser->add_diagnostic(diagnostic_op::error_E062(data.statement));
