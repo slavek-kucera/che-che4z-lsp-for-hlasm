@@ -162,7 +162,7 @@ std::vector<position> file_info::find_references(
     for (const auto& occ : occurrences)
         if (occurrence.is_similar(occ))
             result.emplace_back(occ.occurrence_range.start);
-    std::sort(result.begin(), result.end());
+    std::ranges::sort(result);
     result.erase(std::unique(result.begin(), result.end()), result.end());
     return result;
 }
@@ -246,9 +246,8 @@ const std::vector<symbol_occurrence>& file_info::get_occurrences() const { retur
 
 void file_info::process_occurrences()
 {
-    std::sort(occurrences.begin(), occurrences.end(), [](const auto& l, const auto& r) {
-        return std::tie(l.occurrence_range.end.line, l.occurrence_range.start.line, l.evaluated_model)
-            < std::tie(r.occurrence_range.end.line, r.occurrence_range.start.line, r.evaluated_model);
+    std::ranges::sort(occurrences, {}, [](const auto& e) {
+        return std::tie(e.occurrence_range.end.line, e.occurrence_range.start.line, e.evaluated_model);
     });
 
     occurrences_start_limit.resize(occurrences.size());

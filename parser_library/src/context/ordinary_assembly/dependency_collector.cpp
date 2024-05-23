@@ -147,7 +147,7 @@ bool dependency_collector::contains_dependencies() const
 
 void dependency_collector::collect_unique_symbolic_dependencies(std::vector<context::id_index>& missing_symbols) const
 {
-    std::sort(missing_symbols.begin(), missing_symbols.end());
+    std::ranges::sort(missing_symbols);
 
     utils::merge_sorted(missing_symbols, undefined_symbolics, name_comparator(), name_merger());
 }

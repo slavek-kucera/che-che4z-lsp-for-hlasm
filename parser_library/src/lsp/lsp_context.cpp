@@ -117,9 +117,7 @@ std::vector<document_symbol_item> lsp_context::document_symbol(
         if (m.children.empty())
             continue;
 
-        std::sort(m.children.begin(), m.children.end(), [](const auto& l, const auto& r) {
-            return l.symbol_range.start.line < r.symbol_range.start.line;
-        });
+        std::ranges::sort(m.children, {}, [](const auto& e) { return e.symbol_range.start.line; });
 
         m.children.back().symbol_range.end.line = last_line;
         m.children.back().symbol_selection_range.end.line = last_line;
@@ -426,7 +424,7 @@ std::vector<std::pair<const context::section*, context::id_index>> gather_reacha
                 reachable_sections.emplace_back(s, u.label);
         }
     }
-    std::sort(reachable_sections.begin(), reachable_sections.end());
+    std::ranges::sort(reachable_sections);
     reachable_sections.erase(
         std::unique(reachable_sections.begin(), reachable_sections.end()), reachable_sections.end());
 
@@ -480,7 +478,7 @@ std::vector<std::pair<const context::symbol*, context::id_index>> compute_reacha
         }
     }
 
-    std::sort(reachable_symbols.begin(), reachable_symbols.end());
+    std::ranges::sort(reachable_symbols);
     reachable_symbols.erase(std::unique(reachable_symbols.begin(), reachable_symbols.end()), reachable_symbols.end());
 
     return reachable_symbols;

@@ -142,20 +142,6 @@ TEST_F(lsp_context_macro_in_opencode, references_local_var_same_name)
     EXPECT_EQ(res[1], location(position(10, 4), opencode_loc));
 }
 
-
-auto tie_completion_item(const completion_item& lhs)
-{
-    return std::tie(lhs.label, lhs.detail, lhs.insert_text, lhs.documentation, lhs.kind);
-}
-
-void sort_occurrence_vector(std::vector<completion_item>& v)
-{
-    std::sort(v.begin(), v.end(), [](const completion_item& lhs, const completion_item rhs) {
-        return tie_completion_item(lhs) < tie_completion_item(rhs);
-    });
-}
-
-
 TEST_F(lsp_context_macro_in_opencode, completion_var_in_macro)
 {
     auto res_v = a.context().lsp_ctx->completion(opencode_loc, { 4, 1 }, '\0', completion_trigger_kind::invoked);

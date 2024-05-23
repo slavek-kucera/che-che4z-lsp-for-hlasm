@@ -33,11 +33,9 @@ void adjust_extensions_vector(std::vector<std::string>& extensions)
             ext.insert(0, 1, '.');
 
     // from longest to shortest, then lexicographically
-    std::sort(extensions.begin(), extensions.end(), [](const std::string& l, const std::string& r) {
-        if (l.size() > r.size())
-            return true;
-        if (l.size() < r.size())
-            return false;
+    std::ranges::sort(extensions, [](const std::string& l, const std::string& r) {
+        if (auto c = l.size() <=> r.size(); c != 0)
+            return c > 0;
         return l < r;
     });
     extensions.erase(std::unique(extensions.begin(), extensions.end()), extensions.end());

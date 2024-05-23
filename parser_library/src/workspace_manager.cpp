@@ -1004,7 +1004,7 @@ class workspace_manager_impl final : public workspace_manager,
                 continue;
             allowed_schemes.emplace_back(scheme);
         }
-        std::sort(allowed_schemes.begin(), allowed_schemes.end());
+        std::ranges::sort(allowed_schemes);
         auto new_end = std::unique(allowed_schemes.begin(), allowed_schemes.end());
         allowed_schemes.erase(new_end, allowed_schemes.end());
     }

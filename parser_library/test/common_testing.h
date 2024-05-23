@@ -121,8 +121,8 @@ inline bool contains_message_properties(CMsg&& d, const C& c, Proj p)
 
     std::vector to_find(c.begin(), c.end());
 
-    std::sort(properties.begin(), properties.end());
-    std::sort(to_find.begin(), to_find.end());
+    std::ranges::sort(properties);
+    std::ranges::sort(to_find);
 
     return std::includes(properties.begin(), properties.end(), to_find.begin(), to_find.end());
 }

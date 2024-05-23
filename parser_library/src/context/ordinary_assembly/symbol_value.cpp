@@ -179,7 +179,7 @@ symbol_value symbol_value::ignore_qualification() const
 
     std::for_each(bases->begin(), bases->end(), [](auto& e) { e.first.qualifier = id_index(); });
 
-    std::sort(bases->begin(), bases->end(), [](const auto& l, const auto& r) { return l.first.owner < r.first.owner; });
+    std::ranges::sort(*bases, {}, [](const auto& e) { return e.first.owner; });
 
     bases->erase(aggregate(
                      bases->begin(),
