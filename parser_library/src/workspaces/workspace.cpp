@@ -382,7 +382,7 @@ void generate_merged_fade_messages(const resource_location& rl,
             if (!active_mac_cpy_defs_map)
                 return false;
 
-            auto lineno = static_cast<size_t>(std::distance(line_details_addr, &e));
+            auto lineno = static_cast<size_t>(std::ranges::distance(line_details_addr, &e));
             auto active_mac_cpy_it_e = active_mac_cpy_defs_map->end();
 
             auto active_mac_cpy_it = std::find_if(active_mac_cpy_defs_map->lower_bound(lineno),
@@ -410,8 +410,10 @@ void generate_merged_fade_messages(const resource_location& rl,
     {
         auto active_line = std::find_if_not(std::next(faded_line_it), line_details_it_e, faded_line_predicate);
         fms.emplace_back(fade_message::inactive_statement(uri,
-            range(position(std::distance(line_details_it_b, faded_line_it), 0),
-                position(std::distance(line_details_it_b, std::prev(active_line)), 80))));
+            range {
+                position(std::ranges::distance(line_details_it_b, faded_line_it), 0),
+                position(std::ranges::distance(line_details_it_b, std::prev(active_line)), 80),
+            }));
 
         faded_line_it = std::find_if(active_line, line_details_it_e, faded_line_predicate);
     }
