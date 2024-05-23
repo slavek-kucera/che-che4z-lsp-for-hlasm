@@ -130,7 +130,7 @@ void mark_suspicious(std::vector<lsp::line_entry>& lines)
         return;
 
     const auto percentile_pos = indents.begin() + indents.size() / percentile_factor;
-    std::nth_element(indents.begin(), percentile_pos, indents.end());
+    std::ranges::nth_element(indents, percentile_pos);
     const auto limit = *percentile_pos;
 
     for (auto& x : lines)
