@@ -259,7 +259,7 @@ TEST(parser, sanitize_message_content_replace)
 
     const auto& msg = diag_container.diags[0].message;
 
-    EXPECT_TRUE(std::all_of(msg.begin(), msg.end(), [](unsigned char c) { return c < 0x80; }));
+    EXPECT_TRUE(std::ranges::all_of(msg, [](unsigned char c) { return c < 0x80; }));
 }
 
 TEST(parser, sanitize_message_content_valid_multibyte)

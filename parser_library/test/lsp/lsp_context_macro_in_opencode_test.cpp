@@ -155,7 +155,7 @@ TEST_F(lsp_context_macro_in_opencode, completion_var_in_macro)
     const std::vector<std::string_view> expected { "KEY_PAR", "LABEL", "POS_PAR" };
 
     EXPECT_TRUE(std::is_permutation(res.begin(), res.end(), expected.begin(), expected.end()));
-    EXPECT_TRUE(std::all_of(res_map.begin(), res_map.end(), [](const auto& v) { return v.macro_param; }));
+    EXPECT_TRUE(std::ranges::all_of(res_map, [](const auto& v) { return v.macro_param; }));
 }
 
 TEST_F(lsp_context_macro_in_opencode, completion_var_outside_macro)

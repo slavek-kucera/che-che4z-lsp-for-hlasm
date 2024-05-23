@@ -237,7 +237,7 @@ bool assembler_instruction::check_codepage_parameter(
     // decimal value
     else
     {
-        if (!std::all_of(input_str.cbegin(), input_str.cend(), [](unsigned char c) { return std::isdigit(c); }))
+        if (!std::ranges::all_of(input_str, [](unsigned char c) { return std::isdigit(c); }))
         {
             add_diagnostic(diagnostic_op::error_A215_CODEPAGE_format(name_of_instruction, input.operand_range));
             return false;

@@ -303,7 +303,7 @@ context::SET_t ca_function::ISBIN(const context::C_t& param, diagnostic_adder& a
     if (param.empty())
         RET_ERRPARM;
 
-    if (param.size() <= 32 && std::all_of(param.cbegin(), param.cend(), [](char c) { return c == '0' || c == '1'; }))
+    if (param.size() <= 32 && std::ranges::all_of(param, [](char c) { return c == '0' || c == '1'; }))
         return true;
     return false;
 }
@@ -335,8 +335,7 @@ context::SET_t ca_function::ISHEX(const context::C_t& param, diagnostic_adder& a
     if (param.empty())
         RET_ERRPARM;
 
-    if (param.size() <= 8
-        && std::all_of(param.cbegin(), param.cend(), [](unsigned char c) { return std::isxdigit(c); }))
+    if (param.size() <= 8 && std::ranges::all_of(param, [](unsigned char c) { return std::isxdigit(c); }))
         return true;
     return false;
 }
@@ -346,10 +345,8 @@ context::SET_t ca_function::ISSYM(const context::C_t& param, diagnostic_adder& a
     if (param.empty())
         RET_ERRPARM;
 
-    if (!std::isdigit((unsigned char)param.front()) && param.size() < 64
-        && std::all_of(param.cbegin(), param.cend(), lexing::lexer::ord_char))
-        return true;
-    return false;
+    return !std::isdigit((unsigned char)param.front()) && param.size() < 64
+        && std::ranges::all_of(param, lexing::lexer::ord_char);
 }
 
 context::SET_t ca_function::X2A(std::string_view param, diagnostic_adder& add_diagnostic)

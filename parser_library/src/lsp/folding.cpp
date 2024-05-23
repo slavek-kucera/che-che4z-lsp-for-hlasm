@@ -55,7 +55,7 @@ bool is_separator(const logical_line& ll)
 
 bool blank_line(const logical_line& r)
 {
-    return std::all_of(r.begin(), r.end(), [](const auto& e) { return e == ' '; });
+    return std::ranges::all_of(r, [](const auto& e) { return e == ' '; });
 }
 
 std::pair<bool, signed char> label_and_indent(const logical_line& r)

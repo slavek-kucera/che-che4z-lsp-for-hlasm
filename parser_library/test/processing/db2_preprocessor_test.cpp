@@ -74,7 +74,7 @@ TEST_F(db2_preprocessor_test, first_line)
     EXPECT_EQ(std::ranges::count_if(
                   result, [](const auto& l) { return l.text().find(" SQLSECT ") != std::string_view::npos; }),
         1);
-    EXPECT_TRUE(std::all_of(result.begin(), result.end(), [](const auto& l) { return !l.is_original(); }));
+    EXPECT_TRUE(std::ranges::all_of(result, [](const auto& l) { return !l.is_original(); }));
 }
 
 TEST_F(db2_preprocessor_test, last_line)
@@ -1113,7 +1113,7 @@ TEST_F(db2_preprocessor_test, conditional)
     EXPECT_EQ(std::ranges::count_if(
                   result, [](const auto& l) { return l.text().find(" SQLSECT ") != std::string_view::npos; }),
         0);
-    EXPECT_TRUE(std::all_of(result.begin(), result.end(), [](const auto& l) { return !l.is_original(); }));
+    EXPECT_TRUE(std::ranges::all_of(result, [](const auto& l) { return !l.is_original(); }));
 }
 
 TEST(db2_preprocessor, preprocessor_continuation_overflow)

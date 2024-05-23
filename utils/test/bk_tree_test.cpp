@@ -165,7 +165,7 @@ TEST(bk_tree, multiple_results)
 
     auto r = tree.find<3>("abc", 1);
 
-    ASSERT_TRUE(std::all_of(r.begin(), r.end(), [](const auto& v) { return v.first != nullptr; }));
+    ASSERT_TRUE(std::ranges::all_of(r, [](const auto& v) { return v.first != nullptr; }));
     std::vector<std::string> result;
     std::ranges::transform(r, std::back_inserter(result), [](const auto& v) { return *v.first; });
     const std::string expected[] { "abc1", "abc2", "abc3" };
@@ -184,7 +184,7 @@ TEST(bk_tree, multiple_results_no_limit)
 
     auto r = tree.find<3>("abc");
 
-    ASSERT_TRUE(std::all_of(r.begin(), r.end(), [](const auto& v) { return v.first != nullptr; }));
+    ASSERT_TRUE(std::ranges::all_of(r, [](const auto& v) { return v.first != nullptr; }));
     std::vector<std::string> result;
     std::ranges::transform(r, std::back_inserter(result), [](const auto& v) { return *v.first; });
     const std::string expected[] { "abc1", "abc2", "abc3" };

@@ -135,8 +135,8 @@ dependency_collector& hlasm_plugin::parser_library::context::dependency_collecto
 
 bool dependency_collector::is_address() const
 {
-    return std::all_of(undefined_symbolics.begin(), undefined_symbolics.end(), [](const auto& e) { return !e.get(); })
-        && unresolved_address && !unresolved_address.value().bases().empty();
+    return std::ranges::all_of(undefined_symbolics, [](const auto& e) { return !e.get(); }) && unresolved_address
+        && !unresolved_address.value().bases().empty();
 }
 
 bool dependency_collector::contains_dependencies() const

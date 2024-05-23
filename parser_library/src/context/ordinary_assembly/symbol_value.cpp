@@ -166,8 +166,7 @@ symbol_value symbol_value::ignore_qualification() const
         return *this;
 
     auto result = get_reloc();
-    if (std::all_of(
-            result.bases().begin(), result.bases().end(), [](const auto& be) { return be.first.qualifier.empty(); }))
+    if (std::ranges::all_of(result.bases(), [](const auto& be) { return be.first.qualifier.empty(); }))
     {
         if (result.bases().empty() && !result.has_unresolved_space())
             return result.offset();
