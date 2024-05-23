@@ -13,6 +13,7 @@
  */
 
 #include <algorithm>
+#include <ranges>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -43,11 +44,8 @@ TEST_P(logical_line_iterator_fixture, general_behavior)
     for (auto p : parm)
         concat_parm.append(p);
 
-    EXPECT_TRUE(std::equal(line.begin(), line.end(), concat_parm.begin(), concat_parm.end()));
-    EXPECT_TRUE(std::equal(std::make_reverse_iterator(line.end()),
-        std::make_reverse_iterator(line.begin()),
-        concat_parm.rbegin(),
-        concat_parm.rend()));
+    EXPECT_TRUE(std::ranges::equal(line, concat_parm));
+    EXPECT_TRUE(std::ranges::equal(std::views::reverse(line), std::views::reverse(concat_parm)));
 }
 
 INSTANTIATE_TEST_SUITE_P(logical_line,

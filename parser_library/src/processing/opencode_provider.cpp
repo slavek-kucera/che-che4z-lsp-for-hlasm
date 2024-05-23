@@ -786,10 +786,7 @@ bool opencode_provider::is_next_line_ictl() const
         return false;
 
     auto possible_ictl = test_ictl.substr(0, ICTL_LITERAL.size());
-    return std::equal(
-        possible_ictl.cbegin(), possible_ictl.cend(), ICTL_LITERAL.cbegin(), [](unsigned char l, unsigned char r) {
-            return std::toupper(l) == r;
-        });
+    return std::ranges::equal(possible_ictl, ICTL_LITERAL, {}, [](unsigned char c) { return std::toupper(c); });
 }
 
 bool opencode_provider::is_next_line_process() const
@@ -805,10 +802,7 @@ bool opencode_provider::is_next_line_process() const
         return false;
 
     const auto test_process = current_line_text.substr(0, PROCESS_LITERAL.size());
-    return std::equal(
-        test_process.cbegin(), test_process.cend(), PROCESS_LITERAL.cbegin(), [](unsigned char l, unsigned char r) {
-            return std::toupper(l) == r;
-        });
+    return std::ranges::equal(test_process, PROCESS_LITERAL, {}, [](unsigned char c) { return std::toupper(c); });
 }
 
 extract_next_logical_line_result opencode_provider::extract_next_logical_line_from_copy_buffer()
