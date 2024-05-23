@@ -466,14 +466,13 @@ class workspace_manager_impl final : public workspace_manager,
 
         std::vector<captured_change> captured_changes;
         captured_changes.reserve(changes.size());
-        std::transform(
-            changes.begin(), changes.end(), std::back_inserter(captured_changes), [](const document_change& change) {
-                return captured_change {
-                    .whole = change.whole,
-                    .change_range = change.change_range,
-                    .text = std::string(change.text),
-                };
-            });
+        std::ranges::transform(changes, std::back_inserter(captured_changes), [](const document_change& change) {
+            return captured_change {
+                .whole = change.whole,
+                .change_range = change.change_range,
+                .text = std::string(change.text),
+            };
+        });
 
         m_work_queue.emplace_back(work_item {
             next_unique_id(),
@@ -481,12 +480,9 @@ class workspace_manager_impl final : public workspace_manager,
             [this, document_loc = uri, version, captured_changes = std::move(captured_changes)]() {
                 std::vector<document_change> list;
                 list.reserve(captured_changes.size());
-                std::transform(captured_changes.begin(),
-                    captured_changes.end(),
-                    std::back_inserter(list),
-                    [](const captured_change& cc) {
-                        return cc.whole ? document_change(cc.text) : document_change(cc.change_range, cc.text);
-                    });
+                std::ranges::transform(captured_changes, std::back_inserter(list), [](const captured_change& cc) {
+                    return cc.whole ? document_change(cc.text) : document_change(cc.change_range, cc.text);
+                });
                 m_file_manager.did_change_file(document_loc, version, list);
             },
             {},

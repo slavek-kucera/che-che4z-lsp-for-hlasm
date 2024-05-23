@@ -150,8 +150,7 @@ TEST_F(lsp_context_macro_in_opencode, completion_var_in_macro)
 
     const auto& res_map = *std::get<const vardef_storage*>(res_v);
     std::vector<std::string_view> res;
-    std::transform(
-        res_map.begin(), res_map.end(), std::back_inserter(res), [](const auto& v) { return v.name.to_string_view(); });
+    std::ranges::transform(res_map, std::back_inserter(res), [](const auto& v) { return v.name.to_string_view(); });
 
     const std::vector<std::string_view> expected { "KEY_PAR", "LABEL", "POS_PAR" };
 
@@ -167,8 +166,7 @@ TEST_F(lsp_context_macro_in_opencode, completion_var_outside_macro)
 
     const auto& res_map = *std::get<const vardef_storage*>(res_v);
     std::vector<std::string_view> res;
-    std::transform(
-        res_map.begin(), res_map.end(), std::back_inserter(res), [](const auto& v) { return v.name.to_string_view(); });
+    std::ranges::transform(res_map, std::back_inserter(res), [](const auto& v) { return v.name.to_string_view(); });
 
     const std::vector<std::string_view> expected { "KEY_PAR" };
 

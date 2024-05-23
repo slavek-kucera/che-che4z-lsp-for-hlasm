@@ -167,7 +167,7 @@ TEST(bk_tree, multiple_results)
 
     ASSERT_TRUE(std::all_of(r.begin(), r.end(), [](const auto& v) { return v.first != nullptr; }));
     std::vector<std::string> result;
-    std::transform(r.begin(), r.end(), std::back_inserter(result), [](const auto& v) { return *v.first; });
+    std::ranges::transform(r, std::back_inserter(result), [](const auto& v) { return *v.first; });
     const std::string expected[] { "abc1", "abc2", "abc3" };
 
     EXPECT_TRUE(std::is_permutation(result.begin(), result.end(), std::begin(expected), std::end(expected)));
@@ -186,7 +186,7 @@ TEST(bk_tree, multiple_results_no_limit)
 
     ASSERT_TRUE(std::all_of(r.begin(), r.end(), [](const auto& v) { return v.first != nullptr; }));
     std::vector<std::string> result;
-    std::transform(r.begin(), r.end(), std::back_inserter(result), [](const auto& v) { return *v.first; });
+    std::ranges::transform(r, std::back_inserter(result), [](const auto& v) { return *v.first; });
     const std::string expected[] { "abc1", "abc2", "abc3" };
 
     EXPECT_TRUE(std::is_permutation(result.begin(), result.end(), std::begin(expected), std::end(expected)));

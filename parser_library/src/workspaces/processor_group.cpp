@@ -41,9 +41,8 @@ std::vector<preprocessor_options> translate_pp_configs(const std::vector<config:
 {
     std::vector<preprocessor_options> result;
     result.reserve(pp.size());
-    std::transform(pp.begin(), pp.end(), std::back_inserter(result), [](const auto& p) {
-        return std::visit(translate_pp_options {}, p.options);
-    });
+    std::ranges::transform(
+        pp, std::back_inserter(result), [](const auto& p) { return std::visit(translate_pp_options {}, p.options); });
     return result;
 }
 } // namespace

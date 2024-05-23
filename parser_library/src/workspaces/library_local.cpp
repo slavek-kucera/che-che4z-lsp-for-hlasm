@@ -86,8 +86,7 @@ std::vector<std::string> library_local::list_files()
 
     std::vector<std::string> result;
     result.reserve(files->first.size());
-    std::transform(
-        files->first.begin(), files->first.end(), std::back_inserter(result), [](const auto& f) { return f.first; });
+    std::ranges::transform(files->first, std::back_inserter(result), [](const auto& f) { return f.first; });
     return result;
 }
 

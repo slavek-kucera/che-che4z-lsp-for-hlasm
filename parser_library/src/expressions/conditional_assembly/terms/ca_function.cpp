@@ -629,7 +629,7 @@ context::SET_t ca_function::ESYM(const context::C_t&) { return context::SET_t();
 
 context::SET_t ca_function::LOWER(context::C_t param)
 {
-    std::transform(param.begin(), param.end(), param.begin(), [](unsigned char c) { return (char)tolower(c); });
+    std::ranges::transform(param, param.begin(), [](unsigned char c) { return (char)tolower(c); });
     return param;
 }
 

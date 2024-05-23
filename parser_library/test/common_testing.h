@@ -100,8 +100,7 @@ template<typename CMsg,
 inline bool matches_message_properties(CMsg&& d, const C& c, Proj p, BinPred b = BinPred())
 {
     std::vector<std::decay_t<std::invoke_result_t<Proj, const typename std::decay_t<CMsg>::value_type&>>> properties;
-    std::transform(
-        d.begin(), d.end(), std::back_inserter(properties), [&p](const auto& d) { return std::invoke(p, d); });
+    std::ranges::transform(d, std::back_inserter(properties), std::ref(p));
 
     return std::is_permutation(properties.begin(), properties.end(), c.begin(), c.end(), b);
 }
@@ -116,8 +115,7 @@ inline bool contains_message_properties(CMsg&& d, const C& c, Proj p)
         return false;
 
     std::vector<std::decay_t<std::invoke_result_t<Proj, const typename std::decay_t<CMsg>::value_type&>>> properties;
-    std::transform(
-        d.begin(), d.end(), std::back_inserter(properties), [&p](const auto& d) { return std::invoke(p, d); });
+    std::ranges::transform(d, std::back_inserter(properties), std::ref(p));
 
     std::vector to_find(c.begin(), c.end());
 

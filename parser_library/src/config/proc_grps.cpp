@@ -359,7 +359,7 @@ void add_single_preprocessor(std::vector<preprocessor_options>& preprocessors, c
     else if (j.is_object())
         j.at("name").get_to(p_name);
 
-    std::transform(p_name.begin(), p_name.end(), p_name.begin(), [](unsigned char c) { return (char)toupper(c); });
+    std::ranges::transform(p_name, p_name.begin(), [](unsigned char c) { return (char)toupper(c); });
     if (auto deserializer = find_preprocessor_deserializer(p_name); deserializer)
         deserializer(preprocessors, j);
     else

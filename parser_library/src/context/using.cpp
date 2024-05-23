@@ -108,9 +108,9 @@ size_t using_collection::using_entry::compute_context_drop(register_t d)
     return invalidated;
 }
 
-auto using_collection::using_drop_definition::abs_or_reloc(const using_collection& coll,
-    index_t<mach_expression> e,
-    bool abs_is_register) -> std::pair<std::optional<qualified_address>, range>
+auto using_collection::using_drop_definition::abs_or_reloc(
+    const using_collection& coll, index_t<mach_expression> e, bool abs_is_register)
+    -> std::pair<std::optional<qualified_address>, range>
 {
     if (!e)
         return { std::nullopt, range() };
@@ -136,8 +136,8 @@ auto using_collection::using_drop_definition::abs_or_reloc(const using_collectio
 
     return { std::nullopt, rng };
 }
-auto using_collection::using_drop_definition::reg_or_label(const using_collection& coll,
-    index_t<mach_expression> e) -> std::pair<std::variant<std::monostate, qualified_id, register_t>, range>
+auto using_collection::using_drop_definition::reg_or_label(const using_collection& coll, index_t<mach_expression> e)
+    -> std::pair<std::variant<std::monostate, qualified_id, register_t>, range>
 {
     if (!e)
         return { std::monostate(), range() };
@@ -205,9 +205,7 @@ using_collection::resolved_entry using_collection::using_drop_definition::resolv
     auto [e, e_rng] = abs_or_reloc(coll, m_end, false);
 
     std::array<std::pair<std::optional<qualified_address>, range>, reg_set_size> bases_;
-    std::transform(m_base.begin(), m_base.end(), bases_.begin(), [&coll, &diag](auto base) {
-        return abs_or_reloc(coll, base, true);
-    });
+    std::ranges::transform(m_base, bases_.begin(), [&coll](auto base) { return abs_or_reloc(coll, base, true); });
     const auto bases =
         std::span(bases_).first(std::find(m_base.begin(), m_base.end(), index_t<mach_expression>()) - m_base.begin());
 
@@ -253,9 +251,8 @@ using_collection::resolved_entry using_collection::using_drop_definition::resolv
 
     register_set_t reg_set_ = invalid_register_set;
     auto reg_set = std::span(reg_set_).first(bases.size());
-    std::transform(bases.begin(), bases.end(), reg_set.begin(), [](const auto& r) {
-        return r.first ? (register_t)r.first->offset : invalid_register;
-    });
+    std::ranges::transform(
+        bases, reg_set.begin(), [](const auto& r) { return r.first ? (register_t)r.first->offset : invalid_register; });
     std::bitset<reg_set_size> test_regs;
     for (size_t i = 0; i < reg_set.size(); ++i)
     {
@@ -396,19 +393,17 @@ index_t<using_collection> using_collection::add(index_t<using_collection> curren
 {
     assert(!args.empty() && args.size() <= reg_set_size);
 
-    index_t<instruction_context> ctx_id = add(std::move(eval_ctx), std::move(stack));
+    index_t<instruction_context> ctx = add(std::move(eval_ctx), std::move(stack));
 
-    auto b = add(std::move(begin), ctx_id);
-    auto e = end ? add(std::move(end), ctx_id) : index_t<mach_expression>();
+    auto b = add(std::move(begin), ctx);
+    auto e = end ? add(std::move(end), ctx) : index_t<mach_expression>();
 
     std::vector<index_t<mach_expression>> base;
     base.reserve(args.size());
 
-    std::transform(args.begin(), args.end(), std::back_inserter(base), [this, ctx_id](auto& a) {
-        return add(std::move(a), ctx_id);
-    });
+    std::ranges::transform(args, std::back_inserter(base), [this, ctx](auto& a) { return add(std::move(a), ctx); });
 
-    m_usings.emplace_back(current, index_t<mach_expression>(m_expr_values.size()), ctx_id, b, base, label, e);
+    m_usings.emplace_back(current, index_t<mach_expression>(m_expr_values.size()), ctx, b, std::move(base), label, e);
     return index_t<using_collection>(m_usings.size() - 1);
 }
 
@@ -418,15 +413,13 @@ index_t<using_collection> using_collection::remove(index_t<using_collection> cur
     processing_stack_t stack)
 {
     assert(!args.empty());
-    index_t<instruction_context> ctx_id = add(std::move(eval_ctx), std::move(stack));
+    index_t<instruction_context> ctx = add(std::move(eval_ctx), std::move(stack));
 
     std::vector<index_t<mach_expression>> base;
     base.reserve(args.size());
 
-    std::transform(args.begin(), args.end(), std::back_inserter(base), [this, ctx_id](auto& a) {
-        return add(std::move(a), ctx_id);
-    });
-    m_usings.emplace_back(current, index_t<mach_expression>(m_expr_values.size()), ctx_id, std::move(base));
+    std::ranges::transform(args, std::back_inserter(base), [this, ctx](auto& a) { return add(std::move(a), ctx); });
+    m_usings.emplace_back(current, index_t<mach_expression>(m_expr_values.size()), ctx, std::move(base));
 
     return index_t<using_collection>(m_usings.size() - 1);
 }

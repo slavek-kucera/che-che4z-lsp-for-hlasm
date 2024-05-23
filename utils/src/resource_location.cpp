@@ -297,9 +297,7 @@ resource_location resource_location::lexically_normal() const
     if (dis_uri.path.empty())
         return *this;
 
-    std::transform(dis_uri.scheme.begin(), dis_uri.scheme.end(), dis_uri.scheme.begin(), [](unsigned char c) {
-        return static_cast<const char>(tolower(c));
-    });
+    std::ranges::transform(dis_uri.scheme, dis_uri.scheme.begin(), [](unsigned char c) { return (char)tolower(c); });
 
     dis_uri.path = normalize_path(dis_uri.path, dis_uri.scheme == "file", dis_uri.contains_host());
     normalize_windows_like_uri(dis_uri);
