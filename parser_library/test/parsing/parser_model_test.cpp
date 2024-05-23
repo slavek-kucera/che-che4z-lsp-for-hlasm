@@ -227,7 +227,7 @@ TEST(parser, parse_single_apostrophe_string)
     auto* model = op.value[0]->access_model();
     ASSERT_TRUE(model);
     auto cc = concatenation_point::to_string(model->chain);
-    EXPECT_EQ(std::count(cc.begin(), cc.end(), '\''), 4);
+    EXPECT_EQ(std::ranges::count(cc, '\''), 4);
 }
 
 TEST(parser, parse_single_apostrophe_literal)
@@ -245,7 +245,7 @@ TEST(parser, parse_single_apostrophe_literal)
     auto* model = op.value[0]->access_model();
     ASSERT_TRUE(model);
     auto cc = concatenation_point::to_string(model->chain);
-    EXPECT_EQ(std::count(cc.begin(), cc.end(), '\''), 4);
+    EXPECT_EQ(std::ranges::count(cc, '\''), 4);
 }
 
 TEST(parser, sanitize_message_content_replace)

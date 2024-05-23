@@ -99,7 +99,7 @@ size_t using_collection::using_entry::compute_context_drop(register_t d)
     {
         if (e.label.empty())
         {
-            invalidated += std::count(e.regs.begin(), e.regs.end(), d);
+            invalidated += std::ranges::count(e.regs, d);
             std::replace(e.regs.begin(), e.regs.end(), d, invalid_register);
         }
     }

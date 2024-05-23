@@ -77,7 +77,7 @@ TEST(lsp_completion, completion_list_vars)
     auto result = lsp::generate_completion(&vars);
 
     EXPECT_EQ(result.size(), 1);
-    EXPECT_EQ(std::count_if(result.begin(), result.end(), [](const auto& e) { return e.label == "&VARNAME"; }), 1);
+    EXPECT_EQ(std::ranges::count(result, "&VARNAME", &completion_item::label), 1);
 }
 
 TEST(lsp_completion, completion_list_labels)
@@ -89,7 +89,7 @@ TEST(lsp_completion, completion_list_labels)
     auto result = lsp::generate_completion(&labels);
 
     EXPECT_EQ(result.size(), 1);
-    EXPECT_EQ(std::count_if(result.begin(), result.end(), [](const auto& e) { return e.label == ".LABEL"; }), 1);
+    EXPECT_EQ(std::ranges::count(result, ".LABEL", &completion_item::label), 1);
 }
 
 TEST(lsp_completion, completion_list_empty)

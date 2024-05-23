@@ -49,9 +49,8 @@ bool is_blank_comment(const logical_line& ll, unsigned char first_line_offset)
 bool is_separator(const logical_line& ll)
 {
     static constexpr const auto threshold = 36;
-    return ll.segments.size() == 1 && std::count_if(ll.begin(), ll.end(), [](unsigned char e) {
-        return e != ' ' && !std::isalnum(e);
-    }) > threshold;
+    return ll.segments.size() == 1
+        && std::ranges::count_if(ll, [](unsigned char e) { return e != ' ' && !std::isalnum(e); }) > threshold;
 }
 
 bool blank_line(const logical_line& r)

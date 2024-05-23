@@ -526,8 +526,8 @@ bool symbol_dependency_tables::update_dependencies(const dependency_value& d, co
                                                : std::vector<address::space_entry>();
 
     constexpr static auto unknown_loctr = [](const auto& e) { return e->kind == context::space_kind::LOCTR_UNKNOWN; };
-    const auto loctr_cnt = std::count_if(deps.unresolved_spaces.begin(), deps.unresolved_spaces.end(), unknown_loctr)
-        + std::count_if(addr_spaces.begin(), addr_spaces.end(), [](const auto& e) { return unknown_loctr(e.first); });
+    const auto loctr_cnt = std::ranges::count_if(deps.unresolved_spaces, unknown_loctr)
+        + std::ranges::count_if(addr_spaces, [](const auto& e) { return unknown_loctr(e.first); });
 
     for (const auto& e : deps.unresolved_spaces)
     {
