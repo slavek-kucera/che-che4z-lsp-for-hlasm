@@ -208,7 +208,7 @@ std::vector<document_symbol_item> lsp_context::document_symbol(
         it = next;
     }
 
-    result.erase(std::unique(result.begin(), result.end(), same_symbol), result.end());
+    result.erase(std::ranges::unique(result, same_symbol).begin(), result.end());
 
     static constexpr const auto is_title = [](const auto& s) { return s.kind == TITLE; };
 
@@ -425,8 +425,7 @@ std::vector<std::pair<const context::section*, context::id_index>> gather_reacha
         }
     }
     std::ranges::sort(reachable_sections);
-    reachable_sections.erase(
-        std::unique(reachable_sections.begin(), reachable_sections.end()), reachable_sections.end());
+    reachable_sections.erase(std::ranges::unique(reachable_sections).begin(), reachable_sections.end());
 
     return reachable_sections;
 }
@@ -479,7 +478,7 @@ std::vector<std::pair<const context::symbol*, context::id_index>> compute_reacha
     }
 
     std::ranges::sort(reachable_symbols);
-    reachable_symbols.erase(std::unique(reachable_symbols.begin(), reachable_symbols.end()), reachable_symbols.end());
+    reachable_symbols.erase(std::ranges::unique(reachable_symbols).begin(), reachable_symbols.end());
 
     return reachable_symbols;
 }

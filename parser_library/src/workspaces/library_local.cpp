@@ -38,7 +38,7 @@ void adjust_extensions_vector(std::vector<std::string>& extensions)
             return c > 0;
         return l < r;
     });
-    extensions.erase(std::unique(extensions.begin(), extensions.end()), extensions.end());
+    extensions.erase(std::ranges::unique(extensions).begin(), extensions.end());
 }
 } // namespace
 

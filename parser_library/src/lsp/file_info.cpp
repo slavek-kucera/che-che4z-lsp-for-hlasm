@@ -163,7 +163,7 @@ std::vector<position> file_info::find_references(
         if (occurrence.is_similar(occ))
             result.emplace_back(occ.occurrence_range.start);
     std::ranges::sort(result);
-    result.erase(std::unique(result.begin(), result.end()), result.end());
+    result.erase(std::ranges::unique(result).begin(), result.end());
     return result;
 }
 
