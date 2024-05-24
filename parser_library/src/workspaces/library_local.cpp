@@ -20,6 +20,7 @@
 
 #include "file_manager.h"
 #include "utils/platform.h"
+#include "utils/projectors.h"
 #include "utils/string_operations.h"
 #include "wildcard.h"
 
@@ -86,7 +87,7 @@ std::vector<std::string> library_local::list_files()
 
     std::vector<std::string> result;
     result.reserve(files->first.size());
-    std::ranges::transform(files->first, std::back_inserter(result), [](const auto& f) { return f.first; });
+    std::ranges::transform(files->first, std::back_inserter(result), utils::first_element);
     return result;
 }
 

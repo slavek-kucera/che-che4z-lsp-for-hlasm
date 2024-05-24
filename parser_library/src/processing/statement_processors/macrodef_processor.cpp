@@ -103,13 +103,7 @@ void macrodef_processor::end_processing()
 
     // cleanup empty file scopes
     for (auto& scope : result_.file_scopes)
-    {
-        static constexpr const auto empty_scope = [](const auto& slice) {
-            return slice.begin_statement == slice.end_statement;
-        };
-        auto [new_end, _] = std::ranges::remove_if(scope.second, empty_scope);
-        scope.second.erase(new_end, scope.second.end());
-    }
+        std::erase_if(scope.second, [](const auto& slice) { return slice.begin_statement == slice.end_statement; });
 
     listener_.finish_macro_definition(std::move(result_));
 

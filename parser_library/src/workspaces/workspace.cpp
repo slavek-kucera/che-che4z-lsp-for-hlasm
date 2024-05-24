@@ -142,7 +142,7 @@ struct workspace_parse_lib_provider final : public parse_lib_provider
     {
         std::ranges::set_difference(pfc.m_dependencies,
             next_dependencies,
-            utils::transform_inserter(files_to_close, [](const auto& v) -> const auto& { return v.first; }),
+            utils::transform_inserter(files_to_close, utils::first_element),
             {},
             utils::first_element,
             utils::first_element);
