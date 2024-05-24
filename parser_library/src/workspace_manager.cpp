@@ -120,7 +120,7 @@ class workspace_manager_impl final : public workspace_manager,
     };
     bool allowed_scheme(std::string_view uri) const noexcept
     {
-        return std::binary_search(allowed_schemes.begin(), allowed_schemes.end(), extract_scheme(uri));
+        return std::ranges::binary_search(allowed_schemes, extract_scheme(uri));
     }
     bool allowed_scheme(const resource_location& uri) const noexcept { return allowed_scheme(uri.get_uri()); }
 

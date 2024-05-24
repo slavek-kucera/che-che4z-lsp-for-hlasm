@@ -302,18 +302,8 @@ void asm_processor::process_data_instruction(rebuilt_statement&& stmt)
         const auto has_deps = [label](auto deps, bool& self_ref) {
             if (!deps.contains_dependencies())
                 return false;
-            struct
-            {
-                bool operator()(const context::symbolic_reference& l, const context::id_index& r) const
-                {
-                    return l.name < r;
-                }
-                bool operator()(const context::id_index& l, const context::symbolic_reference& r) const
-                {
-                    return l < r.name;
-                }
-            } cmp;
-            self_ref = std::binary_search(deps.undefined_symbolics.begin(), deps.undefined_symbolics.end(), label, cmp);
+            self_ref =
+                std::ranges::binary_search(deps.undefined_symbolics, label, {}, &context::symbolic_reference::name);
             return true;
         };
         if (!hlasm_ctx.ord_ctx.symbol_defined(label))
