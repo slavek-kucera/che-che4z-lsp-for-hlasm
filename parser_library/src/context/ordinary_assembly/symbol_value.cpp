@@ -176,7 +176,7 @@ symbol_value symbol_value::ignore_qualification() const
 
     auto bases = std::make_shared<std::vector<address::base_entry>>(result.bases().begin(), result.bases().end());
 
-    std::for_each(bases->begin(), bases->end(), [](auto& e) { e.first.qualifier = id_index(); });
+    std::ranges::for_each(*bases, [](auto& e) { e.first.qualifier = id_index(); });
 
     std::ranges::sort(*bases, {}, [](const auto& e) { return e.first.owner; });
 

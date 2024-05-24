@@ -146,7 +146,7 @@ TEST_F(logical_line_iterator_coordinates_multiline, unchanged_code_part)
 
 TEST_F(logical_line_iterator_coordinates_multiline, empty_all_lines)
 {
-    std::for_each(m_line.segments.begin(), m_line.segments.end(), [](auto& s) { s = {}; });
+    std::ranges::fill(m_line.segments, logical_line_segment<std::string_view::iterator>());
 
     auto expected = std::pair<size_t, size_t>(0, 0);
     EXPECT_EQ(m_line.begin().get_coordinates(), expected);
