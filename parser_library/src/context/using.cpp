@@ -447,8 +447,7 @@ bool hlasm_plugin::parser_library::context::using_collection::is_label_mapping_s
 
     const auto& state = get(context_id).context.m_state;
 
-    return std::any_of(
-        state.begin(), state.end(), [label, owner](const auto& s) { return s.label == label && s.owner == owner; });
+    return std::ranges::any_of(state, [label, owner](const auto& s) { return s.label == label && s.owner == owner; });
 }
 
 template</* std::integral */ typename R, /* std::integral */ typename T>

@@ -120,7 +120,7 @@ TEST(extension_handling_test, multiple_macro_definitions)
     EXPECT_TRUE(lib.has_file("MAC"));
     std::vector<hlasm_plugin::parser_library::diagnostic> diags;
     lib.copy_diagnostics(diags);
-    EXPECT_TRUE(std::any_of(diags.begin(), diags.end(), [](const auto& d) { return d.code == "L0004"; }));
+    EXPECT_TRUE(contains_message_codes(diags, { "L0004" }));
 }
 
 TEST(extension_handling_test, no_multiple_macro_definitions)
