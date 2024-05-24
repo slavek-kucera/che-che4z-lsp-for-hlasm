@@ -2025,7 +2025,7 @@ std::pair<const machine_instruction*, const mnemonic_code*> instruction::find_ma
     std::array<char, combined_machine_instruction_name_limit> padded_name {};
     std::ranges::copy(name, padded_name.begin());
 
-    auto it = std::lower_bound(std::begin(mach_instr_names), std::end(mach_instr_names), padded_name);
+    auto it = std::ranges::lower_bound(mach_instr_names, padded_name);
     if (it == std::end(mach_instr_names) || *it != padded_name)
         return {};
 
