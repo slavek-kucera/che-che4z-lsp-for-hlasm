@@ -140,12 +140,12 @@ struct workspace_parse_lib_provider final : public parse_lib_provider
 
     void append_files_to_close(std::set<resource_location>& files_to_close)
     {
-        std::set_difference(pfc.m_dependencies.begin(),
-            pfc.m_dependencies.end(),
-            next_dependencies.begin(),
-            next_dependencies.end(),
+        std::ranges::set_difference(pfc.m_dependencies,
+            next_dependencies,
             utils::transform_inserter(files_to_close, [](const auto& v) -> const auto& { return v.first; }),
-            [](const auto& l, const auto& r) { return l.first < r.first; });
+            {},
+            utils::first_element,
+            utils::first_element);
     }
 
     resource_location get_url(std::string_view library)
