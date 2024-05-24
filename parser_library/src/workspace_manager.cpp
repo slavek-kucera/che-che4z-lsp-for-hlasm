@@ -590,8 +590,7 @@ class workspace_manager_impl final : public workspace_manager,
 
     void unregister_diagnostics_consumer(diagnostics_consumer* consumer) override
     {
-        m_diag_consumers.erase(
-            std::remove(m_diag_consumers.begin(), m_diag_consumers.end(), consumer), m_diag_consumers.end());
+        m_diag_consumers.erase(std::ranges::remove(m_diag_consumers, consumer).begin(), m_diag_consumers.end());
     }
 
     void register_parsing_metadata_consumer(parsing_metadata_consumer* consumer) override
@@ -602,7 +601,7 @@ class workspace_manager_impl final : public workspace_manager,
     void unregister_parsing_metadata_consumer(parsing_metadata_consumer* consumer) override
     {
         auto& pmc = m_parsing_metadata_consumers;
-        pmc.erase(std::remove(pmc.begin(), pmc.end(), consumer), pmc.end());
+        pmc.erase(std::ranges::remove(pmc, consumer).begin(), pmc.end());
     }
 
     void set_message_consumer(message_consumer* consumer) override
