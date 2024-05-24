@@ -118,6 +118,10 @@ struct uri_path_iterator
     using pointer = std::string_view*;
     using reference = std::string_view;
 
+    uri_path_iterator()
+        : uri_path_iterator(nullptr)
+    {}
+
     explicit uri_path_iterator(pointer uri_path)
         : m_uri_path(uri_path)
         , m_started(m_uri_path != nullptr ? m_uri_path->empty() : false)
@@ -326,7 +330,7 @@ resource_location resource_location::lexically_relative(const resource_location&
     uri_path_iterator l_it(&this_uri);
     uri_path_iterator r_it(&base_uri);
 
-    auto [this_it, base_it] = std::mismatch(l_it.begin(), l_it.end(), r_it.begin(), r_it.end());
+    auto [this_it, base_it] = std::ranges::mismatch(l_it, r_it);
     if (this_it == this_it.end() && base_it == base_it.end())
         return resource_location(".");
 

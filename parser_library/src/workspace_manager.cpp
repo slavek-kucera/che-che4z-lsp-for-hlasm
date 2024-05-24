@@ -838,7 +838,7 @@ class workspace_manager_impl final : public workspace_manager,
 
     static size_t prefix_match(std::string_view first, std::string_view second)
     {
-        auto [f, s] = std::mismatch(first.begin(), first.end(), second.begin(), second.end());
+        auto [f, s] = std::ranges::mismatch(first, second);
         return static_cast<size_t>(std::min(f - first.begin(), s - second.begin()));
     }
 
