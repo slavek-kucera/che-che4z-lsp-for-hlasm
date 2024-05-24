@@ -119,10 +119,10 @@ public:
     {
         reset();
 
-        if (std::none_of(doc.begin(), doc.end(), [](const auto& l) {
-                auto text = l.text();
-                return text.starts_with("-INC ") || text.starts_with("++INCLUDE ");
-            }))
+        static constexpr const auto include_statement = [](const auto& l) {
+            return l.starts_with("-INC ") || l.starts_with("++INCLUDE ");
+        };
+        if (std::ranges::none_of(doc, include_statement, &document_line::text))
             co_return doc;
 
         static std::regex include_regex(R"(^(-INC|\+\+INCLUDE)\s+(\S+)(?:\s+(.*))?)");

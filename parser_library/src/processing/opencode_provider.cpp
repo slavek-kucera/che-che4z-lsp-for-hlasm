@@ -750,7 +750,7 @@ bool opencode_provider::finished() const
     const auto& o = m_ctx.hlasm_ctx->opencode_copy_stack();
     if (o.empty())
         return true;
-    return std::none_of(o.begin(), o.end(), [](const auto& c) { return c.suspended(); });
+    return std::ranges::none_of(o, &context::copy_member_invocation::suspended);
 }
 
 processing::preprocessor* opencode_provider::get_preprocessor()
