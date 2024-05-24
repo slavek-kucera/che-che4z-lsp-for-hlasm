@@ -466,7 +466,7 @@ constexpr const auto to_hex = [](unsigned long long n) {
         s.push_back("0123456789ABCDEF"[n & 15]);
         n >>= 4;
     } while (n);
-    std::reverse(s.begin(), s.end());
+    std::ranges::reverse(s);
     return s;
 };
 

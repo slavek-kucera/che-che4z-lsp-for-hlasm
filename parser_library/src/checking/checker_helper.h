@@ -76,7 +76,7 @@ inline std::string dec_to_hexa(int to_convert)
     {
         result.push_back("0123456789ABCDEF"[to_convert % 16]);
     } while (to_convert /= 16);
-    std::reverse(result.begin(), result.end());
+    std::ranges::reverse(result);
     return result;
 }
 
