@@ -113,7 +113,7 @@ class workspace_manager_impl final : public workspace_manager,
         "vscode-test-web:",
         "vscode-vfs:",
     };
-    static_assert(std::is_sorted(std::begin(default_allowed_schemes), std::end(default_allowed_schemes)));
+    static_assert(std::ranges::is_sorted(default_allowed_schemes));
     std::vector<std::string> allowed_schemes = {
         std::begin(default_allowed_schemes),
         std::end(default_allowed_schemes),
