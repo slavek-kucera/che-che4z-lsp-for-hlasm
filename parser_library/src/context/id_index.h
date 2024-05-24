@@ -40,7 +40,7 @@ class id_index
     {
         assert(s.size() < buffer_size);
         if (std::is_constant_evaluated())
-            std::copy(s.begin(), s.end(), m_buffer);
+            std::ranges::copy(s, m_buffer);
         else
             std::memcpy(m_buffer, s.data(), s.size());
         m_buffer[buffer_size - 1] = (char)s.size();

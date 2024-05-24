@@ -510,7 +510,7 @@ void workspace::retrieve_fade_messages(std::vector<fade_message>& fms) const
     for (const auto& [_, proc_file_component] : m_processor_files)
     {
         if (const auto& pfm = proc_file_component.m_last_results->fade_messages)
-            std::copy_if(pfm->begin(), pfm->end(), std::back_inserter(fms), [&opened_files_uris](const auto& fmsg) {
+            std::ranges::copy_if(*pfm, std::back_inserter(fms), [&opened_files_uris](const auto& fmsg) {
                 return opened_files_uris.contains(fmsg.uri);
             });
 
