@@ -106,13 +106,11 @@ std::vector<semantics::preproc_details::name_range> get_operands_list(
         std::ranges::remove_copy_if(
             operand_view, std::back_inserter(operand), [](unsigned char c) { return utils::isblank32(c); });
 
-        operand_list.emplace_back(semantics::preproc_details::name_range {
-            std::move(operand),
+        operand_list.emplace_back(std::move(operand),
             rp.adjust_range(range {
                 position(lineno, op_column_start),
                 position(lineno, op_column_start + operand_view.length()),
-            }),
-        });
+            }));
 
         operands.remove_prefix(operand_view.length());
         op_column_start += operand_view.length();

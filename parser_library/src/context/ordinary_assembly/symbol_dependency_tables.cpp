@@ -527,7 +527,7 @@ bool symbol_dependency_tables::update_dependencies(const dependency_value& d, co
 
     constexpr static auto unknown_loctr = [](const auto& e) { return e->kind == context::space_kind::LOCTR_UNKNOWN; };
     const auto loctr_cnt = std::ranges::count_if(deps.unresolved_spaces, unknown_loctr)
-        + std::ranges::count_if(addr_spaces, [](const auto& e) { return unknown_loctr(e.first); });
+        + std::ranges::count_if(addr_spaces, unknown_loctr, utils::first_element);
 
     for (const auto& e : deps.unresolved_spaces)
     {
@@ -780,7 +780,7 @@ bool symbol_dependency_tables::check_loctr_cycle(const library_info& li)
                 path.pop_back();
                 continue;
             }
-            if (auto it = std::ranges::find_if(path, [next](const auto* v) { return *v == *next; }); it != path.end())
+            if (auto it = std::ranges::find(path, *next, utils::dereference); it != path.end())
             {
                 cycles.insert(it, path.end());
                 continue;

@@ -334,9 +334,7 @@ bool macrodef_processor::test_varsym_validity(const semantics::variable_symbol* 
         return false;
     }
 
-    auto var_id = var->access_basic()->name;
-
-    if (std::ranges::find(param_names, var_id) != param_names.end())
+    if (std::ranges::find(param_names, var->access_basic()->name) != param_names.end())
     {
         add_diagnostic(diagnostic_op::error_E011("Symbolic parameter", op_range));
         if (add_empty)

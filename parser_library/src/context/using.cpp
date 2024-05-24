@@ -100,7 +100,7 @@ size_t using_collection::using_entry::compute_context_drop(register_t d)
         if (e.label.empty())
         {
             invalidated += std::ranges::count(e.regs, d);
-            std::replace(e.regs.begin(), e.regs.end(), d, invalid_register);
+            std::ranges::replace(e.regs, d, invalid_register);
         }
     }
     std::erase_if(context.m_state, [](const auto& e) { return e.regs == invalid_register_set; });
@@ -291,9 +291,7 @@ using_collection::resolved_entry using_collection::using_drop_definition::resolv
 
     } transform { diag };
 
-    constexpr index_t<mach_expression> empty;
-
-    for (const auto& expr : std::span(m_base.begin(), std::ranges::find(m_base, empty)))
+    for (const auto& expr : std::span(m_base.begin(), std::ranges::find(m_base, index_t<mach_expression>())))
     {
         auto [v, rng] = reg_or_label(coll, expr);
         std::visit([&transform, &rng = rng](auto value) { transform(value, rng); }, v);

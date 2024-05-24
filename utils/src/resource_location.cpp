@@ -292,7 +292,7 @@ resource_location resource_location::lexically_normal() const
 {
     auto uri = get_uri();
 
-    std::replace(uri.begin(), uri.end(), '\\', '/');
+    std::ranges::replace(uri, '\\', '/');
 
     if (!utils::path::is_uri(uri))
         return resource_location(normalize_path(uri, false, false));

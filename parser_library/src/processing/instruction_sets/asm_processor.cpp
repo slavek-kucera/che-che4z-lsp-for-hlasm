@@ -797,9 +797,8 @@ bool asm_processor::common_copy_postprocess(
         return false;
     }
 
-    auto whole_copy_stack = hlasm_ctx.whole_copy_stack();
-
-    if (std::ranges::find(whole_copy_stack, data.name) != whole_copy_stack.end())
+    if (auto whole_copy_stack = hlasm_ctx.whole_copy_stack();
+        std::ranges::find(whole_copy_stack, data.name) != whole_copy_stack.end())
     {
         if (diagnoser)
             diagnoser->add_diagnostic(diagnostic_op::error_E062(data.statement));
@@ -1020,7 +1019,7 @@ void asm_processor::process_START(rebuilt_statement&& stmt)
 
     auto sym_loc = hlasm_ctx.processing_stack_top().get_location();
     sym_loc.pos.column = 0;
-    auto* section = hlasm_ctx.ord_ctx.set_section(sect_name, EXECUTABLE, std::move(sym_loc), lib_info);
+    const auto* section = hlasm_ctx.ord_ctx.set_section(sect_name, EXECUTABLE, std::move(sym_loc), lib_info);
 
     const auto& ops = stmt.operands_ref().value;
     if (ops.size() != 1)
@@ -1267,9 +1266,7 @@ bool asm_expr_quals(const semantics::operand_ptr& op, std::string_view value)
 
 void asm_processor::process_PUSH(rebuilt_statement&& stmt)
 {
-    const auto& ops = stmt.operands_ref().value;
-
-    if (std::ranges::any_of(ops, [](const auto& op) { return asm_expr_quals(op, "USING"); }))
+    if (std::ranges::any_of(stmt.operands_ref().value, [](const auto& op) { return asm_expr_quals(op, "USING"); }))
         hlasm_ctx.using_push();
 
     context::ordinary_assembly_dependency_solver dep_solver(hlasm_ctx.ord_ctx, lib_info);
@@ -1281,9 +1278,8 @@ void asm_processor::process_PUSH(rebuilt_statement&& stmt)
 
 void asm_processor::process_POP(rebuilt_statement&& stmt)
 {
-    const auto& ops = stmt.operands_ref().value;
-
-    if (std::ranges::any_of(ops, [](const auto& op) { return asm_expr_quals(op, "USING"); }) && !hlasm_ctx.using_pop())
+    if (std::ranges::any_of(stmt.operands_ref().value, [](const auto& op) { return asm_expr_quals(op, "USING"); })
+        && !hlasm_ctx.using_pop())
         add_diagnostic(diagnostic_op::error_A165_POP_USING(stmt.stmt_range_ref()));
 
     context::ordinary_assembly_dependency_solver dep_solver(hlasm_ctx.ord_ctx, lib_info);

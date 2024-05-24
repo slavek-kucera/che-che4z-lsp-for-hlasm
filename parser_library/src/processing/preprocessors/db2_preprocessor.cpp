@@ -605,8 +605,10 @@ class db2_preprocessor final : public preprocessor // TODO Take DBCS into accoun
 
         s.remove_prefix(label.length());
 
-        return semantics::preproc_details::name_range { std::string(label),
-            range((position(lineno, 0)), (position(lineno, label.length()))) };
+        return semantics::preproc_details::name_range {
+            std::string(label),
+            range(position(lineno, 0), position(lineno, label.length())),
+        };
     }
 
     static std::pair<line_type, semantics::preproc_details::name_range> extract_instruction(
