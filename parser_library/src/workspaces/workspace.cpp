@@ -41,6 +41,7 @@
 #include "utils/factory.h"
 #include "utils/levenshtein_distance.h"
 #include "utils/path_conversions.h"
+#include "utils/projectors.h"
 #include "utils/transform_inserter.h"
 
 using hlasm_plugin::utils::resource::resource_location;
@@ -1138,7 +1139,7 @@ std::vector<std::pair<std::string, size_t>> workspace::make_opcode_suggestion(
 
     for (auto&& s : generate_instruction_suggestions(opcode, opts.instr_set, extended))
         result.emplace_back(std::move(s));
-    std::stable_sort(result.begin(), result.end(), [](const auto& l, const auto& r) { return l.second < r.second; });
+    std::ranges::stable_sort(result, {}, utils::second_element);
 
     return result;
 }

@@ -166,7 +166,7 @@ std::vector<document_symbol_item> lsp_context::document_symbol(
         }
     }
 
-    std::stable_sort(result.begin(), result.end(), [](const auto& l, const auto& r) {
+    std::ranges::stable_sort(result, [](const auto& l, const auto& r) {
         if (const auto c = l.symbol_range.start.line <=> r.symbol_range.start.line; c != 0)
             return c < 0;
 
