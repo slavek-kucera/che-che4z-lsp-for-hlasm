@@ -170,7 +170,7 @@ TEST(bk_tree, multiple_results)
     std::ranges::transform(r, std::back_inserter(result), [](const auto& v) { return *v.first; });
     const std::string expected[] { "abc1", "abc2", "abc3" };
 
-    EXPECT_TRUE(std::is_permutation(result.begin(), result.end(), std::begin(expected), std::end(expected)));
+    EXPECT_TRUE(std::ranges::is_permutation(result, expected));
 }
 
 TEST(bk_tree, multiple_results_no_limit)
@@ -189,7 +189,7 @@ TEST(bk_tree, multiple_results_no_limit)
     std::ranges::transform(r, std::back_inserter(result), [](const auto& v) { return *v.first; });
     const std::string expected[] { "abc1", "abc2", "abc3" };
 
-    EXPECT_TRUE(std::is_permutation(result.begin(), result.end(), std::begin(expected), std::end(expected)));
+    EXPECT_TRUE(std::ranges::is_permutation(result, expected));
 }
 
 TEST(bk_tree, empty)

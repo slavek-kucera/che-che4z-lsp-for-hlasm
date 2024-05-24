@@ -245,13 +245,11 @@ TEST(processor_group, opcode_suggestions)
     auto mac_false = grp.suggest("MAC", false);
     std::vector<std::pair<std::string, size_t>> expected_mac_false { { "MAC1", 1 }, { "MAC2", 1 } };
 
-    EXPECT_TRUE(
-        std::is_permutation(mac_false.begin(), mac_false.end(), expected_mac_false.begin(), expected_mac_false.end()));
+    EXPECT_TRUE(std::ranges::is_permutation(mac_false, expected_mac_false));
 
     auto mac_true = grp.suggest("$LOGMAC", true);
     std::vector<std::pair<std::string, size_t>> expected_mac_true { { "LONGMAC", 2 } };
-    EXPECT_TRUE(
-        std::is_permutation(mac_true.begin(), mac_true.end(), expected_mac_true.begin(), expected_mac_true.end()));
+    EXPECT_TRUE(std::ranges::is_permutation(mac_true, expected_mac_true));
 
     EXPECT_TRUE(grp.suggest("MAC1", false).empty());
     EXPECT_TRUE(grp.suggest("MAC1", true).empty());

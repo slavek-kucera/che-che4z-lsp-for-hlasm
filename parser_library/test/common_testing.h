@@ -102,7 +102,7 @@ inline bool matches_message_properties(CMsg&& d, const C& c, Proj p, BinPred b =
     std::vector<std::decay_t<std::invoke_result_t<Proj, const typename std::decay_t<CMsg>::value_type&>>> properties;
     std::ranges::transform(d, std::back_inserter(properties), std::ref(p));
 
-    return std::is_permutation(properties.begin(), properties.end(), c.begin(), c.end(), b);
+    return std::ranges::is_permutation(properties, c, std::ref(b));
 }
 
 template<typename CMsg,

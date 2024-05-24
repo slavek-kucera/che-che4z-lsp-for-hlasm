@@ -112,14 +112,14 @@ private:
 public:
     lsp_context_endevor_preprocessor_test()
         : lsp_context_preprocessor_test(
-              contents, std::make_shared<mock_parse_lib_provider>(member_list), endevor_preprocessor_options())
+            contents, std::make_shared<mock_parse_lib_provider>(member_list), endevor_preprocessor_options())
     {}
 };
 
 namespace {
 static bool has_same_content(const std::vector<location>& a, const std::vector<location>& b)
 {
-    return std::is_permutation(a.begin(), a.end(), b.begin(), b.end());
+    return std::ranges::is_permutation(a, b);
 }
 } // namespace
 
@@ -212,7 +212,7 @@ protected:
 public:
     lsp_context_cics_preprocessor_test()
         : lsp_context_preprocessor_test(
-              contents, std::make_shared<empty_parse_lib_provider>(), cics_preprocessor_options())
+            contents, std::make_shared<empty_parse_lib_provider>(), cics_preprocessor_options())
     {}
 
     void SetUp() override
@@ -358,7 +358,7 @@ C     EXEC SQL INCLUDE  SqLdA)";
 public:
     lsp_context_db2_preprocessor_include_test()
         : lsp_context_preprocessor_test(
-              contents, std::make_shared<mock_parse_lib_provider>(member_list), db2_preprocessor_options())
+            contents, std::make_shared<mock_parse_lib_provider>(member_list), db2_preprocessor_options())
     {}
 
     void SetUp() override
@@ -504,7 +504,7 @@ ZYXWV    DS    F
 public:
     lsp_context_db2_preprocessor_exec_sql_args_test()
         : lsp_context_preprocessor_test(
-              contents, std::make_shared<mock_parse_lib_provider>(member_list), db2_preprocessor_options())
+            contents, std::make_shared<mock_parse_lib_provider>(member_list), db2_preprocessor_options())
     {}
 };
 
