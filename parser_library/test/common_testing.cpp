@@ -70,7 +70,7 @@ bool matches_fade_messages(const std::vector<fade_message>& a, const std::vector
 
 bool contains_fade_messages(const std::vector<fade_message>& a, const std::vector<fade_message>& b)
 {
-    return std::includes(a.begin(), a.end(), b.begin(), b.end(), [](const auto& msg_a, const auto& msg_b) {
+    return std::ranges::includes(a, b, [](const auto& msg_a, const auto& msg_b) {
         return msg_a.code == msg_b.code && msg_a.r == msg_b.r && msg_a.uri == msg_b.uri;
     });
 }

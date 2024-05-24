@@ -122,7 +122,7 @@ inline bool contains_message_properties(CMsg&& d, const C& c, Proj p)
     std::ranges::sort(properties);
     std::ranges::sort(to_find);
 
-    return std::includes(properties.begin(), properties.end(), to_find.begin(), to_find.end());
+    return std::ranges::includes(properties, to_find);
 }
 
 template<typename CMsg, typename C = std::initializer_list<std::string>>
