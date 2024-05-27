@@ -64,7 +64,6 @@ struct lsp_context_instr : public ::testing::Test
 
 namespace {
 constexpr std::string_view ADDFRR = "ADDFRR";
-auto label_addfrr_compare = [](const auto& item) { return item.label == "ADDFRR"; };
 } // namespace
 TEST_F(lsp_context_instr, ADDFRR_not_loaded)
 {
@@ -90,7 +89,7 @@ TEST_F(lsp_context_instr, ADDFRR_loaded_changed_instr_set)
 
     auto result_z15 = std::ranges::find(comp_list_z15, ADDFRR, &completion_item::label) == comp_list_z15.end();
 
-    auto result_xa = std::ranges::find(comp_list_xa, "ADDFRR", &completion_item::label) != comp_list_xa.end();
+    auto result_xa = std::ranges::find(comp_list_xa, ADDFRR, &completion_item::label) != comp_list_xa.end();
 
     EXPECT_NE(comp_list_z15.size(), comp_list_xa.size());
     EXPECT_TRUE(result_z15);
