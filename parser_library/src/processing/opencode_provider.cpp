@@ -18,6 +18,7 @@
 #include <format>
 
 #include "analyzer.h"
+#include "context/hlasm_context.h"
 #include "library_info_transitional.h"
 #include "lsp/lsp_context.h"
 #include "parsing/parser_impl.h"

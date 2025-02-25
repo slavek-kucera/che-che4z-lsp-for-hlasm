@@ -18,6 +18,7 @@
 #include <format>
 #include <memory>
 #include <numeric>
+#include <ranges>
 
 #include "diagnostic_tools.h"
 #include "ebcdic_encoding.h"
@@ -347,6 +348,7 @@ hlasm_context::hlasm_context(
     , ord_ctx(*this)
 {
     scope_stack_.emplace_back().time = utils::timestamp::now().value_or(utils::timestamp(1900, 1, 1));
+    scope_stack_.back().stack = m_stack_tree.root();
 
     init_instruction_map(opcode_mnemo_, *ids_, asm_options_.instr_set);
 
@@ -434,8 +436,10 @@ std::shared_ptr<id_storage> hlasm_context::ids_ptr() { return ids_; }
 processing_stack_t hlasm_context::processing_stack()
 {
     auto result = m_stack_tree.root();
-
-    for (bool first = true; const auto& source : source_stack_)
+    auto it = std::find_if(scope_stack_.rbegin(), scope_stack_.rend(), [](const auto& scope) {
+        return !scope.stack.empty();
+    }).base();
+    if (const auto& source = source_stack_.front(); it == scope_stack_.begin())
     {
         result = m_stack_tree.step(result,
             source.current_instruction.pos,
@@ -450,19 +454,35 @@ processing_stack_t hlasm_context::processing_stack()
                 member.name(),
                 file_processing_type::COPY);
         }
+        ++it;
+    }
+    else
+        result = (--it)->stack;
 
-        if (first) // append macros immediately after ordinary processing
+    for (const auto e = scope_stack_.end(); it != e; ++it)
+    {
+        it->stack = result;
+        for (auto type = file_processing_type::MACRO; const auto& nest : it->this_macro->get_current_copy_nest())
         {
-            first = false;
-            for (size_t j = 1; j < scope_stack_.size(); ++j)
-            {
-                for (auto type = file_processing_type::MACRO;
-                     const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
-                {
-                    result = m_stack_tree.step(result, nest.loc.pos, nest.loc.resource_loc, nest.member_name, type);
-                    type = file_processing_type::COPY;
-                }
-            }
+            result = m_stack_tree.step(result, nest.loc.pos, nest.loc.resource_loc, nest.member_name, type);
+            type = file_processing_type::COPY;
+        }
+    }
+
+    for (const auto& source : source_stack_ | std::views::drop(1))
+    {
+        result = m_stack_tree.step(result,
+            source.current_instruction.pos,
+            source.current_instruction.resource_loc,
+            id_index(),
+            file_processing_type::OPENCODE);
+        for (const auto& member : source.copy_stack)
+        {
+            result = m_stack_tree.step(result,
+                member.current_statement_position(),
+                member.definition_location()->resource_loc,
+                member.name(),
+                file_processing_type::COPY);
         }
     }
 

@@ -14,6 +14,7 @@
 
 #include "macro_statement_provider.h"
 
+#include "context/hlasm_context.h"
 #include "processing/processing_manager.h"
 
 namespace hlasm_plugin::parser_library::processing {

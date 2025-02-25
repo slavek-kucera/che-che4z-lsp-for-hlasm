@@ -21,6 +21,7 @@
 #include "../common_testing.h"
 #include "../workspace/empty_configs.h"
 #include "analyzer.h"
+#include "context/hlasm_context.h"
 #include "context/id_storage.h"
 #include "library_mock.h"
 #include "lsp/lsp_context.h"
