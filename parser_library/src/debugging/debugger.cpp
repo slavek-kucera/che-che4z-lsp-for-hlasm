@@ -270,7 +270,7 @@ public:
             for (cur = cur.parent(); !cur.empty(); last = cur, cur = cur.parent())
                 if (cur == cond.first)
                     break;
-            return cond.first != cur || (cond.second && *cond.second != last.frame().resource_loc);
+            return cond.first != cur || (cond.second && *cond.second != last.frame().resource_loc());
         };
 
         // breakpoint check
@@ -327,11 +327,10 @@ public:
 
     void step_out()
     {
-        if (!stop_on_stack_condition_.first.empty())
+        if (const auto& [stack, _] = stop_on_stack_condition_; !stack.empty())
         {
             stop_on_stack_changes_ = true;
-            stop_on_stack_condition_ = std::make_pair(
-                stop_on_stack_condition_.first.parent(), stop_on_stack_condition_.first.frame().resource_loc);
+            stop_on_stack_condition_ = std::make_pair(stack.parent(), stack.frame().resource_loc());
         }
         else
             stop_on_next_stmt_ = false; // step out in the opencode is equivalent to continue

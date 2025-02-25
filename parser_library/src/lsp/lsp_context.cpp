@@ -25,7 +25,9 @@
 
 #include "completion_item.h"
 #include "completion_trigger_kind.h"
+#include "context/hlasm_context.h"
 #include "context/macro.h"
+#include "context/ordinary_assembly/section.h"
 #include "context/using.h"
 #include "item_convertors.h"
 #include "lsp/instruction_completions.h"
@@ -87,7 +89,7 @@ std::vector<document_symbol_item> lsp_context::document_symbol(
 
         for (auto s = stack; !s.empty(); s = s.parent())
         {
-            if (s.frame().resource_loc == dl)
+            if (s.frame().resource_loc() == dl)
                 p = &s.frame().pos;
             if (s.frame().proc_type == context::file_processing_type::MACRO)
                 p = nullptr;
@@ -579,26 +581,23 @@ location lsp_context::find_symbol_definition_location(
     std::pair<occurrence_scope_t, context::processing_stack_t> top_reference;
     const auto& [top_scope, top_stack] = top_reference;
 
-    auto stack = sym.proc_stack();
-    while (!stack.empty())
+    for (auto stack = sym.proc_stack(); !stack.empty(); stack = stack.parent())
     {
         const auto& frame = stack.frame();
 
-        if (frame.resource_loc == document_loc && frame.pos.line == pos.line)
+        if (frame.resource_loc() == document_loc && frame.pos.line == pos.line)
         {
             top_reference = {};
             break;
         }
 
-        auto scope = find_occurrence_with_scope(frame.resource_loc, position(frame.pos.line, 0));
+        auto scope = find_occurrence_with_scope(frame.resource_loc(), position(frame.pos.line, 0));
 
         if (scope.first && scope.first->kind == lsp::occurrence_kind::ORD && scope.first->name == sym.name())
             top_reference = { scope, stack };
-
-        stack = stack.parent();
     }
     if (top_scope.first)
-        return location(top_scope.first->occurrence_range.start, top_stack.frame().resource_loc);
+        return location(top_scope.first->occurrence_range.start, top_stack.frame().resource_loc());
     else
         return sym.symbol_location();
 }

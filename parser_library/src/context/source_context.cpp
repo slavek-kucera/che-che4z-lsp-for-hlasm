@@ -16,6 +16,7 @@
 
 #include <cassert>
 #include <memory>
+#include <new>
 
 using namespace hlasm_plugin::parser_library;
 using namespace hlasm_plugin::parser_library::context;
@@ -50,8 +51,25 @@ processing_frame_details::processing_frame_details(position pos,
     , proc_type(std::move(proc_type))
 {}
 
+void* processing_frame_tree::frame_allocator_base::allocate(size_t n) const
+{
+    if (n > limit)
+        return ::operator new(n);
+    return mem->allocate(n);
+}
+
+void processing_frame_tree::frame_allocator_base::deallocate(void* p, size_t n) const noexcept
+{
+    if (n > limit)
+        return ::operator delete(p, n);
+    // small blocks get deallocated with the whole pool
+}
+
+[[noreturn]] void processing_frame_tree::frame_allocator_base::throw_bad_alloc() const { throw std::bad_alloc(); }
+
 processing_frame_tree::processing_frame_tree()
-    : m_root(std::to_address(m_frames.emplace().first))
+    : m_locations(frame_allocator<utils::resource::resource_location>(m_frame_resource))
+    , m_frames(frame_allocator<processing_frame_node>(m_frame_resource))
 {}
 
 processing_frame_tree::node_pointer processing_frame_tree::step(node_pointer current,
@@ -60,9 +78,8 @@ processing_frame_tree::node_pointer processing_frame_tree::step(node_pointer cur
     id_index member,
     file_processing_type proc_type)
 {
-    assert(current.m_node);
-
-    const auto [it, _] = m_frames.insert({ current.m_node, pos, resource_loc, member, proc_type });
+    const auto& loc = *m_locations.insert(resource_loc).first;
+    const auto [it, _] = m_frames.insert({ current.m_node, pos, loc, member, proc_type });
     return node_pointer(std::to_address(it));
 }
 

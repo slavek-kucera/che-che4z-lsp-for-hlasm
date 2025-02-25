@@ -15,7 +15,7 @@
 #ifndef CONTEXT_SOURCE_CONTEXT_H
 #define CONTEXT_SOURCE_CONTEXT_H
 
-#include <memory>
+#include <memory_resource>
 #include <unordered_set>
 #include <vector>
 
@@ -62,20 +62,22 @@ struct processing_frame
         id_index member,
         file_processing_type proc_type)
         : pos(pos)
-        , resource_loc(resource_loc)
+        , resource_loc_ptr(&resource_loc)
         , member_name(member)
         , proc_type(proc_type)
     {}
 
     position pos;
-    utils::resource::resource_location resource_loc;
+    const utils::resource::resource_location* resource_loc_ptr;
     id_index member_name;
     file_processing_type proc_type;
 
     bool operator==(const processing_frame&) const = default;
 
-    location get_location() const { return location(pos, resource_loc); }
+    const utils::resource::resource_location& resource_loc() const noexcept { return *resource_loc_ptr; }
+    location get_location() const { return location(pos, resource_loc()); }
 };
+static_assert(std::is_trivially_destructible_v<processing_frame>);
 
 struct processing_frame_details
 {
@@ -86,11 +88,12 @@ struct processing_frame_details
         id_index member);
 
     position pos;
-    utils::resource::resource_location resource_loc;
+    const utils::resource::resource_location& resource_loc;
     const code_scope& scope;
     id_index member_name;
     file_processing_type proc_type;
 };
+static_assert(std::is_trivially_destructible_v<processing_frame_details>);
 
 using processing_stack_details_t = std::vector<processing_frame_details>;
 
@@ -112,11 +115,12 @@ class processing_frame_tree
             : m_parent(parent)
             , frame(pos, resource_loc, member, proc_type)
         {}
-        explicit processing_frame_node()
+        explicit processing_frame_node(const utils::resource::resource_location& resource_loc)
             : m_parent(nullptr)
-            , frame({}, utils::resource::resource_location(), id_index(), file_processing_type::NONE)
+            , frame({}, resource_loc, id_index(), file_processing_type::NONE)
         {}
     };
+    static_assert(std::is_trivially_destructible_v<processing_frame_node>);
 
     struct hasher
     {
@@ -127,25 +131,96 @@ class processing_frame_tree
                 ((result = utils::hashers::hash_combine(result, std::hash<T>()(v))), ...);
                 return result;
             };
-            return hash(n.m_parent, n.frame.member_name, n.frame.resource_loc, n.frame.pos.column, n.frame.pos.line);
+            return hash(n.m_parent, n.frame.resource_loc(), n.frame.pos.line);
         }
     };
 
-    std::unordered_set<processing_frame_node, hasher> m_frames;
-    const processing_frame_node* m_root;
+    struct frame_memory_resource final : std::pmr::monotonic_buffer_resource
+    {};
+
+    class frame_allocator_base
+    {
+        static constexpr size_t limit = 128;
+        static_assert(sizeof(processing_frame_node) + alignof(processing_frame_node) + 2 * sizeof(void*) < limit);
+
+        frame_memory_resource* mem;
+
+    protected:
+        [[noreturn]] void throw_bad_alloc() const;
+        ~frame_allocator_base() = default;
+
+    public:
+        [[nodiscard]] constexpr auto get_frame_memory_resource() const noexcept { return mem; }
+
+        explicit constexpr frame_allocator_base(frame_memory_resource& mem) noexcept
+            : mem(&mem)
+        {}
+
+        [[nodiscard]] void* allocate(size_t n) const;
+        void deallocate(void* p, size_t n) const noexcept;
+
+        bool operator==(const frame_allocator_base&) const noexcept = default;
+    };
+
+    template<typename T>
+    class frame_allocator : frame_allocator_base
+    {
+        static constexpr size_t max_n = (size_t)-1 / sizeof(T);
+
+    public:
+        [[nodiscard]] constexpr const frame_allocator_base& get_base() const noexcept { return *this; }
+
+        explicit constexpr frame_allocator(frame_memory_resource& mem) noexcept
+            : frame_allocator_base(mem)
+        {}
+
+        template<typename U>
+        explicit constexpr frame_allocator(const frame_allocator<U>& o) noexcept
+            : frame_allocator_base(o.get_base())
+        {}
+
+        using value_type = T;
+
+        [[nodiscard]] T* allocate(size_t n) const
+        {
+            if (n > max_n)
+                frame_allocator_base::throw_bad_alloc();
+            return static_cast<T*>(frame_allocator_base::allocate(sizeof(T) * n));
+        }
+        void deallocate(T* p, size_t n) const noexcept { frame_allocator_base::deallocate(p, sizeof(T) * n); }
+
+        template<typename U>
+        bool operator==(const frame_allocator<U>& o) const noexcept
+        {
+            return get_base() == o.get_base();
+        }
+    };
+
+    frame_memory_resource m_frame_resource;
+
+    std::unordered_set<utils::resource::resource_location,
+        ::std::hash<utils::resource::resource_location>,
+        ::std::equal_to<utils::resource::resource_location>,
+        frame_allocator<utils::resource::resource_location>>
+        m_locations;
+
+    std::unordered_set<processing_frame_node,
+        hasher,
+        ::std::equal_to<processing_frame_node>,
+        frame_allocator<processing_frame_node>>
+        m_frames;
 
 public:
     class node_pointer
     {
-        const processing_frame_node* m_node;
+        const processing_frame_node* m_node = nullptr;
 
         explicit node_pointer(const processing_frame_node* node)
             : m_node(node)
         {}
 
     public:
-        node_pointer()
-            : m_node(nullptr) {};
+        node_pointer() = default;
 
         const processing_frame& frame() const { return m_node->frame; }
         node_pointer parent() const { return node_pointer(m_node->m_parent); }
@@ -155,12 +230,10 @@ public:
 
         bool operator==(node_pointer it) const noexcept { return m_node == it.m_node; }
 
-        bool empty() const noexcept { return !m_node || m_node->m_parent == nullptr; }
+        bool empty() const noexcept { return !m_node; }
 
         friend class processing_frame_tree;
     };
-
-    node_pointer root() const { return node_pointer(m_root); }
 
     processing_frame_tree();
 

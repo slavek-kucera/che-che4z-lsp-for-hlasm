@@ -18,6 +18,7 @@
 #include <iterator>
 #include <ranges>
 
+#include "context/hlasm_context.h"
 #include "context/instruction.h"
 #include "processing/branching_provider.h"
 #include "processing/instruction_sets/asm_processor.h"

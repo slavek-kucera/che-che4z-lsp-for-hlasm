@@ -14,6 +14,7 @@
 
 #include "copy_processor.h"
 
+#include "context/hlasm_context.h"
 #include "macrodef_processor.h"
 
 using namespace hlasm_plugin::parser_library;
