@@ -581,8 +581,7 @@ location lsp_context::find_symbol_definition_location(
     std::pair<occurrence_scope_t, context::processing_stack_t> top_reference;
     const auto& [top_scope, top_stack] = top_reference;
 
-    auto stack = sym.proc_stack();
-    while (!stack.empty())
+    for (auto stack = sym.proc_stack(); !stack.empty(); stack = stack.parent())
     {
         const auto& frame = stack.frame();
 
@@ -596,8 +595,6 @@ location lsp_context::find_symbol_definition_location(
 
         if (scope.first && scope.first->kind == lsp::occurrence_kind::ORD && scope.first->name == sym.name())
             top_reference = { scope, stack };
-
-        stack = stack.parent();
     }
     if (top_scope.first)
         return location(top_scope.first->occurrence_range.start, *top_stack.frame().resource_loc);

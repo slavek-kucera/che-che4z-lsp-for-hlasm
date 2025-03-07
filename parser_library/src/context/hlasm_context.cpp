@@ -348,7 +348,6 @@ hlasm_context::hlasm_context(
     , ord_ctx(*this)
 {
     scope_stack_.emplace_back().time = utils::timestamp::now().value_or(utils::timestamp(1900, 1, 1));
-    scope_stack_.back().stack = m_stack_tree.root();
 
     init_instruction_map(opcode_mnemo_, *ids_, asm_options_.instr_set);
 
@@ -435,7 +434,7 @@ std::shared_ptr<id_storage> hlasm_context::ids_ptr() { return ids_; }
 
 processing_stack_t hlasm_context::processing_stack()
 {
-    auto result = m_stack_tree.root();
+    processing_stack_t result;
     auto it = std::find_if(scope_stack_.rbegin(), scope_stack_.rend(), [](const auto& scope) {
         return !scope.stack.empty();
     }).base();
@@ -485,6 +484,8 @@ processing_stack_t hlasm_context::processing_stack()
                 file_processing_type::COPY);
         }
     }
+
+    assert(!result.empty());
 
     return result;
 }

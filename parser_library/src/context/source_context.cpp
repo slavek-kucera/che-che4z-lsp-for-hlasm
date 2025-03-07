@@ -57,6 +57,7 @@ void* processing_frame_tree::frame_allocator_base::allocate(size_t n) const
         return ::operator new(n);
     return mem->allocate(n);
 }
+
 void processing_frame_tree::frame_allocator_base::deallocate(void* p, size_t n) const noexcept
 {
     if (n > 2 * sizeof(processing_frame_node))
@@ -69,7 +70,6 @@ void processing_frame_tree::frame_allocator_base::deallocate(void* p, size_t n) 
 processing_frame_tree::processing_frame_tree()
     : m_locations(frame_allocator<utils::resource::resource_location>(m_frame_resource))
     , m_frames(frame_allocator<processing_frame_node>(m_frame_resource))
-    , m_root(std::to_address(m_frames.emplace(*m_locations.emplace().first).first))
 {}
 
 processing_frame_tree::node_pointer processing_frame_tree::step(node_pointer current,
@@ -78,8 +78,6 @@ processing_frame_tree::node_pointer processing_frame_tree::step(node_pointer cur
     id_index member,
     file_processing_type proc_type)
 {
-    assert(current.m_node);
-
     const auto& loc = *m_locations.insert(resource_loc).first;
     const auto [it, _] = m_frames.insert({ current.m_node, pos, loc, member, proc_type });
     return node_pointer(std::to_address(it));

@@ -208,20 +208,17 @@ class processing_frame_tree
         frame_allocator<processing_frame_node>>
         m_frames;
 
-    const processing_frame_node* m_root;
-
 public:
     class node_pointer
     {
-        const processing_frame_node* m_node;
+        const processing_frame_node* m_node = nullptr;
 
         explicit node_pointer(const processing_frame_node* node)
             : m_node(node)
         {}
 
     public:
-        node_pointer()
-            : m_node(nullptr) {};
+        node_pointer() = default;
 
         const processing_frame& frame() const { return m_node->frame; }
         node_pointer parent() const { return node_pointer(m_node->m_parent); }
@@ -231,12 +228,10 @@ public:
 
         bool operator==(node_pointer it) const noexcept { return m_node == it.m_node; }
 
-        bool empty() const noexcept { return !m_node || m_node->m_parent == nullptr; }
+        bool empty() const noexcept { return !m_node; }
 
         friend class processing_frame_tree;
     };
-
-    node_pointer root() const { return node_pointer(m_root); }
 
     processing_frame_tree();
 
