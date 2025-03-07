@@ -72,7 +72,7 @@ struct code_scope
     size_t branch_counter_change = 0;
     // the ACTR branch counter
     A_t branch_counter = 4096;
-
+    // stack pointer of the previous frame
     processing_frame_tree::node_pointer stack;
 
     bool is_in_macro() const { return !!this_macro; }
