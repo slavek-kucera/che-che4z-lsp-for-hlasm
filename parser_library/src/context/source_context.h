@@ -168,7 +168,7 @@ class processing_frame_tree
         static constexpr size_t max_n = (size_t)-1 / sizeof(T);
 
     public:
-        [[nodiscard]] constexpr frame_allocator_base get_base() const noexcept { return *this; }
+        [[nodiscard]] constexpr const frame_allocator_base& get_base() const noexcept { return *this; }
 
         explicit constexpr frame_allocator(frame_memory_resource& mem) noexcept
             : frame_allocator_base(mem)
