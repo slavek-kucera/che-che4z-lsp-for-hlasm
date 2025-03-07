@@ -62,7 +62,7 @@ void processing_frame_tree::frame_allocator_base::deallocate(void* p, size_t n) 
 {
     if (n > limit)
         return ::operator delete(p, n);
-    mem->deallocate(p, n);
+    // small blocks get deallocated with the whole pool
 }
 
 [[noreturn]] void processing_frame_tree::frame_allocator_base::throw_bad_alloc() const { throw std::bad_alloc(); }
