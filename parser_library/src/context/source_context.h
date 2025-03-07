@@ -15,7 +15,6 @@
 #ifndef CONTEXT_SOURCE_CONTEXT_H
 #define CONTEXT_SOURCE_CONTEXT_H
 
-#include <memory>
 #include <memory_resource>
 #include <unordered_set>
 #include <vector>
@@ -63,19 +62,20 @@ struct processing_frame
         id_index member,
         file_processing_type proc_type)
         : pos(pos)
-        , resource_loc(&resource_loc)
+        , resource_loc_ptr(&resource_loc)
         , member_name(member)
         , proc_type(proc_type)
     {}
 
     position pos;
-    const utils::resource::resource_location* resource_loc;
+    const utils::resource::resource_location* resource_loc_ptr;
     id_index member_name;
     file_processing_type proc_type;
 
     bool operator==(const processing_frame&) const = default;
 
-    location get_location() const { return location(pos, *resource_loc); }
+    const utils::resource::resource_location& resource_loc() const noexcept { return *resource_loc_ptr; }
+    location get_location() const { return location(pos, resource_loc()); }
 };
 static_assert(std::is_trivially_destructible_v<processing_frame>);
 
@@ -131,7 +131,7 @@ class processing_frame_tree
                 ((result = utils::hashers::hash_combine(result, std::hash<T>()(v))), ...);
                 return result;
             };
-            return hash(n.m_parent, *n.frame.resource_loc, n.frame.pos.line);
+            return hash(n.m_parent, n.frame.resource_loc(), n.frame.pos.line);
         }
     };
 
@@ -141,11 +141,13 @@ class processing_frame_tree
     class frame_allocator_base
     {
         static constexpr size_t limit = 128;
+        static_assert(sizeof(processing_frame_node) + alignof(processing_frame_node) + 2 * sizeof(void*) < limit);
 
         frame_memory_resource* mem;
 
     protected:
         [[noreturn]] void throw_bad_alloc() const;
+        ~frame_allocator_base() = default;
 
     public:
         [[nodiscard]] constexpr auto get_frame_memory_resource() const noexcept { return mem; }

@@ -53,14 +53,14 @@ processing_frame_details::processing_frame_details(position pos,
 
 void* processing_frame_tree::frame_allocator_base::allocate(size_t n) const
 {
-    if (n > 2 * sizeof(processing_frame_node))
+    if (n > limit)
         return ::operator new(n);
     return mem->allocate(n);
 }
 
 void processing_frame_tree::frame_allocator_base::deallocate(void* p, size_t n) const noexcept
 {
-    if (n > 2 * sizeof(processing_frame_node))
+    if (n > limit)
         return ::operator delete(p, n);
     mem->deallocate(p, n);
 }
