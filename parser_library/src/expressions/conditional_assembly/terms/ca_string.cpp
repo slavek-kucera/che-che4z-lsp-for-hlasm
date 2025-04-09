@@ -14,8 +14,6 @@
 
 #include "ca_string.h"
 
-#include <optional>
-
 #include "expressions/conditional_assembly/ca_expr_visitor.h"
 #include "expressions/conditional_assembly/ca_operator_binary.h"
 #include "expressions/evaluation_context.h"
@@ -83,82 +81,82 @@ bool string_too_long(std::string_view s, uint64_t dupl)
 }
 } // namespace
 
+context::A_t ca_string::compute_duplication_factor(const ca_expr_ptr& dupl_factor, const evaluation_context& eval_ctx)
+{
+    if (!dupl_factor)
+        return 1;
+    auto dupl = dupl_factor->evaluate(eval_ctx).access_a();
+
+    if (dupl < 0)
+    {
+        eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE010(dupl_factor->expr_range));
+        return -1;
+    }
+    return dupl;
+}
+
 context::SET_t ca_string::evaluate(const evaluation_context& eval_ctx) const
 {
-    context::C_t str = semantics::concatenation_point::evaluate(value, eval_ctx);
+    context::A_t dupl = compute_duplication_factor(duplication_factor, eval_ctx);
 
-    if (string_too_long(str, 1))
-    {
-        eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE011(expr_range));
-        return context::object_traits<context::C_t>::default_v();
-    }
-
+    context::A_t start = -1;
+    context::A_t count = -1;
     if (substring.start)
     {
-        auto start = substring.start->evaluate(eval_ctx).access_a();
-        std::optional<context::A_t> count;
+        start = substring.start->evaluate(eval_ctx).access_a();
         if (substring.count)
             count = substring.count->evaluate(eval_ctx).access_a();
 
         if (count == 0)
         {
             // when zero-length substring is requested, validation of the first parameter seems suppressed
-            str = "";
+            return context::object_traits<context::C_t>::default_v();
         }
-        else if (start <= 0 || count && count < 0)
+        else if (start <= 0 || substring.count && count < 0)
         {
             eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE008(substring.substring_range));
             return context::object_traits<context::C_t>::default_v();
         }
-        else
-        {
-            auto substr = utils::utf8_substr<false>(str, start - 1, (size_t)count.value_or(-1));
-            if (!substr.offset_valid || count && substr.str.empty())
-            {
-                eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE009(substring.start->expr_range));
-                return context::object_traits<context::C_t>::default_v();
-            }
-            /* TODO uncomment when assembler options will be implemented
-            if (substr.char_count != count)
-                eval_ctx.diags.add_diagnostic(diagnostic_op::error_CW001(substring.count->expr_range));
-            */
-            str = std::string(substr.str);
-        }
     }
 
-    return duplicate(duplication_factor, std::move(str), expr_range, eval_ctx);
+    context::C_t str = semantics::concatenation_point::evaluate(value, eval_ctx);
+
+    if (start > 0)
+    {
+        auto substr = utils::utf8_substr<false>(str, start - 1, (size_t)count);
+        if (!substr.offset_valid || substring.count && substr.str.empty())
+        {
+            eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE009(substring.start->expr_range));
+            return context::object_traits<context::C_t>::default_v();
+        }
+        /* TODO uncomment when assembler options will be implemented
+        if (substr.char_count != count)
+            eval_ctx.diags.add_diagnostic(diagnostic_op::error_CW001(substring.count->expr_range));
+        */
+        str = std::string(substr.str);
+    }
+
+    return duplicate(dupl, std::move(str), expr_range, eval_ctx);
 }
 
 std::string ca_string::duplicate(
-    const ca_expr_ptr& dupl_factor, std::string value, range expr_range, const evaluation_context& eval_ctx)
+    context::A_t dupl, std::string value, range expr_range, const evaluation_context& eval_ctx)
 {
-    if (dupl_factor)
+    if (dupl <= 0 || value.empty())
+        return {};
+
+    if (string_too_long(value, (uint64_t)dupl))
     {
-        auto dupl = dupl_factor->evaluate(eval_ctx).access_a();
-
-        if (dupl < 0)
-        {
-            eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE010(dupl_factor->expr_range));
-            return "";
-        }
-
-        if (string_too_long(value, (uint64_t)dupl))
-        {
-            eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE011(expr_range));
-            return "";
-        }
-
-        if (dupl == 0 || value.empty())
-            value = "";
-        else
-        {
-            value.reserve(value.size() * dupl);
-            auto begin = value.begin();
-            auto end = value.end();
-            for (auto i = 1; i < dupl; ++i)
-                value.append(begin, end);
-        }
+        eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE011(expr_range));
+        return {};
     }
+
+    value.reserve(value.size() * dupl);
+    auto begin = value.begin();
+    auto end = value.end();
+    for (auto i = 1; i < dupl; ++i)
+        value.append(begin, end);
+
     return value;
 }
 
