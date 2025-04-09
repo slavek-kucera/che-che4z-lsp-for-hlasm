@@ -172,7 +172,7 @@ struct concat_point_stringifier
         if (v.symbol->created)
         {
             result.push_back('(');
-            result.append(concatenation_point::to_string(v.symbol->access_created()->created_name));
+            operator()(v.symbol->access_created()->created_name);
             result.push_back(')');
         }
         else
@@ -184,16 +184,24 @@ struct concat_point_stringifier
     void operator()(const sublist_conc& v) const
     {
         result.push_back('(');
-        for (size_t i = 0; i < v.list.size(); ++i)
+        for (bool first = true; const auto& l : v.list)
         {
-            result.append(concatenation_point::to_string(v.list[i]));
-            if (i != v.list.size() - 1)
+            if (first)
+                first = false;
+            else
                 result.push_back(',');
+            operator()(l);
         }
         result.push_back(')');
     }
 
     void operator()(const equals_conc&) const { result.push_back('='); }
+
+    void operator()(const concat_chain& cc) const
+    {
+        for (const auto visitor = [this](const auto& e) { operator()(e); }; const auto& c : cc)
+            std::visit(visitor, c.value);
+    }
 };
 
 std::string concatenation_point::to_string(concat_chain::const_iterator begin, concat_chain::const_iterator end)
