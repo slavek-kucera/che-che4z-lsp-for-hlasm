@@ -72,15 +72,6 @@ bool ca_string::is_character_expression(character_expression_purpose) const { re
 
 void ca_string::apply(ca_expr_visitor& visitor) const { visitor.visit(*this); }
 
-namespace {
-bool string_too_long(std::string_view s, uint64_t dupl)
-{
-    return s.size() * dupl > utils::max_utf8_sequence_length * ca_string::MAX_STR_SIZE
-        || s.size() * dupl > ca_string::MAX_STR_SIZE
-        && utils::length_utf32_no_validation(s) * dupl > ca_string::MAX_STR_SIZE;
-}
-} // namespace
-
 context::A_t ca_string::compute_duplication_factor(const ca_expr_ptr& dupl_factor, const evaluation_context& eval_ctx)
 {
     if (!dupl_factor)
@@ -139,23 +130,54 @@ context::SET_t ca_string::evaluate(const evaluation_context& eval_ctx) const
     return duplicate(dupl, std::move(str), expr_range, eval_ctx);
 }
 
+namespace {
+std::optional<size_t> string_too_long(std::string_view s, uint64_t dupl)
+{
+    if (s.size() > ca_string::MAX_STR_SIZE || s.size() * dupl > ca_string::MAX_STR_SIZE)
+    {
+        const auto len = utils::length_utf32_no_validation(s);
+        if (len > ca_string::MAX_STR_SIZE || len * dupl > ca_string::MAX_STR_SIZE)
+            return len;
+    }
+    return std::nullopt;
+}
+
+void repeat_string(std::string& s, uint64_t n)
+{
+    s.reserve(s.size() * n);
+    auto begin = s.begin();
+    auto end = s.end();
+    for (uint64_t i = 1; i < n; ++i)
+        s.append(begin, end);
+}
+} // namespace
+
 std::string ca_string::duplicate(
     context::A_t dupl, std::string value, range expr_range, const evaluation_context& eval_ctx)
 {
     if (dupl <= 0 || value.empty())
         return {};
 
-    if (string_too_long(value, (uint64_t)dupl))
+    const auto len = string_too_long(value, dupl);
+    if (!len)
     {
-        eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE011(expr_range));
-        return {};
+        repeat_string(value, dupl);
+        return value;
     }
 
-    value.reserve(value.size() * dupl);
-    auto begin = value.begin();
-    auto end = value.end();
-    for (auto i = 1; i < dupl; ++i)
-        value.append(begin, end);
+    eval_ctx.diags.add_diagnostic(diagnostic_op::error_CE011(expr_range));
+
+    if (len > MAX_STR_SIZE)
+    {
+        value = utils::utf8_substr(value, 0, MAX_STR_SIZE).str;
+        return value;
+    }
+
+    const auto repeat = MAX_STR_SIZE / *len;
+    const auto remainer = MAX_STR_SIZE % *len;
+
+    repeat_string(value, repeat);
+    value.append(utils::utf8_substr(value, 0, remainer).str);
 
     return value;
 }
