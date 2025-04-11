@@ -422,7 +422,7 @@ void macro_processor::get_keyword_arg(const resolved_statement& statement,
         auto chain_end = chain.end();
         context::macro_data_ptr data;
 
-        diagnostic_adder add_diags(statement.operands_ref().field_range);
+        diagnostic_adder add_diags(this->eval_ctx.diags, statement.operands_ref().field_range);
         if (semantics::concat_chain_matches<semantics::sublist_conc>(chain_begin, chain_end))
         {
             data = create_macro_data(chain_begin, chain_end, eval_ctx, add_diags);
