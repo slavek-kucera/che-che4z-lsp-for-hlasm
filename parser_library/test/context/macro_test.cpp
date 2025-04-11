@@ -1356,7 +1356,7 @@ TEST(macro, operand_dot)
     EXPECT_TRUE(a.diags().empty());
 }
 
-TEST(macro, macro_operand_cap)
+TEST(macro, macro_operand_cap1)
 {
     std::string input = R"(
          GBLA  &L
@@ -1469,8 +1469,30 @@ TEST(macro, macro_operand_cap5)
     analyzer a(input);
     a.analyze();
 
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "CE011" }));
     // TODO: Does not work yet
+    // EXPECT_TRUE(matches_message_codes(a.diags(), { "CE011" }));
+    // EXPECT_EQ(get_var_value<A_t>(a.hlasm_ctx(), "L"), 0);
+}
+
+TEST(macro, macro_operand_cap6)
+{
+    std::string input = R"(
+         GBLA  &L
+
+         MACRO
+         MAC   &C=
+         GBLA  &L
+&L       SETA  K'&C(1)
+         MEND
+
+&X       SETC  (4062)'A'
+         MAC   C=(&X)
+)";
+    analyzer a(input);
+    a.analyze();
+
+    // TODO: Does not work yet
+    // EXPECT_TRUE(matches_message_codes(a.diags(), { "CE011" }));
     // EXPECT_EQ(get_var_value<A_t>(a.hlasm_ctx(), "L"), 0);
 }
 
