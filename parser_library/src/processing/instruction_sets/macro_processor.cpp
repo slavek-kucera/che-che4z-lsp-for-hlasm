@@ -325,7 +325,7 @@ context::macro_data_ptr macro_processor::get_label_args(const resolved_statement
     {
         if (const auto sub = utils::utf8_substr(value, 0, label_limit); sub.str.size() != value.size())
         {
-            value.erase(sub.str.size());
+            value.clear();
             add_diagnostic(diagnostic_op::error_CE011(label.field_range));
         }
     }

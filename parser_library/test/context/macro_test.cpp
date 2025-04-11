@@ -1401,3 +1401,24 @@ TEST(macro, macro_operand_cap2)
     EXPECT_EQ(get_var_value<A_t>(a.hlasm_ctx(), "L"), 1);
     EXPECT_EQ(get_var_value<C_t>(a.hlasm_ctx(), "F"), "A");
 }
+
+TEST(macro, macro_label_cap)
+{
+    std::string input = R"(
+         GBLA  &L
+
+         MACRO
+&C       MAC
+         GBLA  &L
+&L       SETA  K'&C
+         MEND
+
+&X       SETC  (64)'A'
+&X       MAC
+)";
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "CE011" }));
+    EXPECT_EQ(get_var_value<A_t>(a.hlasm_ctx(), "L"), 0);
+}
