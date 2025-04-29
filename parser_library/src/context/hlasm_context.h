@@ -144,6 +144,8 @@ private:
     // return variable symbol from an arbitrary scope
     variable_symbol* get_var_sym(id_index name, const code_scope& scope, const system_variable_map& sysvars) const;
 
+    const opcode_t* find_opcode_mnemo_tagged(id_index name, opcode_generation gen) const;
+
 public:
     hlasm_context(utils::resource::resource_location file_loc = utils::resource::resource_location(""),
         asm_option asm_opts = {},

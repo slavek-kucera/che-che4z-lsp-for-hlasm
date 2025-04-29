@@ -18,6 +18,7 @@
 #include <format>
 #include <memory>
 #include <numeric>
+#include <ranges>
 
 #include "diagnostic_tools.h"
 #include "ebcdic_encoding.h"
@@ -655,11 +656,44 @@ int hlasm_context::get_branch_counter() const { return curr_scope()->branch_coun
 
 void hlasm_context::decrement_branch_counter() { --curr_scope()->branch_counter; }
 
+const opcode_t* hlasm_context::find_opcode_mnemo_tagged(id_index name, opcode_generation gen) const
+{
+    static constexpr std::string_view asm_tag = ":ASM";
+    static constexpr std::string_view mac_tag = ":MAC";
+    static_assert(asm_tag.size() == mac_tag.size());
+
+    auto i = name.to_string_view();
+    const bool asm_ = i.ends_with(asm_tag);
+    const bool mac_ = i.ends_with(mac_tag);
+    if (!asm_ && !mac_)
+        return nullptr;
+    i.remove_suffix(asm_tag.size());
+
+    const auto alt = ids_->find(i);
+    if (!alt)
+        return nullptr;
+    const auto alt_it = opcode_mnemo_.find(*alt);
+    if (alt_it == opcode_mnemo_.end())
+        return nullptr;
+
+    if (mac_)
+    {
+        const auto macro_in_scope = [gen](const auto& p) { return p.second <= gen && p.first.is_macro(); };
+        const auto mac_it = std::ranges::find_if(std::views::reverse(alt_it->second), macro_in_scope);
+        if (mac_it != alt_it->second.rend())
+            return &mac_it->first;
+    }
+    else if (const auto& [op, op_gen] = alt_it->second.front(); asm_ && op_gen == opcode_generation::zero)
+        return &op;
+
+    return nullptr;
+}
+
 const opcode_t* hlasm_context::find_opcode_mnemo(id_index name, opcode_generation gen) const
 {
     auto it = opcode_mnemo_.find(name);
     if (it == opcode_mnemo_.end())
-        return nullptr;
+        return find_opcode_mnemo_tagged(name, gen);
     auto op = std::find_if(it->second.rbegin(), it->second.rend(), [gen](const auto& e) { return e.second <= gen; });
     if (op == it->second.rend())
         return nullptr;

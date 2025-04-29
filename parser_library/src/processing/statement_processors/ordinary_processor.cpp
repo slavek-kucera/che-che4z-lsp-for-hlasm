@@ -244,7 +244,7 @@ std::optional<processing_status> ordinary_processor::get_instruction_processing_
     if (code.is_macro())
     {
         return std::make_pair(processing_format(processing_kind::ORDINARY, processing_form::MAC),
-            op_code(instruction, context::instruction_type::MAC, code.get_macro_details()));
+            op_code(code.opcode, context::instruction_type::MAC, code.get_macro_details()));
     }
 
     if (code.opcode.empty())
