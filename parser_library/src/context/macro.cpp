@@ -91,7 +91,7 @@ macro_definition::macro_definition(id_index name,
 }
 
 std::pair<std::unique_ptr<macro_invocation>, bool> macro_definition::call(
-    macro_data_ptr label_param_data, std::vector<macro_arg> actual_params, id_index syslist_name)
+    macro_data_ptr label_param_data, std::vector<macro_arg> actual_params, id_index syslist_name) const
 {
     std::vector<macro_data_ptr> syslist;
     std::unordered_map<id_index, std::unique_ptr<macro_param_base>> named_cpy;
@@ -159,9 +159,15 @@ std::pair<std::unique_ptr<macro_invocation>, bool> macro_definition::call(
         std::make_unique<system_variable_syslist>(
             syslist_name, std::make_unique<macro_param_data_zero_based>(std::move(syslist))));
 
-    return { std::make_unique<macro_invocation>(
-                 id, cached_definition, copy_nests, labels, std::move(named_cpy), definition_location),
-        truncated_syslist };
+    return {
+        std::make_unique<macro_invocation>(id,
+            const_cast<cached_block&>(cached_definition), // TODO:
+            copy_nests,
+            labels,
+            std::move(named_cpy),
+            definition_location),
+        truncated_syslist,
+    };
 }
 
 const std::vector<std::unique_ptr<positional_param>>& macro_definition::get_positional_params() const

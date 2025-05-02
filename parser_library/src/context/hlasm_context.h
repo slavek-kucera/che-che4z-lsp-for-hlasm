@@ -144,7 +144,7 @@ private:
     // return variable symbol from an arbitrary scope
     variable_symbol* get_var_sym(id_index name, const code_scope& scope, const system_variable_map& sysvars) const;
 
-    const opcode_t* find_opcode_mnemo_tagged(id_index name, opcode_generation gen) const;
+    const opcode_t* search_opcodes(id_index name, opcode_generation gen) const;
 
 public:
     hlasm_context(utils::resource::resource_location file_loc = utils::resource::resource_location(""),
@@ -265,7 +265,7 @@ public:
     void add_macro(macro_def_ptr macro, bool external);
     // enters a macro with actual params
     std::pair<const macro_invocation*, bool> enter_macro(
-        id_index name, macro_data_ptr label_param_data, std::vector<macro_arg> params);
+        const macro_definition* macro_def, macro_data_ptr label_param_data, std::vector<macro_arg> params);
     // leaves current macro
     void leave_macro();
 

@@ -92,7 +92,7 @@ public:
 
     // returns object with parameters' data set to actual parameters in macro call
     std::pair<std::unique_ptr<macro_invocation>, bool> call(
-        macro_data_ptr label_param_data, std::vector<macro_arg> actual_params, id_index syslist_name);
+        macro_data_ptr label_param_data, std::vector<macro_arg> actual_params, id_index syslist_name) const;
 
     const std::vector<std::unique_ptr<positional_param>>& get_positional_params() const;
     const std::vector<std::unique_ptr<keyword_param>>& get_keyword_params() const;

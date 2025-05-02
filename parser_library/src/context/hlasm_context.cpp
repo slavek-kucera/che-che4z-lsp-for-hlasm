@@ -29,6 +29,7 @@
 #include "ordinary_assembly/location_counter.h"
 #include "using.h"
 #include "utils/factory.h"
+#include "utils/projectors.h"
 #include "utils/time.h"
 #include "variables/set_symbol.h"
 #include "variables/system_variable.h"
@@ -459,7 +460,7 @@ processing_stack_t hlasm_context::processing_stack()
             for (size_t j = 1; j < scope_stack_.size(); ++j)
             {
                 for (auto type = file_processing_type::MACRO;
-                     const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
+                    const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
                 {
                     result = m_stack_tree.step(result, nest.loc.pos, nest.loc.resource_loc, nest.member_name, type);
                     type = file_processing_type::COPY;
@@ -497,7 +498,7 @@ processing_stack_details_t hlasm_context::processing_stack_details()
             for (size_t j = 1; j < scope_stack_.size(); ++j)
             {
                 for (auto type = file_processing_type::MACRO;
-                     const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
+                    const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
                 {
                     res.emplace_back(nest.loc.pos, nest.loc.resource_loc, scope_stack_[j], type, nest.member_name);
                     type = file_processing_type::COPY;
@@ -685,58 +686,61 @@ instruction_tag_type identify_tag(std::string_view s)
 }
 } // namespace
 
-const opcode_t* hlasm_context::find_opcode_mnemo_tagged(id_index name, opcode_generation gen) const
-{
-    const auto name_view = name.to_string_view();
-    const auto tag = identify_tag(name_view);
-    using enum instruction_tag_type;
-
-    if (tag == NONE)
-        return nullptr;
-
-    const auto alt = ids_->find(remove_instruction_tag(name_view));
-    if (!alt)
-        return nullptr;
-    const auto alt_it = opcode_mnemo_.find(*alt);
-    if (alt_it == opcode_mnemo_.end())
-        return nullptr;
-
-    if (tag == MAC)
-    {
-        const auto macro_in_scope = [gen](const auto& p) { return p.second <= gen && p.first.is_macro(); };
-        const auto mac_it = std::ranges::find_if(std::views::reverse(alt_it->second), macro_in_scope);
-        if (mac_it != alt_it->second.rend())
-            return &mac_it->first;
-    }
-    else if (const auto& [op, op_gen] = alt_it->second.front(); tag == ASM && op_gen == opcode_generation::zero)
-        return &op;
-
-    return nullptr;
-}
-
-const opcode_t* hlasm_context::find_opcode_mnemo(id_index name, opcode_generation gen) const
+const opcode_t* hlasm_context::search_opcodes(id_index name, opcode_generation gen) const
 {
     auto it = opcode_mnemo_.find(name);
     if (it == opcode_mnemo_.end())
-        return find_opcode_mnemo_tagged(name, gen);
+        return nullptr;
     auto op = std::find_if(it->second.rbegin(), it->second.rend(), [gen](const auto& e) { return e.second <= gen; });
     if (op == it->second.rend())
         return nullptr;
     return &op->first;
 }
 
+const opcode_t* hlasm_context::find_opcode_mnemo(id_index name, opcode_generation gen) const
+{
+    switch (const auto name_view = name.to_string_view(); identify_tag(name_view))
+    {
+        case instruction_tag_type::NONE:
+            return search_opcodes(name, gen);
+
+        case instruction_tag_type::ASM: {
+            const auto without_tag = ids_->find(remove_instruction_tag(name_view));
+            if (!without_tag)
+                return nullptr;
+            if (const auto* op = search_opcodes(*without_tag, gen); op && *op && !op->is_macro())
+                return op;
+            return nullptr;
+        }
+
+        case instruction_tag_type::MAC: {
+            if (const auto* tagged_macro = search_opcodes(name, gen))
+                return tagged_macro;
+            const auto without_tag = ids_->find(remove_instruction_tag(name_view));
+            if (!without_tag)
+                return nullptr;
+            if (const auto* op = search_opcodes(*without_tag, gen); op && op->is_macro())
+                return op;
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
+
 const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
 {
-    const auto name_view = name.to_string_view();
-    const auto tag = identify_tag(name_view);
-    switch (tag)
+    switch (const auto name_view = name.to_string_view(); identify_tag(name_view))
     {
         case instruction_tag_type::NONE: {
             const auto it = opcode_mnemo_.find(name);
-            if (it == opcode_mnemo_.end() || !it->second.back().first)
+            if (it == opcode_mnemo_.end())
+                return nullptr;
+            const auto el = std::ranges::find_if(
+                std::views::reverse(it->second), [](const opcode_t& op) { return !!op; }, utils::first_element);
+            if (el == it->second.rend())
                 return nullptr;
 
-            return &it->second.back().first;
+            return &el->first;
         }
 
         case instruction_tag_type::ASM: {
@@ -745,26 +749,39 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
                 return nullptr;
 
             const auto it = opcode_mnemo_.find(*without_tag);
-            if (it == opcode_mnemo_.end() || it->second.front().second != opcode_generation::zero)
+            if (it == opcode_mnemo_.end())
+                return nullptr;
+            const auto el = std::ranges::find_if(
+                std::views::reverse(it->second),
+                [](const opcode_t& op) { return op && !op.is_macro(); },
+                utils::first_element);
+            if (el == it->second.rend())
                 return nullptr;
 
-            return &it->second.front().first;
+            return &el->first;
         }
 
         case instruction_tag_type::MAC: {
-            if (const auto it = opcode_mnemo_.find(name);
-                it != opcode_mnemo_.end() && it->second.back().first.is_macro())
-                return &it->second.back().first;
+            auto it = opcode_mnemo_.find(name);
+            if (it == opcode_mnemo_.end())
+                return nullptr;
+            auto el = std::ranges::find_if(std::views::reverse(it->second), &opcode_t::is_macro, utils::first_element);
+            if (el == it->second.rend())
+                return nullptr;
 
+            return &el->first;
             const auto without_tag = ids_->find(remove_instruction_tag(name_view));
             if (!without_tag)
                 return nullptr;
 
-            const auto it = opcode_mnemo_.find(*without_tag);
-            if (it == opcode_mnemo_.end() || !it->second.back().first.is_macro())
+            it = opcode_mnemo_.find(*without_tag);
+            if (it == opcode_mnemo_.end())
+                return nullptr;
+            el = std::ranges::find_if(std::views::reverse(it->second), &opcode_t::is_macro, utils::first_element);
+            if (el == it->second.rend())
                 return nullptr;
 
-            return &it->second.back().first;
+            return &el->first;
         }
     }
 
@@ -879,13 +896,7 @@ void hlasm_context::add_macro(macro_def_ptr macro, bool external)
     auto& mnemo = opcode_mnemo_[m->id];
     mnemo.emplace_back(opcode_t { m->id, m.get() }, next_gen);
     if (external)
-    {
         external_macros_.try_emplace(m->id, m);
-        // external macros do not override assembler instruction
-        // re-establish the original instruction if macro is loaded via tagging
-        if (const auto& orig = mnemo.front(); orig.second == opcode_generation::zero)
-            mnemo.emplace_back(orig.first, ++m_current_opcode_generation);
-    }
     // hide strange MAC:ASM named macros
     if (identify_tag(m->id.to_string_view()) == instruction_tag_type::ASM)
         mnemo.emplace_back(opcode_t(), ++m_current_opcode_generation);
@@ -917,12 +928,9 @@ context::macro_definition* hlasm_context::get_macro_definition(id_index name, co
 bool hlasm_context::is_in_macro() const { return scope_stack_.back().is_in_macro(); }
 
 std::pair<const macro_invocation*, bool> hlasm_context::enter_macro(
-    id_index name, macro_data_ptr label_param_data, std::vector<macro_arg> params)
+    const macro_definition* macro_def, macro_data_ptr label_param_data, std::vector<macro_arg> params)
 {
     assert(SYSNDX_ <= SYSNDX_limit);
-
-    auto* macro_def = get_macro_definition(name);
-    assert(macro_def);
 
     if (label_param_data)
     {
@@ -1167,7 +1175,7 @@ void hlasm_context::validate_psect_registrations(diagnostic_consumer& diags)
     {
         const auto& [psect, stack] = details;
         const auto* section = ord_ctx.get_section(psect);
-        if (const symbol * s; !section && (s = ord_ctx.get_symbol(psect)) != nullptr
+        if (const symbol* s; !section && (s = ord_ctx.get_symbol(psect)) != nullptr
             && (!psect_compatible_symbol(s) || (section = extract_symbol_base(s)) == nullptr))
         {
             diags.add_diagnostic(
