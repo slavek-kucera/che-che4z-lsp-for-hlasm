@@ -229,9 +229,9 @@ public:
     void decrement_branch_counter();
 
     // adds opsyn mnemonic
-    void add_mnemonic(id_index mnemo, id_index op_code);
+    bool add_mnemonic(id_index mnemo, id_index op_code);
     // removes opsyn mnemonic
-    void remove_mnemonic(id_index mnemo);
+    bool remove_mnemonic(id_index mnemo);
     const opcode_map& opcode_mnemo_storage() const;
 
     // checks whether the symbol is an operation code (is a valid instruction or a mnemonic)

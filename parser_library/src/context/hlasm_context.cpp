@@ -708,7 +708,7 @@ const opcode_t* hlasm_context::find_opcode_mnemo(id_index name, opcode_generatio
             const auto without_tag = ids_->find(remove_instruction_tag(name_view));
             if (!without_tag)
                 return nullptr;
-            if (const auto* op = search_opcodes(*without_tag, gen); op && *op && !op->is_macro())
+            if (const auto* op = search_opcodes(*without_tag, gen); op && !op->empty() && !op->is_macro())
                 return op;
             return nullptr;
         }
@@ -736,7 +736,7 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
             if (it == opcode_mnemo_.end())
                 return nullptr;
             const auto el = std::ranges::find_if(
-                std::views::reverse(it->second), [](const opcode_t& op) { return !!op; }, utils::first_element);
+                std::views::reverse(it->second), [](const opcode_t& op) { return !op.empty(); }, utils::first_element);
             if (el == it->second.rend())
                 return nullptr;
 
@@ -753,7 +753,7 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
                 return nullptr;
             const auto el = std::ranges::find_if(
                 std::views::reverse(it->second),
-                [](const opcode_t& op) { return op && !op.is_macro(); },
+                [](const opcode_t& op) { return !op.empty() && !op.is_macro(); },
                 utils::first_element);
             if (el == it->second.rend())
                 return nullptr;
@@ -788,23 +788,29 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
     return nullptr;
 }
 
-void hlasm_context::add_mnemonic(id_index mnemo, id_index op_code)
+bool hlasm_context::add_mnemonic(id_index mnemo, id_index op_code)
 {
-    auto it = opcode_mnemo_.find(op_code);
-    assert(it != opcode_mnemo_.end() && it->second.back().first);
+    const auto* op = find_opcode_mnemo(op_code, opcode_generation::current);
+    if (!op || op->empty())
+        return false;
 
-    opcode_mnemo_[mnemo].emplace_back(it->second.back().first, ++m_current_opcode_generation);
+    opcode_mnemo_[mnemo].emplace_back(*op, ++m_current_opcode_generation);
+
+    return true;
 }
 
-void hlasm_context::remove_mnemonic(id_index mnemo)
+bool hlasm_context::remove_mnemonic(id_index mnemo)
 {
-    [[maybe_unused]] const opcode_t* test_opcode;
-    assert((test_opcode = find_opcode_mnemo(mnemo, opcode_generation::current)) && *test_opcode);
+    const auto* op = find_opcode_mnemo(mnemo, opcode_generation::current);
+    if (!op || op->empty())
+        return false;
 
     if (auto it = external_macros_.find(mnemo); it == external_macros_.end())
         opcode_mnemo_[mnemo].emplace_back(opcode_t(), ++m_current_opcode_generation);
     else // restore external macro when available
         opcode_mnemo_[mnemo].emplace_back(opcode_t { it->first, it->second.get() }, ++m_current_opcode_generation);
+
+    return true;
 }
 
 opcode_t hlasm_context::get_operation_code(id_index symbol, opcode_generation gen) const

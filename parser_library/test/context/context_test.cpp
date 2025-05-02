@@ -145,13 +145,13 @@ TEST(context, OPSYN)
     auto st = ctx.ids().add(std::string_view("ST"));
     auto mv = ctx.ids().add(std::string_view("MV"));
 
-    ctx.add_mnemonic(lr, st);
+    EXPECT_TRUE(ctx.add_mnemonic(lr, st));
     EXPECT_EQ(ctx.get_operation_code(lr).opcode, st);
 
-    ctx.add_mnemonic(mv, lr);
+    EXPECT_TRUE(ctx.add_mnemonic(mv, lr));
     EXPECT_EQ(ctx.get_operation_code(mv).opcode, st);
 
-    ctx.remove_mnemonic(lr);
+    EXPECT_TRUE(ctx.remove_mnemonic(lr));
     EXPECT_EQ(ctx.get_operation_code(lr).opcode, id_index());
 
     EXPECT_EQ(ctx.get_operation_code(mvc).opcode, mvc);
