@@ -79,7 +79,7 @@ std::optional<processing_status> ordinary_processor::get_processing_status(
 
     processing_form f = processing_form::UNKNOWN;
     context::instruction_type t = context::instruction_type::UNDEF;
-    const context::macro_definition* mac_ptr = nullptr;
+    context::macro_definition* mac_ptr = nullptr;
     if (found.value())
     {
         f = processing_form::MAC;

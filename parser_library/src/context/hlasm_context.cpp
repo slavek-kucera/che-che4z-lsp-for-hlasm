@@ -899,7 +899,7 @@ context::macro_definition* hlasm_context::get_macro_definition(id_index name, co
 bool hlasm_context::is_in_macro() const { return scope_stack_.back().is_in_macro(); }
 
 std::pair<const macro_invocation*, bool> hlasm_context::enter_macro(
-    const macro_definition* macro_def, macro_data_ptr label_param_data, std::vector<macro_arg> params)
+    macro_definition* macro_def, macro_data_ptr label_param_data, std::vector<macro_arg> params)
 {
     assert(SYSNDX_ <= SYSNDX_limit);
 

@@ -33,14 +33,14 @@ struct op_code
     constexpr op_code()
         : type(context::instruction_type::UNDEF)
     {}
-    constexpr op_code(context::id_index value, context::instruction_type type, const context::macro_definition* mac_def)
+    constexpr op_code(context::id_index value, context::instruction_type type, context::macro_definition* mac_def)
         : value(value)
         , mac_def(mac_def)
         , type(type)
     {}
 
     context::id_index value;
-    const context::macro_definition* mac_def = nullptr;
+    context::macro_definition* mac_def = nullptr;
     context::instruction_type type;
 };
 

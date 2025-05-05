@@ -267,7 +267,7 @@ public:
     void add_macro(macro_def_ptr macro, bool external);
     // enters a macro with actual params
     std::pair<const macro_invocation*, bool> enter_macro(
-        const macro_definition* macro_def, macro_data_ptr label_param_data, std::vector<macro_arg> params);
+        macro_definition* macro_def, macro_data_ptr label_param_data, std::vector<macro_arg> params);
     // leaves current macro
     void leave_macro();
 
