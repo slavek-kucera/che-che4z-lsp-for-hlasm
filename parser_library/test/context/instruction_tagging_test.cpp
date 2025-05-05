@@ -247,3 +247,17 @@ TEST(instruction_tagging, disallow_asm_override_2)
     a.analyze();
     EXPECT_TRUE(matches_message_codes(a.diags(), { "E049" }));
 }
+
+TEST(instruction_tagging, op_attr)
+{
+    std::string input = R"(
+    MACRO
+    SAM31
+    MEND
+&C1 SETC O'SAM31:ASM
+&C2 SETC O'SAM31:MAC
+)";
+    analyzer a(input);
+    a.analyze();
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "S0002" }));
+}
