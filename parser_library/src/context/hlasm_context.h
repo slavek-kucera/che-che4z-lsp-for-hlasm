@@ -326,7 +326,9 @@ public:
 
     bool next_statement() { return --m_statements_remaining >= 0; }
 
-    const opcode_t* find_opcode_mnemo(id_index name, opcode_generation gen, context::id_index* ext_suggestion) const;
+    const opcode_t* find_opcode_mnemo(id_index name,
+        opcode_generation gen = opcode_generation::current,
+        context::id_index* ext_suggestion = nullptr) const;
     const opcode_t* find_any_valid_opcode(id_index name) const;
 
     opcode_generation current_opcode_generation() const { return m_current_opcode_generation; }

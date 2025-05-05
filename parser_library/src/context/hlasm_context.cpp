@@ -786,7 +786,7 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
 
 bool hlasm_context::add_mnemonic(id_index mnemo, id_index op_code)
 {
-    const auto* op = find_opcode_mnemo(op_code, opcode_generation::current, nullptr);
+    const auto* op = find_opcode_mnemo(op_code);
     if (!op || op->empty())
         return false;
 
@@ -797,7 +797,7 @@ bool hlasm_context::add_mnemonic(id_index mnemo, id_index op_code)
 
 bool hlasm_context::remove_mnemonic(id_index mnemo)
 {
-    const auto* op = find_opcode_mnemo(mnemo, opcode_generation::current, nullptr);
+    const auto* op = find_opcode_mnemo(mnemo);
     if (!op || op->empty())
         return false;
 
@@ -862,7 +862,7 @@ struct opcode_attr_visitor
 
 C_t hlasm_context::get_opcode_attr(id_index symbol, opcode_generation gen) const
 {
-    auto op = find_opcode_mnemo(symbol, gen, nullptr);
+    auto op = find_opcode_mnemo(symbol, gen);
     if (!op)
         return "U";
 
@@ -921,7 +921,7 @@ const hlasm_context::opcode_map& hlasm_context::opcode_mnemo_storage() const { r
 
 context::macro_definition* hlasm_context::get_macro_definition(id_index name, context::opcode_generation gen) const
 {
-    if (auto mnem = find_opcode_mnemo(name, gen, nullptr); mnem && mnem->is_macro())
+    if (auto mnem = find_opcode_mnemo(name, gen); mnem && mnem->is_macro())
         return mnem->get_macro_details();
 
     return nullptr;

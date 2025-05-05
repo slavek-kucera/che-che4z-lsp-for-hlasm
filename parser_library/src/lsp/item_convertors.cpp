@@ -353,7 +353,7 @@ std::vector<completion_item> generate_completion(const completion_list_instructi
     {
         auto id = hlasm_ctx.ids().find(instr.label);
         // TODO: we could provide more precise results here if actual generation is provided
-        if (id.has_value() && hlasm_ctx.find_opcode_mnemo(id.value(), context::opcode_generation::zero, nullptr))
+        if (id.has_value() && hlasm_ctx.find_opcode_mnemo(id.value(), context::opcode_generation::zero))
         {
             auto& i = result.emplace_back(instr);
             if (auto space = i.insert_text.find(' '); space != std::string::npos)
