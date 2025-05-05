@@ -723,13 +723,21 @@ const opcode_t* hlasm_context::find_opcode_mnemo(id_index name, opcode_generatio
             }
             break;
 
-        case instruction_tag_type::MAC:
+        case instruction_tag_type::MAC: {
             if (const auto* tagged_macro = search_opcodes(name, gen))
                 return tagged_macro;
-            if (const auto without_tag = ids_->find(remove_instruction_tag(name_view)))
-                if (const auto* op = search_opcodes(*without_tag, gen); op && op->is_macro())
+
+            const auto without_tag = remove_instruction_tag(name_view);
+            if (identify_tag(without_tag) != instruction_tag_type::NONE)
+                return nullptr;
+
+            if (const auto id = ids_->find(without_tag))
+            {
+                if (const auto* op = search_opcodes(*id, gen); op && op->is_macro())
                     return op;
+            }
             break;
+        }
     }
 
     return nullptr;
@@ -755,14 +763,19 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
             }
             break;
 
-        case instruction_tag_type::MAC:
+        case instruction_tag_type::MAC: {
             if (const auto* tagged = search_opcodes(name, &opcode_t::is_macro, utils::first_element))
                 return tagged;
 
-            if (const auto without_tag = ids_->find(remove_instruction_tag(name_view)))
-                return search_opcodes(*without_tag, &opcode_t::is_macro, utils::first_element);
+            const auto without_tag = remove_instruction_tag(name_view);
+            if (identify_tag(without_tag) != instruction_tag_type::NONE)
+                return nullptr;
+
+            if (const auto id = ids_->find(remove_instruction_tag(name_view)))
+                return search_opcodes(*id, &opcode_t::is_macro, utils::first_element);
 
             break;
+        }
     }
 
     return nullptr;
