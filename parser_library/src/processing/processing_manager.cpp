@@ -334,8 +334,8 @@ std::optional<bool> processing_manager::request_external_processing(
         return it->second;
     }
 
-    auto next_task = lib_provider_.parse_library(std::move(key.first), ctx_, proc_kind)
-                         .then([this, key, callback = std::move(callback)](bool result) {
+    auto next_task = lib_provider_.parse_library(key.first, ctx_, proc_kind)
+                         .then([this, key = std::move(key), callback = std::move(callback)](bool result) {
                              m_external_requests.insert_or_assign(key, result);
                              if (callback)
                                  callback(result);

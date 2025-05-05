@@ -712,8 +712,15 @@ const opcode_t* hlasm_context::find_opcode_mnemo(id_index name, opcode_generatio
 
         case instruction_tag_type::ASM:
             if (const auto without_tag = ids_->find(remove_instruction_tag(name_view)))
-                if (const auto* op = search_opcodes(*without_tag, gen); op && op->is_asm())
-                    return op;
+            {
+                const auto it = opcode_mnemo_.find(*without_tag);
+                if (it == opcode_mnemo_.end())
+                    return nullptr;
+                const auto& [op, g] = it->second.front();
+                if (g != opcode_generation::zero)
+                    return nullptr;
+                return &op;
+            }
             break;
 
         case instruction_tag_type::MAC:
@@ -737,7 +744,15 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
 
         case instruction_tag_type::ASM:
             if (const auto without_tag = ids_->find(remove_instruction_tag(name_view)))
-                return search_opcodes(*without_tag, &opcode_t::is_asm, utils::first_element);
+            {
+                const auto it = opcode_mnemo_.find(*without_tag);
+                if (it == opcode_mnemo_.end())
+                    return nullptr;
+                const auto& [op, g] = it->second.front();
+                if (g != opcode_generation::zero)
+                    return nullptr;
+                return &op;
+            }
             break;
 
         case instruction_tag_type::MAC:
