@@ -324,9 +324,9 @@ void processing_manager::finish_opencode()
 }
 
 std::optional<bool> processing_manager::request_external_processing(
-    context::id_index name, processing_kind proc_kind, std::function<void(bool)> callback)
+    std::string name, processing_kind proc_kind, std::function<void(bool)> callback)
 {
-    const auto key = std::pair(name.to_string(), proc_kind);
+    auto key = std::pair(std::move(name), proc_kind);
     if (auto it = m_external_requests.find(key); it != m_external_requests.end())
     {
         if (callback)
@@ -334,7 +334,7 @@ std::optional<bool> processing_manager::request_external_processing(
         return it->second;
     }
 
-    auto next_task = lib_provider_.parse_library(name.to_string(), ctx_, proc_kind)
+    auto next_task = lib_provider_.parse_library(std::move(key.first), ctx_, proc_kind)
                          .then([this, key, callback = std::move(callback)](bool result) {
                              m_external_requests.insert_or_assign(key, result);
                              if (callback)
@@ -432,7 +432,7 @@ void processing_manager::register_sequence_symbol(context::id_index target, rang
         if (!lookahead_active())
             diag_ctx.add_diagnostic(diagnostic_op::error_E045(target.to_string_view(), symbol_range));
         else if (auto it = m_lookahead_seq_redifinitions.find(target); it == m_lookahead_seq_redifinitions.end()
-                 || it->second.first != pending_seq_redifinition_state::lookahead_pending)
+            || it->second.first != pending_seq_redifinition_state::lookahead_pending)
         {
             // already defined either in normal processing or previous lookahead, so silently ignore
         }

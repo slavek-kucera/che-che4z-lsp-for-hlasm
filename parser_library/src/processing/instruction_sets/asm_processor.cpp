@@ -502,7 +502,7 @@ void asm_processor::process_COPY(rebuilt_statement&& stmt)
             else
             {
                 branch_provider.request_external_processing(
-                    extract->name, processing_kind::COPY, [extract, this](bool result) {
+                    extract->name.to_string(), processing_kind::COPY, [extract, this](bool result) {
                         common_copy_postprocess(result, *extract, *ctx.hlasm_ctx, &diag_ctx);
                     });
             }

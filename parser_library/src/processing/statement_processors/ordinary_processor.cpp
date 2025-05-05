@@ -73,7 +73,7 @@ std::optional<processing_status> ordinary_processor::get_processing_status(
     if (auto status = get_instruction_processing_status(id, hlasm_ctx); status.has_value())
         return *status;
 
-    auto found = branch_provider_.request_external_processing(id, processing_kind::MACRO, {});
+    auto found = branch_provider_.request_external_processing(id.to_string(), processing_kind::MACRO, {});
     if (!found.has_value())
         return std::nullopt;
 

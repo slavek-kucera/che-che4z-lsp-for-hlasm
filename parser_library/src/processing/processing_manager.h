@@ -127,7 +127,7 @@ private:
     void finish_copy_member(copy_processing_result result) override;
     void finish_opencode() override;
     std::optional<bool> request_external_processing(
-        context::id_index name, processing::processing_kind proc_kind, std::function<void(bool)> callback) override;
+        std::string name, processing::processing_kind proc_kind, std::function<void(bool)> callback) override;
 
     void schedule_helper_task(utils::task t) override;
 
