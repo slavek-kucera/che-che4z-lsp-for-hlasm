@@ -457,7 +457,7 @@ bool macrodef_processor::process_COPY(const resolved_statement& statement)
         else
         {
             branching_provider_.request_external_processing(
-                extract->name.to_string(), processing_kind::COPY, [extract, this](bool result) {
+                extract->name, processing_kind::COPY, [extract, this](bool result) {
                     asm_processor::common_copy_postprocess(result, *extract, *ctx.hlasm_ctx, &diag_ctx);
                 });
         }

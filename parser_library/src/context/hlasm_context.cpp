@@ -460,7 +460,7 @@ processing_stack_t hlasm_context::processing_stack()
             for (size_t j = 1; j < scope_stack_.size(); ++j)
             {
                 for (auto type = file_processing_type::MACRO;
-                    const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
+                     const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
                 {
                     result = m_stack_tree.step(result, nest.loc.pos, nest.loc.resource_loc, nest.member_name, type);
                     type = file_processing_type::COPY;
@@ -498,7 +498,7 @@ processing_stack_details_t hlasm_context::processing_stack_details()
             for (size_t j = 1; j < scope_stack_.size(); ++j)
             {
                 for (auto type = file_processing_type::MACRO;
-                    const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
+                     const auto& nest : scope_stack_[j].this_macro->get_current_copy_nest())
                 {
                     res.emplace_back(nest.loc.pos, nest.loc.resource_loc, scope_stack_[j], type, nest.member_name);
                     type = file_processing_type::COPY;
@@ -703,11 +703,14 @@ const opcode_t* hlasm_context::search_opcodes(id_index name, opcode_generation g
     return search_opcodes(name, [gen](const auto& e) { return e.second <= gen; });
 }
 
-const opcode_t* hlasm_context::find_opcode_mnemo(id_index name, opcode_generation gen) const
+const opcode_t* hlasm_context::find_opcode_mnemo(
+    id_index name, opcode_generation gen, context::id_index* ext_suggestion) const
 {
     switch (const auto name_view = name.to_string_view(); identify_tag(name_view))
     {
         case instruction_tag_type::NONE:
+            if (ext_suggestion)
+                *ext_suggestion = name;
             return search_opcodes(name, gen);
 
         case instruction_tag_type::ASM:
@@ -724,18 +727,18 @@ const opcode_t* hlasm_context::find_opcode_mnemo(id_index name, opcode_generatio
             break;
 
         case instruction_tag_type::MAC: {
-            if (const auto* tagged_macro = search_opcodes(name, gen))
+            if (const auto* tagged_macro = search_opcodes(name, gen); tagged_macro && tagged_macro->is_macro())
                 return tagged_macro;
 
             const auto without_tag = remove_instruction_tag(name_view);
             if (identify_tag(without_tag) != instruction_tag_type::NONE)
                 return nullptr;
 
-            if (const auto id = ids_->find(without_tag))
-            {
-                if (const auto* op = search_opcodes(*id, gen); op && op->is_macro())
-                    return op;
-            }
+            const auto id = ids_->add(without_tag);
+            if (ext_suggestion)
+                *ext_suggestion = id;
+            if (const auto* op = search_opcodes(id, gen); op && op->is_macro())
+                return op;
             break;
         }
     }
@@ -783,7 +786,7 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
 
 bool hlasm_context::add_mnemonic(id_index mnemo, id_index op_code)
 {
-    const auto* op = find_opcode_mnemo(op_code, opcode_generation::current);
+    const auto* op = find_opcode_mnemo(op_code, opcode_generation::current, nullptr);
     if (!op || op->empty())
         return false;
 
@@ -794,7 +797,7 @@ bool hlasm_context::add_mnemonic(id_index mnemo, id_index op_code)
 
 bool hlasm_context::remove_mnemonic(id_index mnemo)
 {
-    const auto* op = find_opcode_mnemo(mnemo, opcode_generation::current);
+    const auto* op = find_opcode_mnemo(mnemo, opcode_generation::current, nullptr);
     if (!op || op->empty())
         return false;
 
@@ -806,9 +809,9 @@ bool hlasm_context::remove_mnemonic(id_index mnemo)
     return true;
 }
 
-opcode_t hlasm_context::get_operation_code(id_index symbol, opcode_generation gen) const
+opcode_t hlasm_context::get_operation_code(id_index symbol, context::id_index* ext_suggestion) const
 {
-    if (auto it = find_opcode_mnemo(symbol, gen); it)
+    if (auto it = find_opcode_mnemo(symbol, opcode_generation::current, ext_suggestion); it)
         return *it;
     else
         return opcode_t();
@@ -859,7 +862,7 @@ struct opcode_attr_visitor
 
 C_t hlasm_context::get_opcode_attr(id_index symbol, opcode_generation gen) const
 {
-    auto op = find_opcode_mnemo(symbol, gen);
+    auto op = find_opcode_mnemo(symbol, gen, nullptr);
     if (!op)
         return "U";
 
@@ -918,7 +921,7 @@ const hlasm_context::opcode_map& hlasm_context::opcode_mnemo_storage() const { r
 
 context::macro_definition* hlasm_context::get_macro_definition(id_index name, context::opcode_generation gen) const
 {
-    if (auto mnem = find_opcode_mnemo(name, gen); mnem && mnem->is_macro())
+    if (auto mnem = find_opcode_mnemo(name, gen, nullptr); mnem && mnem->is_macro())
         return mnem->get_macro_details();
 
     return nullptr;
@@ -1174,7 +1177,7 @@ void hlasm_context::validate_psect_registrations(diagnostic_consumer& diags)
     {
         const auto& [psect, stack] = details;
         const auto* section = ord_ctx.get_section(psect);
-        if (const symbol* s; !section && (s = ord_ctx.get_symbol(psect)) != nullptr
+        if (const symbol * s; !section && (s = ord_ctx.get_symbol(psect)) != nullptr
             && (!psect_compatible_symbol(s) || (section = extract_symbol_base(s)) == nullptr))
         {
             diags.add_diagnostic(

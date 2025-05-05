@@ -70,13 +70,16 @@ std::optional<processing_status> ordinary_processor::get_processing_status(
     assert(instruction.has_value());
     const auto& id = *instruction;
 
-    if (auto status = get_instruction_processing_status(id, hlasm_ctx); status.has_value())
+    context::id_index suggestion;
+
+    if (auto status = get_instruction_processing_status(id, hlasm_ctx, &suggestion); status.has_value())
         return *status;
 
-    auto name = id.to_string();
-    if (name.ends_with(":MAC"))
-        name.erase(name.size() - 4);
-    auto found = branch_provider_.request_external_processing(std::move(name), processing_kind::MACRO, {});
+    // if (suggestion.empty())
+    //     return std::make_pair(processing_format(processing_kind::ORDINARY, processing_form::UNKNOWN),
+    //         op_code(id, context::instruction_type::UNDEF, nullptr));
+
+    auto found = branch_provider_.request_external_processing(suggestion, processing_kind::MACRO, {});
     if (!found.has_value())
         return std::nullopt;
 
@@ -86,7 +89,7 @@ std::optional<processing_status> ordinary_processor::get_processing_status(
     if (found.value())
     {
         f = processing_form::MAC;
-        if (auto mp = hlasm_ctx.find_macro(id))
+        if (auto mp = hlasm_ctx.find_macro(suggestion))
         {
             t = context::instruction_type::MAC;
             mac_ptr = mp->get();
@@ -240,9 +243,9 @@ struct processing_status_visitor
 };
 
 std::optional<processing_status> ordinary_processor::get_instruction_processing_status(
-    context::id_index instruction, context::hlasm_context& hlasm_ctx)
+    context::id_index instruction, context::hlasm_context& hlasm_ctx, context::id_index* ext_suggestion)
 {
-    auto code = hlasm_ctx.get_operation_code(instruction);
+    auto code = hlasm_ctx.get_operation_code(instruction, ext_suggestion);
 
     if (code.is_macro())
     {

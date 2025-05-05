@@ -17,7 +17,6 @@
 
 #include <functional>
 #include <optional>
-#include <string>
 
 #include "context/id_index.h"
 #include "processing_format.h"
@@ -36,7 +35,7 @@ public:
     virtual void register_sequence_symbol(context::id_index target, range symbol_range) = 0;
 
     virtual std::optional<bool> request_external_processing(
-        std::string name, processing_kind proc_kind, std::function<void(bool)> callback) = 0;
+        context::id_index name, processing_kind proc_kind, std::function<void(bool)> callback) = 0;
 };
 
 } // namespace hlasm_plugin::parser_library::processing

@@ -109,7 +109,7 @@ private:
 
     std::shared_ptr<std::vector<fade_message>> m_fade_msgs;
 
-    std::map<std::pair<std::string, processing::processing_kind>, bool> m_external_requests;
+    std::map<std::pair<context::id_index, processing::processing_kind>, bool> m_external_requests;
 
     bool attr_lookahead_active() const;
     bool seq_lookahead_active() const;
@@ -127,7 +127,7 @@ private:
     void finish_copy_member(copy_processing_result result) override;
     void finish_opencode() override;
     std::optional<bool> request_external_processing(
-        std::string name, processing::processing_kind proc_kind, std::function<void(bool)> callback) override;
+        context::id_index name, processing::processing_kind proc_kind, std::function<void(bool)> callback) override;
 
     void schedule_helper_task(utils::task t) override;
 

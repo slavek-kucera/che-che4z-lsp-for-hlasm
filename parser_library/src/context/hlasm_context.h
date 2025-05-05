@@ -237,7 +237,7 @@ public:
     const opcode_map& opcode_mnemo_storage() const;
 
     // checks whether the symbol is an operation code (is a valid instruction or a mnemonic)
-    opcode_t get_operation_code(id_index symbol, opcode_generation gen = opcode_generation::current) const;
+    opcode_t get_operation_code(id_index symbol, context::id_index* ext_suggestion = nullptr) const;
 
     // get data attribute value of ordinary symbol
     SET_t get_attribute_value_ord(data_attr_kind attribute, id_index symbol);
@@ -326,7 +326,7 @@ public:
 
     bool next_statement() { return --m_statements_remaining >= 0; }
 
-    const opcode_t* find_opcode_mnemo(id_index name, opcode_generation gen) const;
+    const opcode_t* find_opcode_mnemo(id_index name, opcode_generation gen, context::id_index* ext_suggestion) const;
     const opcode_t* find_any_valid_opcode(id_index name) const;
 
     opcode_generation current_opcode_generation() const { return m_current_opcode_generation; }

@@ -42,7 +42,7 @@ std::optional<processing_status> lookahead_processor::get_processing_status(
     // Lookahead processor always returns value
     if (instruction.has_value() && !instruction->empty())
     {
-        auto status = ordinary_processor::get_instruction_processing_status(*instruction, hlasm_ctx);
+        auto status = ordinary_processor::get_instruction_processing_status(*instruction, hlasm_ctx, nullptr);
 
         if (status)
         {
@@ -137,7 +137,7 @@ void lookahead_processor::process_COPY(const resolved_statement& statement)
         else
         {
             branch_provider_.request_external_processing(
-                extract->name.to_string(), processing_kind::COPY, [extract, this](bool result) {
+                extract->name, processing_kind::COPY, [extract, this](bool result) {
                     asm_processor::common_copy_postprocess(result, *extract, *ctx.hlasm_ctx, &diag_ctx);
                 });
         }
