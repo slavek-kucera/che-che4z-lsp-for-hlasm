@@ -144,6 +144,8 @@ private:
     // return variable symbol from an arbitrary scope
     variable_symbol* get_var_sym(id_index name, const code_scope& scope, const system_variable_map& sysvars) const;
 
+    template<typename Pred, typename Proj = std::identity>
+    const opcode_t* search_opcodes(id_index name, Pred p, Proj proj = Proj()) const;
     const opcode_t* search_opcodes(id_index name, opcode_generation gen) const;
 
 public:

@@ -50,6 +50,8 @@ struct opcode_t
         return std::holds_alternative<macro_definition*>(opcode_detail);
     }
 
+    [[nodiscard]] constexpr bool is_asm() const noexcept { return !empty() && !is_macro(); }
+
     [[nodiscard]] constexpr macro_definition* get_macro_details() const noexcept
     {
         if (std::holds_alternative<macro_definition*>(opcode_detail))
