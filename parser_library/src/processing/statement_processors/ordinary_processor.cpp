@@ -75,9 +75,9 @@ std::optional<processing_status> ordinary_processor::get_processing_status(
     if (auto status = get_instruction_processing_status(id, hlasm_ctx, &suggestion); status.has_value())
         return *status;
 
-    // if (suggestion.empty())
-    //     return std::make_pair(processing_format(processing_kind::ORDINARY, processing_form::UNKNOWN),
-    //         op_code(id, context::instruction_type::UNDEF, nullptr));
+    if (suggestion.empty())
+        return std::make_pair(processing_format(processing_kind::ORDINARY, processing_form::UNKNOWN),
+            op_code(id, context::instruction_type::UNDEF, nullptr));
 
     auto found = branch_provider_.request_external_processing(suggestion, processing_kind::MACRO, {});
     if (!found.has_value())
