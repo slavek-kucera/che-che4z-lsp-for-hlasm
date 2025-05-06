@@ -664,17 +664,17 @@ enum class instruction_tag_type
     ASM,
     MAC,
 };
-static constexpr std::string_view asm_tag = ":ASM";
-static constexpr std::string_view mac_tag = ":MAC";
+constexpr std::string_view asm_tag = ":ASM";
+constexpr std::string_view mac_tag = ":MAC";
 
-std::string_view remove_instruction_tag(std::string_view s)
+constexpr std::string_view remove_instruction_tag(std::string_view s)
 {
     static_assert(asm_tag.size() == mac_tag.size());
     s.remove_suffix(asm_tag.size());
     return s;
 }
 
-instruction_tag_type identify_tag(std::string_view s)
+constexpr instruction_tag_type identify_tag(std::string_view s)
 {
     const auto asm_ = s.ends_with(asm_tag);
     const auto mac_ = s.ends_with(mac_tag);
@@ -716,13 +716,8 @@ const opcode_t* hlasm_context::find_opcode_mnemo(
         case instruction_tag_type::ASM:
             if (const auto without_tag = ids_->find(remove_instruction_tag(name_view)))
             {
-                const auto it = opcode_mnemo_.find(*without_tag);
-                if (it == opcode_mnemo_.end())
-                    return nullptr;
-                const auto& [op, g] = it->second.front();
-                if (g != opcode_generation::zero)
-                    return nullptr;
-                return &op;
+                if (const auto* op = search_opcodes(*without_tag, gen); op && op->is_asm())
+                    return op;
             }
             break;
 
@@ -755,15 +750,7 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
 
         case instruction_tag_type::ASM:
             if (const auto without_tag = ids_->find(remove_instruction_tag(name_view)))
-            {
-                const auto it = opcode_mnemo_.find(*without_tag);
-                if (it == opcode_mnemo_.end())
-                    return nullptr;
-                const auto& [op, g] = it->second.front();
-                if (g != opcode_generation::zero)
-                    return nullptr;
-                return &op;
-            }
+                return search_opcodes(*without_tag, &opcode_t::is_asm, utils::first_element);
             break;
 
         case instruction_tag_type::MAC: {
@@ -797,8 +784,7 @@ bool hlasm_context::add_mnemonic(id_index mnemo, id_index op_code)
 
 bool hlasm_context::remove_mnemonic(id_index mnemo)
 {
-    const auto* op = find_opcode_mnemo(mnemo);
-    if (!op || op->empty())
+    if (const auto* op = find_opcode_mnemo(mnemo); !op || op->empty())
         return false;
 
     if (auto it = external_macros_.find(mnemo); it == external_macros_.end())

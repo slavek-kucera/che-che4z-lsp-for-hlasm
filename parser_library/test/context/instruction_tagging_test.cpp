@@ -197,7 +197,7 @@ TEST(instruction_tagging, tag_without_instruction)
     EXPECT_TRUE(matches_message_codes(a.diags(), { "E049" }));
 }
 
-TEST(instruction_tagging, opsyn_interaction)
+TEST(instruction_tagging, invalid_opsyn)
 {
     std::string input = R"(
     SAM31:ASM
@@ -218,6 +218,28 @@ SAM31:MAC OPSYN
     analyzer a(input, analyzer_options { &lib_provider });
     a.analyze();
     EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "S0002", "E057", "E057" }));
+}
+
+TEST(instruction_tagging, valid_opsyn)
+{
+    std::string input = R"(
+ABC OPSYN SAM31
+    ABC:ASM
+)";
+    analyzer a(input);
+    a.analyze();
+    EXPECT_TRUE(a.diags().empty());
+}
+
+TEST(instruction_tagging, deleted_instruciton)
+{
+    std::string input = R"(
+SAM31 OPSYN
+      SAM31:ASM
+)";
+    analyzer a(input);
+    a.analyze();
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "E049" }));
 }
 
 TEST(instruction_tagging, disallow_asm_override_1)
