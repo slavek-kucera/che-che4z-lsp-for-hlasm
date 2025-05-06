@@ -676,13 +676,15 @@ constexpr std::string_view remove_instruction_tag(std::string_view s)
 
 constexpr instruction_tag_type identify_tag(std::string_view s)
 {
+    using enum instruction_tag_type;
+
     const auto asm_ = s.ends_with(asm_tag);
     const auto mac_ = s.ends_with(mac_tag);
     if (asm_)
-        return instruction_tag_type::ASM;
+        return ASM;
     if (mac_)
-        return instruction_tag_type::MAC;
-    return instruction_tag_type::NONE;
+        return MAC;
+    return NONE;
 }
 } // namespace
 
@@ -761,7 +763,7 @@ const opcode_t* hlasm_context::find_any_valid_opcode(id_index name) const
             if (identify_tag(without_tag) != instruction_tag_type::NONE)
                 return nullptr;
 
-            if (const auto id = ids_->find(remove_instruction_tag(name_view)))
+            if (const auto id = ids_->find(without_tag))
                 return search_opcodes(*id, &opcode_t::is_macro, utils::first_element);
 
             break;
