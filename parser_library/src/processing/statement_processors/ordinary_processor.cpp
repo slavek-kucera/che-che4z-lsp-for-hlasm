@@ -95,7 +95,7 @@ std::optional<processing_status> ordinary_processor::get_processing_status(
             mac_ptr = mp->get();
         }
     }
-    return std::make_pair(processing_format(processing_kind::ORDINARY, f), op_code(id, t, mac_ptr));
+    return std::make_pair(processing_format(processing_kind::ORDINARY, f), op_code(suggestion, t, mac_ptr));
 }
 
 void ordinary_processor::process_statement(context::shared_stmt_ptr s)
