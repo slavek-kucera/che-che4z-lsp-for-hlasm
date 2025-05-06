@@ -16,6 +16,7 @@
 
 #include "../common_testing.h"
 #include "../mock_parse_lib_provider.h"
+#include "lsp/lsp_context.h"
 
 TEST(instruction_tagging, basic)
 {
@@ -282,4 +283,31 @@ TEST(instruction_tagging, op_attr)
     analyzer a(input);
     a.analyze();
     EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "S0002" }));
+}
+
+TEST(instruction_tagging, instr_like)
+{
+    std::string input = R"(
+    MACRO
+    SAM31 &ARG=DEFAULT
+    MEND
+*
+    MACRO
+    TEST
+    SAM31:ASM
+    SAM31:MAC
+    MEND
+)";
+
+    hlasm_plugin::utils::resource::resource_location opencode("opencode");
+    analyzer a(input, analyzer_options { opencode });
+    a.analyze();
+    EXPECT_TRUE(a.diags().empty());
+
+    const auto sam31_asm = a.context().lsp_ctx->hover(opencode, position(7, 5));
+    const auto sam31_mac = a.context().lsp_ctx->hover(opencode, position(8, 5));
+
+    EXPECT_NE(sam31_asm, sam31_mac);
+    EXPECT_NE(sam31_asm.find("Machine instruction"), std::string::npos);
+    EXPECT_NE(sam31_mac.find("&ARG=DEFAULT"), std::string::npos);
 }
