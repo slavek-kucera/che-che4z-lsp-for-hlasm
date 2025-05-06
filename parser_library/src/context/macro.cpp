@@ -159,11 +159,9 @@ std::pair<std::unique_ptr<macro_invocation>, bool> macro_definition::call(
         std::make_unique<system_variable_syslist>(
             syslist_name, std::make_unique<macro_param_data_zero_based>(std::move(syslist))));
 
-    return {
-        std::make_unique<macro_invocation>(
-            id, cached_definition, copy_nests, labels, std::move(named_cpy), definition_location),
-        truncated_syslist,
-    };
+    return { std::make_unique<macro_invocation>(
+                 id, cached_definition, copy_nests, labels, std::move(named_cpy), definition_location),
+        truncated_syslist };
 }
 
 const std::vector<std::unique_ptr<positional_param>>& macro_definition::get_positional_params() const
