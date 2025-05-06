@@ -197,18 +197,22 @@ bool ordinary_processor::terminal_condition(const statement_provider_kind prov_k
 
 bool ordinary_processor::finished() { return finished_flag_; }
 
-
 struct processing_status_visitor
 {
     context::id_index id;
     context::hlasm_context& hlasm_ctx;
 
-    processing_status return_value(processing_form f, operand_occurrence o, context::instruction_type t) const
+    std::optional<processing_status> return_value(
+        processing_form f, operand_occurrence o, context::instruction_type t) const noexcept
     {
-        return std::make_pair(processing_format(processing_kind::ORDINARY, f, o), op_code(id, t, nullptr));
+        return std::optional<processing_status> {
+            std::in_place,
+            processing_format(processing_kind::ORDINARY, f, o),
+            op_code(id, t, nullptr),
+        };
     }
 
-    processing_status operator()(const context::assembler_instruction* i) const
+    std::optional<processing_status> operator()(const context::assembler_instruction* i) const noexcept
     {
         const auto f = id == context::id_index("DC") || id == context::id_index("DS") || id == context::id_index("DXD")
             ? processing_form::DAT
@@ -216,52 +220,44 @@ struct processing_status_visitor
         const auto o = i->max_operands() == 0 ? operand_occurrence::ABSENT : operand_occurrence::PRESENT;
         return return_value(f, o, context::instruction_type::ASM);
     }
-    processing_status operator()(const context::machine_instruction* i) const
+    std::optional<processing_status> operator()(const context::machine_instruction* i) const noexcept
     {
         return return_value(processing_form::MACH,
             i->operands().empty() ? operand_occurrence::ABSENT : operand_occurrence::PRESENT,
             context::instruction_type::MACH);
     }
-    processing_status operator()(const context::ca_instruction* i) const
+    std::optional<processing_status> operator()(const context::ca_instruction* i) const noexcept
     {
         return return_value(processing_form::CA,
             i->operandless() ? operand_occurrence::ABSENT : operand_occurrence::PRESENT,
             context::instruction_type::CA);
     }
-    processing_status operator()(const context::mnemonic_code* i) const
+    std::optional<processing_status> operator()(const context::mnemonic_code* i) const noexcept
     {
         return return_value(processing_form::MACH,
             i->operand_count().second == 0 ? operand_occurrence::ABSENT : operand_occurrence::PRESENT,
             context::instruction_type::MACH);
     }
-    template<typename T>
-    processing_status operator()(const T&) const
+    std::optional<processing_status> operator()(context::macro_definition* mac) const noexcept
     {
-        // opcode should already be found
-        throw std::logic_error("processing_status_visitor: unexpected instruction type");
+        return std::optional<processing_status> {
+            std::in_place,
+            processing_format(processing_kind::ORDINARY, processing_form::MAC),
+            op_code(id, context::instruction_type::MAC, mac),
+        };
     }
+    std::optional<processing_status> operator()(std::monostate) const noexcept { return std::nullopt; }
 };
 
 std::optional<processing_status> ordinary_processor::get_instruction_processing_status(
     context::id_index instruction, context::hlasm_context& hlasm_ctx, context::id_index* ext_suggestion)
 {
-    auto code = hlasm_ctx.get_operation_code(instruction, ext_suggestion);
+    if (instruction.empty())
+        return std::make_pair(
+            processing_format(processing_kind::ORDINARY, processing_form::CA, operand_occurrence::ABSENT),
+            op_code(context::id_index(), context::instruction_type::CA, nullptr));
 
-    if (code.is_macro())
-    {
-        return std::make_pair(processing_format(processing_kind::ORDINARY, processing_form::MAC),
-            op_code(code.opcode, context::instruction_type::MAC, code.get_macro_details()));
-    }
-
-    if (code.opcode.empty())
-    {
-        if (instruction.empty())
-            return std::make_pair(
-                processing_format(processing_kind::ORDINARY, processing_form::CA, operand_occurrence::ABSENT),
-                op_code(context::id_index(), context::instruction_type::CA, nullptr));
-        else
-            return std::nullopt;
-    }
+    const auto code = hlasm_ctx.get_operation_code(instruction, ext_suggestion);
 
     return std::visit(processing_status_visitor { code.opcode, hlasm_ctx }, code.opcode_detail);
 }
