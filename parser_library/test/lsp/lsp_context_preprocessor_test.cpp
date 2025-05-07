@@ -117,7 +117,7 @@ public:
 };
 
 namespace {
-static bool has_same_content(const std::vector<location>& a, const std::vector<location>& b)
+bool has_same_content(const std::vector<location>& a, const std::vector<location>& b)
 {
     return std::ranges::is_permutation(a, b);
 }

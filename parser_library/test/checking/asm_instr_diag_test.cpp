@@ -1105,7 +1105,7 @@ INSTANTIATE_TEST_SUITE_P(mnote,
         mnote_test { 150, "test", diagnostic_severity::error },
         mnote_test { 255, "test", diagnostic_severity::error }));
 
-static constexpr const auto proj_cms = [](const auto& m) { return std::make_tuple(m.code, m.message, m.severity); };
+constexpr auto proj_cms = [](const auto& m) { return std::make_tuple(m.code, m.message, m.severity); };
 
 TEST_P(mnote_fixture, diagnostic_severity)
 {
