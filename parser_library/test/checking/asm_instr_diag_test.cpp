@@ -1132,7 +1132,7 @@ TEST(mnote, substitution_first)
     analyzer a(input);
     a.analyze();
 
-    static constexpr const auto expected = std::make_tuple("MNOTE", "test message", diagnostic_severity::warning);
+    static constexpr auto expected = std::make_tuple("MNOTE", "test message", diagnostic_severity::warning);
     EXPECT_TRUE(matches_message_properties(a.diags(), { expected }, proj_cms));
 }
 
@@ -1147,7 +1147,7 @@ TEST(mnote, substitution_both)
     analyzer a(input);
     a.analyze();
 
-    static constexpr const auto expected = std::make_tuple("MNOTE", "test message", diagnostic_severity::error);
+    static constexpr auto expected = std::make_tuple("MNOTE", "test message", diagnostic_severity::error);
     EXPECT_TRUE(matches_message_properties(a.diags(), { expected }, proj_cms));
 }
 
@@ -1160,7 +1160,7 @@ TEST(mnote, empty_first_arg)
     analyzer a(input);
     a.analyze();
 
-    static constexpr const auto expected = std::make_tuple("MNOTE", "test message", diagnostic_severity::hint);
+    static constexpr auto expected = std::make_tuple("MNOTE", "test message", diagnostic_severity::hint);
     EXPECT_TRUE(matches_message_properties(a.diags(), { expected }, proj_cms));
 }
 
