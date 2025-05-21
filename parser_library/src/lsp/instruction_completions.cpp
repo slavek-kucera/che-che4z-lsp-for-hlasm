@@ -131,9 +131,9 @@ std::string get_page_text(size_t pageno)
         return utils::concat("\n\nDetails on [page ",
             page_text,
             "](",
-            "https://publibfp.dhe.ibm.com/epubs/pdf/a227832d.pdf#page=",
+            "https://publibfp.dhe.ibm.com/epubs/pdf/a227832e.pdf#page=",
             page_text,
-            " \"Principles of Operations (SA22-7832-13)\")");
+            " \"Principles of Operations (SA22-7832-14)\")");
     }
 }
 
