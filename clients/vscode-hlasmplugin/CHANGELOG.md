@@ -6,6 +6,7 @@
 - Validate length of macro operands
 - Support instruction tagging
 - Support external dummy sections
+- Support Z17 instructions
 
 #### Fixed
 - Incorrect processing stack in nested macros
