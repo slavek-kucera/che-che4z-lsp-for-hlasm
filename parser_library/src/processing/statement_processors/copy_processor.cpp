@@ -14,6 +14,7 @@
 
 #include "copy_processor.h"
 
+#include "context/hlasm_context.h"
 #include "context/well_known.h"
 #include "macrodef_processor.h"
 

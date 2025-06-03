@@ -17,6 +17,7 @@
 #include <cassert>
 #include <memory>
 
+#include "context/hlasm_context.h"
 #include "diagnostic_tools.h"
 #include "lsp/lsp_context.h"
 #include "lsp/text_data_view.h"

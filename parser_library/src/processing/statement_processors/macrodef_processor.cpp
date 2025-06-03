@@ -16,6 +16,7 @@
 
 #include <ranges>
 
+#include "context/hlasm_context.h"
 #include "context/well_known.h"
 #include "instructions/instruction.h"
 #include "processing/branching_provider.h"

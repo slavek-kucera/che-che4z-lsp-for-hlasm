@@ -23,6 +23,7 @@
 #include "analyzer.h"
 #include "completion_item.h"
 #include "completion_trigger_kind.h"
+#include "context/hlasm_context.h"
 #include "document_symbol_item.h"
 #include "fade_messages.h"
 #include "file.h"
