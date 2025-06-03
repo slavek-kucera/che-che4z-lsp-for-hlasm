@@ -206,7 +206,7 @@ struct workspace_parse_lib_provider final : public parse_lib_provider
 
         auto& macro_pfc = co_await ws.add_processor_file_impl(file);
 
-        auto cache_key = macro_cache_key::create_from_context(*ctx.hlasm_ctx, kind, ctx.hlasm_ctx->ids().add(library));
+        auto cache_key = macro_cache_key::create_from_context(*ctx.hlasm_ctx, kind, ctx.hlasm_ctx->add_id(library));
 
         auto& mc = get_cache(url, file);
 
@@ -560,7 +560,7 @@ utils::value_task<parse_file_result> workspace::parse_file(resource_location* se
     assert(comp.m_opened);
 
     if (!comp.m_last_opencode_id_storage)
-        comp.m_last_opencode_id_storage = std::make_shared<context::id_storage>();
+        comp.m_last_opencode_id_storage = context::hlasm_context::make_default_id_storage();
 
     return [](processor_file_compoments& comp, workspace& self) -> utils::value_task<parse_file_result> {
         const auto& url = comp.m_file->get_location();

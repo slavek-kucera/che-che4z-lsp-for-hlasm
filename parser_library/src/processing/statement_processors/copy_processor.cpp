@@ -14,6 +14,7 @@
 
 #include "copy_processor.h"
 
+#include "context/well_known.h"
 #include "macrodef_processor.h"
 
 using namespace hlasm_plugin::parser_library;
@@ -54,9 +55,9 @@ void copy_processor::process_statement(context::shared_stmt_ptr statement)
 
     if (auto res_stmt = statement->access_resolved())
     {
-        if (res_stmt->opcode_ref().value == context::id_storage::well_known::MACRO)
+        if (res_stmt->opcode_ref().value == context::well_known::MACRO)
             process_MACRO();
-        else if (res_stmt->opcode_ref().value == context::id_storage::well_known::MEND)
+        else if (res_stmt->opcode_ref().value == context::well_known::MEND)
             process_MEND();
     }
 
