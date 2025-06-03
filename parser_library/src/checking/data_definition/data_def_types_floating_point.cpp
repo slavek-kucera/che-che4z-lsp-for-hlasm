@@ -44,7 +44,7 @@ data_def_type_E_D_L::data_def_type_E_D_L(char type,
           implicit_length)
 {}
 
-const std::set<std::pair<char, std::string_view>> allowed_round_modes = {
+constexpr std::pair<char, std::string_view> allowed_round_modes[] = {
     { 'B', "1" },
     { 'B', "4" },
     { 'B', "5" },
@@ -201,7 +201,8 @@ bool data_def_type_E_D_L::check(
                 ++i;
             }
 
-            if (!allowed_round_modes.contains(std::pair<char, std::string_view>(extension, round_mode_s)))
+            if (std::ranges::find(allowed_round_modes, std::pair<char, std::string_view>(extension, round_mode_s))
+                == std::ranges::end(allowed_round_modes))
             {
                 add_diagnostic(diagnostic_op::error_D026(op.nominal_value.rng));
                 return false;
