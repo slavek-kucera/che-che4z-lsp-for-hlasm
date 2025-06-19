@@ -17,7 +17,6 @@
 #include "server_options.h"
 #include "server_streams.h"
 #include "stream_helper.h"
-#include "utils/platform.h"
 
 #define ASIO_STANDALONE
 #include "asio.hpp"
