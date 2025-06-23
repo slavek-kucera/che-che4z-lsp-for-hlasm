@@ -248,53 +248,80 @@ int32_t data_def_type_E_D_L::get_integer_attribute_impl(uint32_t length, int32_t
 
 data_def_type_E::data_def_type_E()
     : data_def_type_E_D_L(
-          'E', '\0', modifier_bound(1, 64), modifier_bound(1, 8), modifier_bound(0, 5), context::fullword, 4)
+          'E', '\0', modifier_bound { 1, 64 }, modifier_bound { 1, 8 }, modifier_bound { 0, 5 }, context::fullword, 4)
 {}
 
 data_def_type_EH::data_def_type_EH()
     : data_def_type_E_D_L(
-          'E', 'H', modifier_bound(12, 64), modifier_bound(1, 8), modifier_bound(0, 5), context::fullword, 4)
+          'E', 'H', modifier_bound { 12, 64 }, modifier_bound { 1, 8 }, modifier_bound { 0, 5 }, context::fullword, 4)
 {}
 
 data_def_type_ED::data_def_type_ED()
-    : data_def_type_E_D_L('E', 'D', modifier_bound(32, 32), modifier_bound(4, 4), ignored(), context::fullword, 4)
+    : data_def_type_E_D_L('E', 'D', modifier_bound { 32, 32 }, modifier_bound { 4, 4 }, ignored(), context::fullword, 4)
 {}
 
 data_def_type_EB::data_def_type_EB()
-    : data_def_type_E_D_L('E', 'B', modifier_bound(32, 32), modifier_bound(4, 4), ignored(), context::fullword, 4)
+    : data_def_type_E_D_L('E', 'B', modifier_bound { 32, 32 }, modifier_bound { 4, 4 }, ignored(), context::fullword, 4)
 {}
 
 data_def_type_D::data_def_type_D()
-    : data_def_type_E_D_L(
-          'D', '\0', modifier_bound(1, 64), modifier_bound(1, 8), modifier_bound(0, 13), context::doubleword, 8)
+    : data_def_type_E_D_L('D',
+          '\0',
+          modifier_bound { 1, 64 },
+          modifier_bound { 1, 8 },
+          modifier_bound { 0, 13 },
+          context::doubleword,
+          8)
 {}
 
 data_def_type_DH::data_def_type_DH()
-    : data_def_type_E_D_L(
-          'D', 'H', modifier_bound(12, 64), modifier_bound(1, 8), modifier_bound(0, 13), context::doubleword, 8)
+    : data_def_type_E_D_L('D',
+          'H',
+          modifier_bound { 12, 64 },
+          modifier_bound { 1, 8 },
+          modifier_bound { 0, 13 },
+          context::doubleword,
+          8)
 {}
 
 data_def_type_DB::data_def_type_DB()
-    : data_def_type_E_D_L('D', 'B', modifier_bound(64, 64), modifier_bound(8, 8), ignored(), context::doubleword, 8)
+    : data_def_type_E_D_L(
+          'D', 'B', modifier_bound { 64, 64 }, modifier_bound { 8, 8 }, ignored(), context::doubleword, 8)
 {}
 
 data_def_type_DD::data_def_type_DD()
-    : data_def_type_E_D_L('D', 'D', modifier_bound(64, 64), modifier_bound(8, 8), ignored(), context::doubleword, 8)
+    : data_def_type_E_D_L(
+          'D', 'D', modifier_bound { 64, 64 }, modifier_bound { 8, 8 }, ignored(), context::doubleword, 8)
 {}
 
 data_def_type_L::data_def_type_L()
-    : data_def_type_E_D_L(
-          'L', '\0', modifier_bound(1, 128), modifier_bound(1, 16), modifier_bound(0, 27), context::doubleword, 16)
+    : data_def_type_E_D_L('L',
+          '\0',
+          modifier_bound { 1, 128 },
+          modifier_bound { 1, 16 },
+          modifier_bound { 0, 27 },
+          context::doubleword,
+          16)
 {}
 
 data_def_type_LH::data_def_type_LH()
-    : data_def_type_E_D_L(
-          'L', 'H', modifier_bound(12, 128), modifier_bound(1, 16), modifier_bound(0, 27), context::doubleword, 16)
+    : data_def_type_E_D_L('L',
+          'H',
+          modifier_bound { 12, 128 },
+          modifier_bound { 1, 16 },
+          modifier_bound { 0, 27 },
+          context::doubleword,
+          16)
 {}
 
 data_def_type_LQ::data_def_type_LQ()
-    : data_def_type_E_D_L(
-          'L', 'Q', modifier_bound(12, 128), modifier_bound(1, 16), modifier_bound(0, 27), context::quadword, 16)
+    : data_def_type_E_D_L('L',
+          'Q',
+          modifier_bound { 12, 128 },
+          modifier_bound { 1, 16 },
+          modifier_bound { 0, 27 },
+          context::quadword,
+          16)
 {}
 
 data_def_type_LD::data_def_type_LD()
