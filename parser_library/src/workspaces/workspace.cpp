@@ -62,7 +62,7 @@ struct workspace::dependency_cache
 struct workspace::processor_file_compoments
 {
     std::shared_ptr<file> m_file;
-    std::unique_ptr<parsing_results> m_last_results;
+    std::unique_ptr<parsing_results> m_last_results = std::make_unique<parsing_results>();
 
     std::map<resource_location, std::variant<std::shared_ptr<dependency_cache>, virtual_file_handle>, std::less<>>
         m_dependencies;
@@ -79,12 +79,9 @@ struct workspace::processor_file_compoments
 
     index_t<processor_group, unsigned long long> m_group_id;
 
-    explicit processor_file_compoments(std::shared_ptr<file> file);
-    processor_file_compoments(const processor_file_compoments&) = delete;
-    processor_file_compoments(processor_file_compoments&&) noexcept;
-    processor_file_compoments& operator=(const processor_file_compoments&) = delete;
-    processor_file_compoments& operator=(processor_file_compoments&&) noexcept;
-    ~processor_file_compoments();
+    explicit processor_file_compoments(std::shared_ptr<file> file)
+        : m_file(std::move(file))
+    {}
 
     [[nodiscard]] utils::task update_source_if_needed(file_manager& fm);
 };
@@ -1108,15 +1105,6 @@ bool workspace::is_dependency(const resource_location& file_location) const
     }
     return false;
 }
-
-workspace::processor_file_compoments::processor_file_compoments(std::shared_ptr<file> file)
-    : m_file(std::move(file))
-    , m_last_results(std::make_unique<parsing_results>())
-{}
-workspace::processor_file_compoments::processor_file_compoments(processor_file_compoments&&) noexcept = default;
-workspace::processor_file_compoments& workspace::processor_file_compoments::operator=(
-    processor_file_compoments&&) noexcept = default;
-workspace::processor_file_compoments::~processor_file_compoments() = default;
 
 utils::task workspace::processor_file_compoments::update_source_if_needed(file_manager& fm)
 {
