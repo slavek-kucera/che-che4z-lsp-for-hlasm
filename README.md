@@ -21,7 +21,7 @@ HLASM Language Support, Explorer for Endevor and Zowe Explorer are all available
 
 <a href="https://www.openmainframeproject.org/all-projects/zowe/conformance"><img alt="This extension is Zowe v3 conformant" src="https://artwork.openmainframeproject.org/other/zowe-conformant/zowev3/explorer-vs-code/color/zowe-conformant-zowev3-explorer-vs-code-color.png" width=20% height=20% /></a>
 
-## Prerequisites
+### Prerequisites
 
 To enable automatic dependency retrieval from Endevor, install the following:
 - Endevor REST API version 2.16 or higher (PTF LU09053).
@@ -31,7 +31,7 @@ To enable automatic dependency retrieval from Endevor, install the following:
 
 HLASM Language Support is supported on Visual Studio Code, GitHub Codespaces and Visual Studio Code for the Web. The language server component can be also integrated with other LSP compatible editors (e.g. Neovim).
 
-#### Restriction
+### Restriction
 
 Bulk and on-demand downloading of dependencies via FTP is not available in the Web extension environment.
 
@@ -71,17 +71,32 @@ The HLASM Language Support extension parses and analyzes all parts of a HLASM pr
 ### Highlighting
 The HLASM Language Support extension highlights statements with different colors for labels, instructions, operands, remarks and variables. Statements containing instructions that can have operands are highlighted differently to statements that do not expect operands. Code that is skipped by branching `AIF`, `AGO` or conditional assembly is not colored.
 
+<details>
+<summary>Highlighting</summary>
+
 ![](/clients/vscode-hlasmplugin/readme_res/highlighting.png)
+
+</details>
 
 ### Autocomplete
 Autocomplete is enabled for the instruction field. While typing, a list of instructions starting with the typed characters displays. Selecting an instruction from the list completes it and inserts the default operands. Variables and sequence symbols are also filled with a value from their scope.
 
+<details>
+<summary>Autocomplete</summary>
+
 ![](/clients/vscode-hlasmplugin/readme_res/autocomplete.gif)
+
+</details>
 
 ### Go To Definition and Find All References
 The extension adds the 'go to definition' and 'find all references' functionalities. Use the 'go to definition' functionality to show definitions of variable symbols, ordinary symbols and macros, or open COPY files directly. Use the 'find all references' functionality to show all places where a symbol is used.
 
+<details>
+<summary>Go to definition or find all references</summary>
+
 ![](/clients/vscode-hlasmplugin/readme_res/go_to_def.gif)
+
+</details>
 
 ### Branch Indicators
 In the HLASM Language Support extension settings, enable the **Hlasm: Show Branch Indicators** option to add branch indicators to the source code view. Branch indicators display as arrows to the left of instructions and indicate whether the instructions branch up or down. If the branching direction cannot be determined, a right arrow displays.
@@ -108,7 +123,12 @@ When the tracer stops at a macro or COPY instruction, you can select **step into
 
 Breakpoints can be set before or during the debugging session.
 
+<details>
+<summary>Tracing through macros</summary>
+
 ![](/clients/vscode-hlasmplugin/readme_res/tracer.gif)
+
+</details>
 
 ## Configuration
 
@@ -132,7 +152,8 @@ The structure of the configuration is based on Endevor®. Ensure that you config
 
 Visual Studio Code workspace variables can be referenced in both configuration files using the standard syntax `${config:variable_name}`.
 
-### Example `proc_grps.json`:
+<details>
+<summary>Example `proc_grps.json`</summary>
 
 The following example defines two processor groups, GROUP1 and GROUP2, and a list of directories to search for macros and COPY files, it also defines the _SYSPARM_ assembler parameter for GROUP1. Additionally, if the library `MACLIB/` does not exist in the workspace, the plugin does not report it as an error.
 
@@ -179,7 +200,10 @@ The order of libraries that are selected by a path mask is arbitrary. We therefo
 }
 ```
 
-### Example `pgm_conf.json`:
+</details>
+
+<details>
+<summary>Example `pgm_conf.json`</summary>
 
 The following example specifies that GROUP1 is used when working with `source_code` and GROUP2 is used when working with `second_file`.
 
@@ -198,9 +222,15 @@ The following example specifies that GROUP1 is used when working with `source_co
 }
 ```
 
+</details>
+
 When you have both `proc_grps.json` and `pgm_conf.json` configured as above and you invoke the MAC1 macro from the `source_code`, the folder `ASMMAC/` in the current workspace is searched for a file with the name "MAC1". If "MAC1" file isn't found, the folder `C:/SYS.ASMMAC` is searched. If even this search is unsuccessful, an error saying that the macro does not exist is displayed.
 
-The program name in `pgm_conf.json` can be wildcarded, as in the following example:
+The program name in `pgm_conf.json` can be wildcarded.
+
+<details>
+<summary>Example</summary>
+In the followin example, GROUP1 is used for all open code programs.
 
 ```
 {
@@ -212,9 +242,13 @@ The program name in `pgm_conf.json` can be wildcarded, as in the following examp
   ]
 }
 ```
-In this example, GROUP1 is used for all open code programs.
+
+</details>
 
 Assembler options defined by the processor group can be overridden in the `pgm_conf.json` file as shown in the following example:
+
+<details>
+<summary>Example</summary>
 
 ```
 {
@@ -231,12 +265,17 @@ Assembler options defined by the processor group can be overridden in the `pgm_c
 }
 ```
 
+</details>
+
 ### Other Configuration Files
 
 #### `.bridge.json` Configuration File
 If you use Endevor Bridge for Git, your workspace might already have `.bridge.json` configuration files which contain program to processor group mappings. In this case, you do not need to create a separate `pgm_conf.json` file. However, `proc_grps.json` is still required to enable successful mapping between programs specified in `.bridge.json` and processor groups defined in `proc_grps.json`.
 
-#### Example of `.bridge.json`:
+<details>
+<summary>
+Example of `.bridge.json`:
+</summary>
 In this `.bridge.json` file, the program `source_code` is mapped to a processor group `GROUP1` and all other existing programs are mapped to `GROUP2` by default.
 
 ```
@@ -250,6 +289,8 @@ In this `.bridge.json` file, the program `source_code` is mapped to a processor 
   "fileExtension": ""
 }
 ```
+
+</details>
 
 #### Configuration Lookup Precedence
 
@@ -270,6 +311,8 @@ If the `macro_extensions` parameter is not provided or is empty the language ser
 
 For example, with the extension `.hlasm`, a user can add the macro `MAC` to his source code even if it is in a file called `MAC.hlasm`.
 
+<details>
+<summary>Example</summary>
 The following example of `proc_grps.json` specifies that files with the extension `.hlasm` are recognized as macros, with the exception of macros in the `C:/external/project/macs` directory, where they must have the extension `.mac`.
 
 ```
@@ -295,9 +338,15 @@ The following example of `proc_grps.json` specifies that files with the extensio
 }
 ```
 
+</details>
+
 ### Suppression of Diagnostics
 
 For files that use macros extensively but do not have the definitions available, diagnostics reported by HLASM Language Support might not be helpful. For those cases, there is the setting `diagnosticsSuppressLimit`, which can be set either in the editor settings, or in `pgm_conf.json`. For files that do not have processor group configuration in `pgm_conf.json`, all diagnostics are suppressed if they exceed the configured limit.
+
+<details>
+<summary>Example</summary>
+In the following `pgm_conf.json` example, the `source_code` file has a configuration, so all discovered diagnostics are always shown. However, if you open another file and do not assign a processor group to it, its diagnostics are not shown if there are more than 15 of them.
 
 ```
 {
@@ -310,7 +359,8 @@ For files that use macros extensively but do not have the definitions available,
   "diagnosticsSuppressLimit" : 15
 }
 ```
-In the `pgm_conf.json` example above, the `source_code` file has a configuration, so all discovered diagnostics are always shown. However, if you open another file and do not assign a processor group to it, its diagnostics are not shown if there are more than 15 of them.
+
+</details>
 
 ### Preprocessors
 
@@ -319,7 +369,12 @@ Processor groups can be configured so that the HLASM source is processed with a 
 - `CICS` 
 - `ENDEVOR`
 
-A preprocessor option can be configured using the `preprocessor` key in a processor group:
+A preprocessor option can be configured using the `preprocessor` key in a processor group. Multiple preprocessors can be chained.
+
+<details>
+<summary>Examples</summary>
+Specifying preprocessor and its options in the `proc_grps.json`:
+
 ```
 {
   "pgroups": [
@@ -347,7 +402,8 @@ A preprocessor option can be configured using the `preprocessor` key in a proces
 }
 ```
 
-You can also chain the preprocessors in the following way:
+Chaining multiple preprocessors:
+
 ```
 {
   "pgroups": [
@@ -369,6 +425,8 @@ You can also chain the preprocessors in the following way:
   ]
 }
 ```
+
+</details>
 
 ## Download Dependencies
 
