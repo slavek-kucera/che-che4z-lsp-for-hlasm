@@ -129,7 +129,7 @@ bool data_def_type::expects_single_symbol() const { return false; }
 template<typename field_val_T>
 bool check_modifier(const data_def_field<field_val_T>& modifier,
     const std::string& type_str,
-    const std::string& modifier_name,
+    std::string_view modifier_name,
     modifier_spec bound,
     const diagnostic_collector& add_diagnostic)
 {
