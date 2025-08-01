@@ -207,7 +207,7 @@ consteval assembler_instruction::assembler_instruction(std::string_view name,
     unsigned short desc_off,
     unsigned char desc_len,
     bool postpone_dependencies,
-    bool data_def) noexcept
+    data_def_instruction data_def) noexcept
     : m_name(name)
     , m_has_ord_symbols(has_ord_symbols)
     , m_postpone_dependencies(postpone_dependencies)
