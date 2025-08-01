@@ -481,7 +481,7 @@ public:
 class assembler_instruction
 {
     inline_string<9> m_name;
-    bool m_has_ord_symbols : 1, m_postpone_dependencies : 1;
+    bool m_has_ord_symbols : 1, m_postpone_dependencies : 1, m_data_def : 1;
     signed char m_min_operands;
     signed char m_max_operands; // -1 in case there is no max value
     unsigned char m_desc_len;
@@ -496,7 +496,8 @@ public:
         bool has_ord_symbols,
         unsigned short desc_off,
         unsigned char desc_len,
-        bool postpone_dependencies = false) noexcept;
+        bool postpone_dependencies = false,
+        bool data_def = false) noexcept;
 
     constexpr auto name() const noexcept { return m_name.to_string_view(); }
     constexpr auto has_ord_symbols() const noexcept { return m_has_ord_symbols; }

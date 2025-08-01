@@ -169,8 +169,9 @@ processing_status macrodef_processor::get_macro_processing_status(
         else if (code.opcode == context::well_known::COPY)
         {
             processing_format format(processing_kind::MACRO, processing_form::ASM_GENERIC, operand_occurrence::PRESENT);
+            const auto* copy_instr = std::get<const instructions::assembler_instruction*>(code.opcode_detail);
 
-            return std::make_pair(format, op_code(code.opcode, context::instruction_type::ASM));
+            return std::make_pair(format, op_code(code.opcode, copy_instr));
         }
     }
 
