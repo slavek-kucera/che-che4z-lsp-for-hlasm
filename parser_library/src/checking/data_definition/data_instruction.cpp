@@ -38,6 +38,8 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
         return;
     }
     diagnostic_consumer_transform diags([&add_diagnostic](diagnostic_op d) { add_diagnostic(std::move(d)); });
+    checking::using_label_checker lc(dep_solver, diags);
+    std::vector<context::id_index> missing_symbols;
 
     auto operands_bit_length = 0ULL;
     for (const auto& operand : ops)
@@ -52,7 +54,6 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
         assert(ai.has_ord_symbols());
         assert(!ai.postpone_dependencies());
 
-        std::vector<context::id_index> missing_symbols;
         if (op->has_dependencies(dep_solver, &missing_symbols))
         {
             for (const auto& symbol : missing_symbols)
@@ -60,10 +61,11 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
                     diagnostic_op::error_E010("ordinary symbol", symbol.to_string_view(), op->operand_range));
             if (missing_symbols.empty()) // this is a fallback message if somehow non-symbolic deps are not resolved
                 add_diagnostic(diagnostic_op::error_E016(op->operand_range));
+            else
+                missing_symbols.clear();
             continue;
         }
 
-        checking::using_label_checker lc(dep_solver, diags);
         op->apply_mach_visitor(lc);
 
         const auto check_op = op->get_operand_value(*op->value, dep_solver, diags);
