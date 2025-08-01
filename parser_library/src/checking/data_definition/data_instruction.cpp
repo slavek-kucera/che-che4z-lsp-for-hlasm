@@ -72,11 +72,8 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
         if (!exact_match)
             continue;
 
-        const bool passed = ai.data_def_type() == instructions::data_def_instruction::DC_TYPE
-            ? def_type->check<data_instr_type::DC>(check_op, add_diagnostic)
-            : def_type->check<data_instr_type::DS>(check_op, add_diagnostic);
-
-        if (!passed)
+        static constexpr data_instr_type subtypes[] = { {}, data_instr_type::DC, data_instr_type::DS };
+        if (!def_type->check(check_op, subtypes[(unsigned char)ai.data_def_type()], add_diagnostic))
             continue;
 
         if (check_op.length.len_type != checking::data_def_length_t::BIT)
@@ -106,8 +103,8 @@ data::data(const std::vector<label_types>& allowed_types, std::string_view name_
     : assembler_instruction(allowed_types, name_of_instruction, 1, -1)
 {}
 
-template<data_instr_type instr_type>
 bool data::check_data(std::span<const asm_operand* const> to_check,
+    data_instr_type instr_type,
     const range& stmt_range,
     const diagnostic_collector& add_diagnostic) const
 {
@@ -127,7 +124,7 @@ bool data::check_data(std::span<const asm_operand* const> to_check,
         }
 
         const auto [def_type, exact_match] = op->check_type_and_extension(add_diagnostic);
-        ret &= exact_match && def_type->check<instr_type>(*op, add_diagnostic);
+        ret &= exact_match && def_type->check(*op, instr_type, add_diagnostic);
 
         if (!ret)
             continue;
@@ -169,7 +166,7 @@ bool dc::check(std::span<const asm_operand* const> to_check,
     const range& stmt_range,
     const diagnostic_collector& add_diagnostic) const
 {
-    return check_data<data_instr_type::DC>(to_check, stmt_range, add_diagnostic);
+    return check_data(to_check, data_instr_type::DC, stmt_range, add_diagnostic);
 }
 
 ds_dxd::ds_dxd(const std::vector<label_types>& allowed_types, std::string_view name_of_instruction)
@@ -179,7 +176,7 @@ bool ds_dxd::check(std::span<const asm_operand* const> to_check,
     const range& stmt_range,
     const diagnostic_collector& add_diagnostic) const
 {
-    return check_data<data_instr_type::DS>(to_check, stmt_range, add_diagnostic);
+    return check_data(to_check, data_instr_type::DS, stmt_range, add_diagnostic);
 }
 
 } // namespace hlasm_plugin::parser_library::checking

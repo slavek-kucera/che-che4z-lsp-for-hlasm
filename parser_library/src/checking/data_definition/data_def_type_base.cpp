@@ -96,10 +96,10 @@ data_def_type::data_def_type(char type,
 // data_def_type('X', '\0', modifier_bound{ 1, 2048 }, modifier_bound{ 1, 256 }, 65535, n_a(), n_a(),
 // nominal_value_type::STRING, no_align, as_needed()) {}
 
-template<data_instr_type instr_type>
-bool data_def_type::check(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const
+bool data_def_type::check(
+    const data_definition_operand& op, data_instr_type instr_type, const diagnostic_collector& add_diagnostic) const
 {
-    auto [ret, check_nom] = check_base<instr_type>(op, add_diagnostic);
+    auto [ret, check_nom] = check_base(op, instr_type, add_diagnostic);
     ret &= check(op, add_diagnostic, check_nom);
     if (!ret)
         return false;
@@ -115,12 +115,12 @@ bool data_def_type::check(const data_definition_operand& op, const diagnostic_co
 
 bool data_def_type::check_DC(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const
 {
-    return check<data_instr_type::DC>(op, add_diagnostic);
+    return check(op, data_instr_type::DC, add_diagnostic);
 }
 
 bool data_def_type::check_DS(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const
 {
-    return check<data_instr_type::DS>(op, add_diagnostic);
+    return check(op, data_instr_type::DS, add_diagnostic);
 }
 
 bool data_def_type::expects_single_symbol() const { return false; }
@@ -179,10 +179,14 @@ int16_t data_def_type::get_implicit_scale(const reduced_nominal_value_t&) const
     return 0;
 }
 
-template<>
-std::pair<bool, bool> data_def_type::check_nominal_present<data_instr_type::DC>(
-    const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const
+std::pair<bool, bool> data_def_type::check_nominal_present(
+    const data_definition_operand& op, data_instr_type instr_type, const diagnostic_collector& add_diagnostic) const
 {
+    // DS does not require nominal value
+    // however if nominal value present, it must be valid
+    if (instr_type == data_instr_type::DS)
+        return { true, op.nominal_value.present };
+
     // nominal value can be omitted with DC when duplication factor is 0.
     bool ret = true;
     bool check_nom = true;
@@ -201,30 +205,17 @@ std::pair<bool, bool> data_def_type::check_nominal_present<data_instr_type::DC>(
     return { ret, check_nom };
 }
 
-template<>
-std::pair<bool, bool> data_def_type::check_nominal_present<data_instr_type::DS>(
-    const data_definition_operand& op, const diagnostic_collector&) const
+modifier_spec data_def_type::get_length_spec(data_instr_type instr_type) const
 {
-    // DS does not require nominal value
-    // however if nominal value present, it must be valid
-    if (op.nominal_value.present)
-        return { true, true };
-    else
-        return { true, false };
-}
-template<data_instr_type instr_type>
-modifier_spec data_def_type::get_length_spec() const
-{
-    if constexpr (instr_type == data_instr_type::DC)
+    if (instr_type == data_instr_type::DC)
         return length_spec_;
     else
         return ds_length_spec_;
 }
 
-template<data_instr_type instr_type>
-modifier_spec data_def_type::get_bit_length_spec() const
+modifier_spec data_def_type::get_bit_length_spec(data_instr_type instr_type) const
 {
-    if constexpr (instr_type == data_instr_type::DC)
+    if (instr_type == data_instr_type::DC)
         return bit_length_spec_;
     else
         return ds_bit_length_spec_;
@@ -243,8 +234,8 @@ bool data_def_type::check_dupl_factor(
     return true;
 }
 
-template<data_instr_type instr_type>
-bool data_def_type::check_length(const data_def_length_t& length, const diagnostic_collector& add_diagnostic) const
+bool data_def_type::check_length(
+    const data_def_length_t& length, data_instr_type instr_type, const diagnostic_collector& add_diagnostic) const
 {
     if (std::holds_alternative<n_a>(bit_length_spec_) && length.len_type == data_def_length_t::length_type::BIT)
     {
@@ -255,9 +246,9 @@ bool data_def_type::check_length(const data_def_length_t& length, const diagnost
     else
     {
         if (length.len_type == data_def_length_t::length_type::BIT)
-            return check_modifier(length, type_str, "bit length", get_bit_length_spec<instr_type>(), add_diagnostic);
+            return check_modifier(length, type_str, "bit length", get_bit_length_spec(instr_type), add_diagnostic);
         else
-            return check_modifier(length, type_str, "length", get_length_spec<instr_type>(), add_diagnostic);
+            return check_modifier(length, type_str, "length", get_length_spec(instr_type), add_diagnostic);
     }
 }
 
@@ -339,18 +330,17 @@ bool data_def_type::check_nominal_type(
 }
 
 
-template<data_instr_type instr_type>
 std::pair<bool, bool> data_def_type::check_base(
-    const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const
+    const data_definition_operand& op, data_instr_type instr_type, const diagnostic_collector& add_diagnostic) const
 {
     assert(op.type.value == type);
     assert(op.extension.value == extension);
     bool ret = check_dupl_factor(op.dupl_factor, add_diagnostic);
-    ret &= check_length<instr_type>(op.length, add_diagnostic);
+    ret &= check_length(op.length, instr_type, add_diagnostic);
     ret &= check_modifier(op.scale, type_str, "scale", scale_spec_, add_diagnostic);
     ret &= check_modifier(op.exponent, type_str, "exponent", exponent_spec_, add_diagnostic);
 
-    auto [nom_present_ok, check_nom] = check_nominal_present<instr_type>(op, add_diagnostic);
+    auto [nom_present_ok, check_nom] = check_nominal_present(op, instr_type, add_diagnostic);
     ret &= nom_present_ok;
     if (check_nom)
     {
@@ -495,8 +485,3 @@ const data_def_type* data_def_type::access_data_def_type(char type, char extensi
 }
 
 data_def_type::~data_def_type() = default;
-
-template bool data_def_type::check<data_instr_type::DC>(
-    const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const;
-template bool data_def_type::check<data_instr_type::DS>(
-    const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const;
