@@ -16,6 +16,7 @@
 
 #include <stdexcept>
 
+#include "checking/data_check.h"
 #include "checking/diagnostic_collector.h"
 #include "checking/instruction_checker.h"
 #include "checking/machine_check.h"
@@ -365,6 +366,9 @@ void ordinary_processor::check_postponed_statements(
                 {
                     case instructions::data_def_instruction::DC_TYPE:
                     case instructions::data_def_instruction::DS_TYPE:
+                        checking::check_data_instruction_operands(
+                            *opcode.instr_asm, ops, stmt_range, dep_solver, collector);
+                        break;
 
                     case instructions::data_def_instruction::NONE:
                         if (!transform_asm(operand_vector, ops, *opcode.instr_asm, dep_solver, collector))

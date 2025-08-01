@@ -16,11 +16,91 @@
 // asm instructions from the assembler checker:
 // DC, DS, DXD
 
+#include "../data_check.h"
 #include "checking/asm_instr_check.h"
 #include "checking/diagnostic_collector.h"
+#include "checking/using_label_checker.h"
 #include "data_definition_operand.h"
+#include "instructions/instruction.h"
+#include "semantics/operand_impls.h"
 
 namespace hlasm_plugin::parser_library::checking {
+
+void check_data_instruction_operands(const instructions::assembler_instruction& ai,
+    std::span<const std::unique_ptr<semantics::operand>> ops,
+    const range& stmt_range,
+    context::dependency_solver& dep_solver,
+    diagnostic_collector& add_diagnostic)
+{
+    if (ops.empty())
+    {
+        add_diagnostic(diagnostic_op::error_A010_minimum(ai.name(), 1, stmt_range));
+        return;
+    }
+    diagnostic_consumer_transform diags([&add_diagnostic](diagnostic_op d) { add_diagnostic(std::move(d)); });
+
+    auto operands_bit_length = 0ULL;
+    for (const auto& operand : ops)
+    {
+        const auto* op = operand->access_data_def();
+        if (!op)
+        {
+            add_diagnostic(diagnostic_op::error_A004_data_def_expected());
+            continue;
+        }
+
+        assert(ai.has_ord_symbols());
+        assert(!ai.postpone_dependencies());
+
+        std::vector<context::id_index> missing_symbols;
+        if (op->has_dependencies(dep_solver, &missing_symbols))
+        {
+            for (const auto& symbol : missing_symbols)
+                add_diagnostic(
+                    diagnostic_op::error_E010("ordinary symbol", symbol.to_string_view(), op->operand_range));
+            if (missing_symbols.empty()) // this is a fallback message if somehow non-symbolic deps are not resolved
+                add_diagnostic(diagnostic_op::error_E016(op->operand_range));
+            continue;
+        }
+
+        checking::using_label_checker lc(dep_solver, diags);
+        op->apply_mach_visitor(lc);
+
+        const auto check_op = op->get_operand_value(*op->value, dep_solver, diags);
+
+        const auto [def_type, exact_match] = check_op.check_type_and_extension(add_diagnostic);
+        if (!exact_match)
+            continue;
+
+        const bool passed = ai.data_def_type() == instructions::data_def_instruction::DC_TYPE
+            ? def_type->check<data_instr_type::DC>(check_op, add_diagnostic)
+            : def_type->check<data_instr_type::DS>(check_op, add_diagnostic);
+
+        if (!passed)
+            continue;
+
+        if (check_op.length.len_type != checking::data_def_length_t::BIT)
+        {
+            // align to whole byte
+            operands_bit_length = round_up(operands_bit_length, 8ULL);
+
+            // enforce data def alignment
+            const context::alignment al = def_type->get_alignment(check_op.length.present);
+
+            operands_bit_length = round_up(operands_bit_length, al.boundary * 8ULL);
+        }
+
+        operands_bit_length += def_type->get_length(check_op);
+    }
+
+    // align to whole byte
+    operands_bit_length = round_up(operands_bit_length, 8ULL);
+
+    if (operands_bit_length / 8 > INT32_MAX)
+    {
+        add_diagnostic(diagnostic_op::error_D029(stmt_range));
+    }
+}
 
 data::data(const std::vector<label_types>& allowed_types, std::string_view name_of_instruction)
     : assembler_instruction(allowed_types, name_of_instruction, 1, -1)
