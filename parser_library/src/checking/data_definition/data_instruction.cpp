@@ -61,6 +61,10 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
         add_diagnostic(diagnostic_op::error_A010_minimum(ai.name(), 1, stmt_range));
         return;
     }
+
+    static constexpr data_instr_type subtypes[] = { {}, data_instr_type::DC, data_instr_type::DS };
+    const auto subtype = subtypes[(unsigned char)ai.data_def_type()];
+
     diagnostic_consumer_transform diags([&add_diagnostic](diagnostic_op d) { add_diagnostic(std::move(d)); });
     checking::using_label_checker lc(dep_solver, diags);
     std::vector<context::id_index> missing_symbols;
@@ -98,8 +102,7 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
 
         const auto check_op = op->get_operand_value(*op->value, dep_solver, diags);
 
-        static constexpr data_instr_type subtypes[] = { {}, data_instr_type::DC, data_instr_type::DS };
-        if (!def_type->check(check_op, subtypes[(unsigned char)ai.data_def_type()], add_diagnostic))
+        if (!def_type->check(check_op, subtype, add_diagnostic))
             continue;
 
         if (check_op.length.len_type != checking::data_def_length_t::BIT)
