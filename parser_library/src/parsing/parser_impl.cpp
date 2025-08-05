@@ -2336,7 +2336,7 @@ result_t<expressions::nominal_value_ptr> parser2::lex_literal_nominal()
         auto [error, n] = lex_literal_nominal_addr();
         if (error)
             return failure;
-        return std::make_unique<expressions::nominal_value_exprs>(std::move(n));
+        return std::make_unique<expressions::nominal_value_exprs>(std::move(n), range_from(start));
     }
     else
     {
