@@ -80,6 +80,11 @@ enum class nominal_value_type
 class data_def_type
 {
 public:
+    enum class expects_single_symbol_t : bool
+    {
+        no,
+        yes,
+    };
     // constructor for types with  the same lengths in DC and DS instruction
     data_def_type(char type,
         char extension,
@@ -91,6 +96,7 @@ public:
         context::alignment implicit_alignment,
         implicit_length_t implicit_length,
         context::integer_type int_type_,
+        expects_single_symbol_t single_symbol = expects_single_symbol_t::no,
         bool ignores_scale = false);
 
     // constructor for types with different allowed lengths with DS instruction
@@ -116,7 +122,7 @@ public:
     bool check_DC(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const;
     bool check_DS(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const;
 
-    virtual bool expects_single_symbol() const;
+    bool expects_single_symbol() const noexcept { return single_symbol == expects_single_symbol_t::yes; }
 
     context::alignment get_alignment(bool length_present) const;
     // returns length of the operand in bits
@@ -203,6 +209,7 @@ private:
 
     context::integer_type int_type_;
     bool ignores_scale_ = false;
+    expects_single_symbol_t single_symbol = expects_single_symbol_t::no;
 };
 
 } // namespace hlasm_plugin::parser_library::checking
