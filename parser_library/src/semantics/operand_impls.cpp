@@ -383,7 +383,7 @@ void macro_operand::apply(operand_visitor& visitor) const { visitor.visit(*this)
 
 data_def_operand::data_def_operand(
     std::shared_ptr<const expressions::data_definition> dd_ptr, const range& operand_range)
-    : evaluable_operand(operand_type::DAT, operand_range)
+    : operand(operand_type::DAT, operand_range)
     , value(std::move(dd_ptr))
 {}
 
@@ -408,20 +408,6 @@ context::dependency_collector data_def_operand::get_dependencies(context::depend
     return value->get_dependencies(info);
 }
 
-bool data_def_operand::has_dependencies(
-    context::dependency_solver& info, std::vector<context::id_index>* missing_symbols) const
-{
-    auto deps = value->get_dependencies(info);
-    if (missing_symbols)
-        deps.collect_unique_symbolic_dependencies(*missing_symbols);
-    return deps.contains_dependencies();
-}
-
-bool data_def_operand::has_error(context::dependency_solver& info) const
-{
-    return value->get_dependencies(info).has_error;
-}
-
 template<typename... args>
 std::vector<const context::resolvable*> resolvable_list(const args&... expr)
 {
@@ -433,12 +419,6 @@ std::vector<const context::resolvable*> resolvable_list(const args&... expr)
         }(expr),
         ...);
     return list;
-}
-
-std::unique_ptr<checking::operand> data_def_operand::get_operand_value(
-    context::dependency_solver& info, diagnostic_op_consumer& diags) const
-{
-    return std::make_unique<checking::data_definition_operand>(get_operand_value(*value, info, diags));
 }
 
 checking::data_definition_operand data_def_operand::get_operand_value(

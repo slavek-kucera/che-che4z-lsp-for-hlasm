@@ -82,8 +82,9 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
         assert(ai.has_ord_symbols());
         assert(!ai.postpone_dependencies());
 
-        if (op->has_dependencies(dep_solver, &missing_symbols))
+        if (const auto deps = op->value->get_dependencies(dep_solver); deps.contains_dependencies())
         {
+            deps.collect_unique_symbolic_dependencies(missing_symbols);
             for (const auto& symbol : missing_symbols)
                 add_diagnostic(
                     diagnostic_op::error_E010("ordinary symbol", symbol.to_string_view(), op->operand_range));
