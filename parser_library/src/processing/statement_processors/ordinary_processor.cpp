@@ -346,7 +346,7 @@ void ordinary_processor::check_postponed_statements(
         const auto& opcode = rs->opcode_ref();
         const auto instruction_name = opcode.value.to_string_view();
         const auto& ops = rs->operands_ref().value;
-        const auto stmt_range = rs->stmt_range_ref();
+        const auto& stmt_range = rs->stmt_range_ref();
 
         using enum context::instruction_type;
         switch (opcode.type)
