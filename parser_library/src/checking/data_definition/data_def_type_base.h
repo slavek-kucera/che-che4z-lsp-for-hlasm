@@ -32,7 +32,7 @@ enum class integer_type : unsigned char;
 
 namespace hlasm_plugin::parser_library::checking {
 
-class data_definition_operand;
+struct data_definition_operand;
 
 // DC and DS have subtle differences; this enum is used to template functions accordingly.
 enum class data_instr_type

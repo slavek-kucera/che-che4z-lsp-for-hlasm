@@ -426,6 +426,23 @@ checking::data_definition_operand data_def_operand::get_operand_value(
 {
     checking::data_definition_operand op;
 
+    op.operand_range = dd.type_range;
+    if (dd.dupl_factor)
+        op.operand_range.start = dd.dupl_factor->get_range().start;
+    if (dd.nominal_value)
+        op.operand_range.end = dd.nominal_value->value_range.end;
+    else if (dd.exponent)
+        op.operand_range.end = dd.exponent->get_range().end;
+    else if (dd.scale)
+        op.operand_range.end = dd.scale->get_range().end;
+    else if (dd.length)
+        op.operand_range.end = dd.length->get_range().end;
+    else if (dd.program_type)
+        op.operand_range.end = dd.program_type->get_range().end;
+    else if (dd.extension)
+        op.operand_range.end = dd.extension_range.end;
+
+
     op.dupl_factor = dd.evaluate_dupl_factor(info, diags);
     op.type.value = dd.type;
     op.type.rng = dd.type_range;

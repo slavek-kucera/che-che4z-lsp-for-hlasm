@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <utility>
 
+#include "checking/data_definition/data_def_type_base.h"
 #include "context/hlasm_context.h"
 #include "context/literal_pool.h"
 #include "context/well_known.h"
