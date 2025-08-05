@@ -54,7 +54,7 @@ bool data_def_type_H_F_FD::check(
         return true;
 
     size_t i = 0;
-    const std::string& nom = std::get<std::string>(op.nominal_value.value);
+    std::string_view nom = std::get<std::string>(op.nominal_value.value);
     if (nom.size() == 0)
     {
         add_diagnostic(diagnostic_op::error_D010(op.nominal_value.rng, type_str));
@@ -141,8 +141,8 @@ bool data_def_type_P_Z::check(
         return true;
 
     size_t i = 0;
-    const std::string& nom = std::get<std::string>(op.nominal_value.value);
-    if (nom.size() == 0)
+    std::string_view nom = std::get<std::string>(op.nominal_value.value);
+    if (nom.empty())
     {
         add_diagnostic(diagnostic_op::error_D010(op.nominal_value.rng, type_str));
         return false;
