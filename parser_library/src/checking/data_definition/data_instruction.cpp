@@ -48,6 +48,19 @@ std::pair<const data_def_type*, bool> check_type_and_extension(
     add_diagnostic(diagnostic_op::error_D012(dd.type_range));
     return { nullptr, false };
 }
+
+data_instr_type translate(instructions::data_def_instruction t) noexcept
+{
+    switch (t)
+    {
+        case instructions::data_def_instruction::DC_TYPE:
+            return data_instr_type::DC;
+        case instructions::data_def_instruction::DS_TYPE:
+            return data_instr_type::DS;
+        default:
+            assert(false);
+    }
+}
 } // namespace
 
 void check_data_instruction_operands(const instructions::assembler_instruction& ai,
@@ -62,8 +75,7 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
         return;
     }
 
-    static constexpr data_instr_type subtypes[] = { {}, data_instr_type::DC, data_instr_type::DS };
-    const auto subtype = subtypes[(unsigned char)ai.data_def_type()];
+    const auto subtype = translate(ai.data_def_type());
 
     diagnostic_consumer_transform diags([&add_diagnostic](diagnostic_op d) { add_diagnostic(std::move(d)); });
     checking::using_label_checker lc(dep_solver, diags);
@@ -101,7 +113,7 @@ void check_data_instruction_operands(const instructions::assembler_instruction& 
         if (!exact_match)
             continue;
 
-        const auto check_op = op->get_operand_value(*op->value, dep_solver, diags);
+        const auto check_op = op->get_operand_value(dep_solver, diags);
 
         if (!def_type->check(check_op, subtype, add_diagnostic))
             continue;

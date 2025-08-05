@@ -422,38 +422,23 @@ std::vector<const context::resolvable*> resolvable_list(const args&... expr)
 }
 
 checking::data_definition_operand data_def_operand::get_operand_value(
-    const expressions::data_definition& dd, context::dependency_solver& info, diagnostic_op_consumer& diags)
+    context::dependency_solver& info, diagnostic_op_consumer& diags) const
 {
     checking::data_definition_operand op;
 
-    op.operand_range = dd.type_range;
-    if (dd.dupl_factor)
-        op.operand_range.start = dd.dupl_factor->get_range().start;
-    if (dd.nominal_value)
-        op.operand_range.end = dd.nominal_value->value_range.end;
-    else if (dd.exponent)
-        op.operand_range.end = dd.exponent->get_range().end;
-    else if (dd.scale)
-        op.operand_range.end = dd.scale->get_range().end;
-    else if (dd.length)
-        op.operand_range.end = dd.length->get_range().end;
-    else if (dd.program_type)
-        op.operand_range.end = dd.program_type->get_range().end;
-    else if (dd.extension)
-        op.operand_range.end = dd.extension_range.end;
+    op.operand_range = operand_range;
 
+    op.dupl_factor = value->evaluate_dupl_factor(info, diags);
+    op.type.value = value->type;
+    op.type.rng = value->type_range;
+    op.extension.present = value->extension != '\0';
+    op.extension.value = value->extension;
+    op.extension.rng = value->extension_range;
+    op.length = value->evaluate_length(info, diags);
+    op.scale = value->evaluate_scale(info, diags);
+    op.exponent = value->evaluate_exponent(info, diags);
 
-    op.dupl_factor = dd.evaluate_dupl_factor(info, diags);
-    op.type.value = dd.type;
-    op.type.rng = dd.type_range;
-    op.extension.present = dd.extension != '\0';
-    op.extension.value = dd.extension;
-    op.extension.rng = dd.extension_range;
-    op.length = dd.evaluate_length(info, diags);
-    op.scale = dd.evaluate_scale(info, diags);
-    op.exponent = dd.evaluate_exponent(info, diags);
-
-    op.nominal_value = dd.evaluate_nominal_value(info, diags);
+    op.nominal_value = value->evaluate_nominal_value(info, diags);
 
     return op;
 }
