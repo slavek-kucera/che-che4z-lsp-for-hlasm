@@ -124,13 +124,10 @@ uint32_t data_def_type_B::get_nominal_length_attribute(const reduced_nominal_val
 {
     if (!nom.present)
         return 1;
+    else if (!std::holds_alternative<std::string_view>(nom.value))
+        return 0;
     else
-    {
-        if (!std::holds_alternative<std::string_view>(nom.value))
-            return 0;
-        else
-            return get_X_B_length_attr(std::get<std::string_view>(nom.value), 8);
-    }
+        return get_X_B_length_attr(std::get<std::string_view>(nom.value), 8);
 }
 
 //******************************   type C   ********************************//
@@ -162,13 +159,10 @@ uint32_t data_def_type_CA_CE::get_nominal_length_attribute(const reduced_nominal
 {
     if (!nom.present)
         return 1;
+    else if (!std::holds_alternative<std::string_view>(nom.value))
+        return 0;
     else
-    {
-        if (!std::holds_alternative<std::string_view>(nom.value))
-            return 0;
-        else
-            return (uint32_t)utils::length_utf32_no_validation(std::get<std::string_view>(nom.value));
-    }
+        return (uint32_t)utils::length_utf32_no_validation(std::get<std::string_view>(nom.value));
 }
 
 data_def_type_C::data_def_type_C()
@@ -210,13 +204,10 @@ uint32_t data_def_type_CU::get_nominal_length_attribute(const reduced_nominal_va
 {
     if (!nom.present)
         return 2;
+    else if (!std::holds_alternative<std::string_view>(nom.value))
+        return 0;
     else
-    {
-        if (!std::holds_alternative<std::string_view>(nom.value))
-            return 0;
-        else
-            return 2 * (uint32_t)utils::length_utf16_no_validation(std::get<std::string_view>(nom.value));
-    }
+        return 2 * (uint32_t)utils::length_utf16_no_validation(std::get<std::string_view>(nom.value));
 }
 
 bool data_def_type_CU::check(const data_definition_operand& op, const diagnostic_collector& add_diagnostic, bool) const
