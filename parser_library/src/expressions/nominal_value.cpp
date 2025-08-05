@@ -42,7 +42,7 @@ const nominal_value_exprs* nominal_value_t::access_exprs() const
 //*********** nominal_value_string ***************
 dependency_collector nominal_value_string::get_dependencies(dependency_solver&) const { return dependency_collector(); }
 
-nominal_value_string::nominal_value_string(std::string value, hlasm_plugin::parser_library::range rng)
+nominal_value_string::nominal_value_string(std::string value, range rng)
     : nominal_value_t(rng)
     , value(std::move(value))
 {}

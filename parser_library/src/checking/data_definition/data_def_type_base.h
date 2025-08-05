@@ -119,9 +119,6 @@ public:
         data_instr_type instr_type,
         const diagnostic_collector& add_diagnostic) const;
 
-    bool check_DC(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const;
-    bool check_DS(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const;
-
     bool expects_single_symbol() const noexcept { return single_symbol == expects_single_symbol_t::yes; }
 
     context::alignment get_alignment(bool length_present) const;
@@ -172,7 +169,7 @@ private:
 
     // Data def types override this function to implement type-specific check. check_nominal specifies whether it is
     // safe to access nominal value of operand(has correct type, etc..).
-    virtual bool check(
+    virtual bool check_impl(
         const data_definition_operand& op, const diagnostic_collector& add_diagnostic, bool check_nominal) const;
 
     // Concatenates the two characters and returns resulting string.

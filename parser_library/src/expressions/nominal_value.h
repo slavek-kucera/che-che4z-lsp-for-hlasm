@@ -26,7 +26,7 @@ struct nominal_value_exprs;
 // D and B are expressions) or string.
 struct nominal_value_t : public context::dependable
 {
-    nominal_value_t(range rng) noexcept
+    explicit nominal_value_t(range rng) noexcept
         : value_range(rng)
     {}
     range value_range;

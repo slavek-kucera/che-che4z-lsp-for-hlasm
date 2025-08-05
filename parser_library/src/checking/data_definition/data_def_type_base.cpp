@@ -102,7 +102,7 @@ bool data_def_type::check(
     const data_definition_operand& op, data_instr_type instr_type, const diagnostic_collector& add_diagnostic) const
 {
     auto [ret, check_nom] = check_base(op, instr_type, add_diagnostic);
-    ret &= check(op, add_diagnostic, check_nom);
+    ret &= check_impl(op, add_diagnostic, check_nom);
     if (!ret)
         return false;
     // if operand is ok, we can call get_length and check if it is not too long
@@ -113,16 +113,6 @@ bool data_def_type::check(
     }
 
     return true;
-}
-
-bool data_def_type::check_DC(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const
-{
-    return check(op, data_instr_type::DC, add_diagnostic);
-}
-
-bool data_def_type::check_DS(const data_definition_operand& op, const diagnostic_collector& add_diagnostic) const
-{
-    return check(op, data_instr_type::DS, add_diagnostic);
 }
 
 template<typename field_val_T>
@@ -351,7 +341,7 @@ std::pair<bool, bool> data_def_type::check_base(
     return { ret, check_nom };
 }
 
-bool data_def_type::check(const data_definition_operand&, const diagnostic_collector&, bool) const { return true; }
+bool data_def_type::check_impl(const data_definition_operand&, const diagnostic_collector&, bool) const { return true; }
 
 context::alignment data_def_type::get_alignment(bool length_present) const
 {
