@@ -20,6 +20,7 @@ on:
       - master
       - development
       - release-next
+      - ci_test
   pull_request:
     branches:
       - master
