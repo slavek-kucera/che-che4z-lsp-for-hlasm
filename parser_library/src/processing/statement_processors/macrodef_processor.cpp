@@ -160,8 +160,14 @@ processing_status macrodef_processor::get_macro_processing_status(
         auto code = hlasm_ctx.get_operation_code(*instruction);
         if (const auto** ca_instr = std::get_if<const instructions::ca_instruction*>(&code.opcode_detail); ca_instr)
         {
+            static constexpr processing_form forms[] = {
+                processing_form::CA_GENERIC,
+                processing_form::CA_VARDEF,
+                processing_form::CA_BRANCH,
+            };
+            assert(static_cast<uint8_t>((*ca_instr)->subtype()) < std::size(forms));
             processing_format format(processing_kind::MACRO,
-                processing_form::CA,
+                forms[static_cast<uint8_t>((*ca_instr)->subtype())],
                 (*ca_instr)->operandless() ? operand_occurrence::ABSENT : operand_occurrence::PRESENT);
 
             return std::make_pair(format, op_code(code.opcode, context::instruction_type::CA));
@@ -176,7 +182,7 @@ processing_status macrodef_processor::get_macro_processing_status(
 
     if (instruction && instruction->empty())
     {
-        processing_format format(processing_kind::MACRO, processing_form::CA, operand_occurrence::ABSENT);
+        processing_format format(processing_kind::MACRO, processing_form::CA_GENERIC, operand_occurrence::ABSENT);
 
         return std::make_pair(format, op_code(context::id_index(), context::instruction_type::CA));
     }
@@ -440,7 +446,7 @@ struct empty_statement_t final : public resolved_statement
 };
 
 const processing_status empty_statement_t::status(
-    processing_format(processing_kind::ORDINARY, processing_form::CA, operand_occurrence::ABSENT),
+    processing_format(processing_kind::ORDINARY, processing_form::CA_GENERIC, operand_occurrence::ABSENT),
     op_code(context::well_known::ANOP, context::instruction_type::CA));
 
 bool macrodef_processor::process_COPY(const resolved_statement& statement)

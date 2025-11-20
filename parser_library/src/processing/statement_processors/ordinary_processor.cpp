@@ -26,6 +26,7 @@
 #include "context/ordinary_assembly/location_counter.h"
 #include "context/ordinary_assembly/ordinary_assembly_dependency_solver.h"
 #include "context/ordinary_assembly/symbol_dependency_tables.h"
+#include "context/well_known.h"
 #include "diagnostic_consumer.h"
 #include "ebcdic_encoding.h"
 #include "instructions/instruction.h"
@@ -234,7 +235,13 @@ struct processing_status_visitor
     }
     std::optional<processing_status> operator()(const instructions::ca_instruction* i) const noexcept
     {
-        return return_value(processing_form::CA, i->operandless(), context::instruction_type::CA);
+        static constexpr processing_form forms[] = {
+            processing_form::CA_GENERIC,
+            processing_form::CA_VARDEF,
+            processing_form::CA_BRANCH,
+        };
+        assert(static_cast<uint8_t>(i->subtype()) < std::size(forms));
+        return return_value(forms[static_cast<uint8_t>(i->subtype())], i->operandless(), context::instruction_type::CA);
     }
     std::optional<processing_status> operator()(const instructions::mnemonic_code* i) const noexcept
     {
@@ -252,7 +259,7 @@ std::optional<processing_status> ordinary_processor::get_instruction_processing_
 {
     if (instruction.empty())
         return std::make_pair(
-            processing_format(processing_kind::ORDINARY, processing_form::CA, operand_occurrence::ABSENT),
+            processing_format(processing_kind::ORDINARY, processing_form::CA_GENERIC, operand_occurrence::ABSENT),
             op_code(context::id_index(), context::instruction_type::CA));
 
     const auto code = hlasm_ctx.get_operation_code(instruction, ext_suggestion);

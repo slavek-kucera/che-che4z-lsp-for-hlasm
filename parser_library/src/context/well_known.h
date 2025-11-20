@@ -37,9 +37,7 @@ struct well_known
     static constexpr id_index MHELP = id_index("MHELP");
     static constexpr id_index ASPACE = id_index("ASPACE");
     static constexpr id_index AIF = id_index("AIF");
-    static constexpr id_index AIFB = id_index("AIFB");
     static constexpr id_index AGO = id_index("AGO");
-    static constexpr id_index AGOB = id_index("AGOB");
     static constexpr id_index ACTR = id_index("ACTR");
     static constexpr id_index AREAD = id_index("AREAD");
     static constexpr id_index ALIAS = id_index("ALIAS");

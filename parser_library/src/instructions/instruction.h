@@ -393,16 +393,25 @@ public:
 };
 extern constinit const machine_instruction g_machine_instructions[];
 
+enum class ca_instruction_subtype : uint8_t
+{
+    GENERIC,
+    VARDEF,
+    BRANCH,
+};
+
 class ca_instruction
 {
     inline_string<6> m_name;
-    bool m_operandless;
+    bool m_operandless : 1;
+    ca_instruction_subtype m_subtype : 7;
 
 public:
-    consteval ca_instruction(std::string_view n, bool opless) noexcept;
+    consteval ca_instruction(std::string_view n, bool opless, ca_instruction_subtype subtype) noexcept;
 
     constexpr auto name() const noexcept { return m_name.to_string_view(); }
     constexpr auto operandless() const noexcept { return m_operandless; }
+    constexpr auto subtype() const noexcept { return m_subtype; }
 
     static constexpr auto max_name_len = decltype(m_name)::max_len;
 };

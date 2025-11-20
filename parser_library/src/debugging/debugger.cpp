@@ -606,15 +606,15 @@ public:
         processing::op_code()
     };
     static constexpr processing::processing_status seta_status = {
-        processing::processing_format(processing::processing_kind::ORDINARY, processing::processing_form::CA),
+        processing::processing_format(processing::processing_kind::ORDINARY, processing::processing_form::CA_GENERIC),
         processing::op_code(context::well_known::SETA, context::instruction_type::CA)
     };
     static constexpr processing::processing_status setb_status = {
-        processing::processing_format(processing::processing_kind::ORDINARY, processing::processing_form::CA),
+        processing::processing_format(processing::processing_kind::ORDINARY, processing::processing_form::CA_GENERIC),
         processing::op_code(context::well_known::SETB, context::instruction_type::CA)
     };
     static constexpr processing::processing_status setc_status = {
-        processing::processing_format(processing::processing_kind::ORDINARY, processing::processing_form::CA),
+        processing::processing_format(processing::processing_kind::ORDINARY, processing::processing_form::CA_GENERIC),
         processing::op_code(context::well_known::SETC, context::instruction_type::CA)
     };
 
@@ -703,7 +703,7 @@ public:
             lexing::u8string_view_with_newlines(expr), *ctx_, &diags, semantics::range_provider(), range(), 1, status);
 
         semantics::operand_ptr op =
-            status.first.form == processing::processing_form::CA ? p.ca_op_expr() : p.operand_mach();
+            status.first.form == processing::processing_form::CA_GENERIC ? p.ca_op_expr() : p.operand_mach();
 
         static constexpr auto ca_expr = [](const semantics::operand_ptr& o) -> const expressions::ca_expression* {
             if (const auto* ca_op = o->access_ca())

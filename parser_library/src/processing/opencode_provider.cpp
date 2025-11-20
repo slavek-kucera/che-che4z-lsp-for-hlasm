@@ -393,21 +393,18 @@ std::shared_ptr<const context::hlasm_statement> opencode_provider::process_ordin
                 case processing_form::DEFERRED:
                     h.op_rem_body_deferred();
                     break;
-                case processing_form::CA: {
-                    using wk = context::well_known;
-                    bool var_def = opcode.value == wk::GBLA || opcode.value == wk::GBLB || opcode.value == wk::GBLC
-                        || opcode.value == wk::LCLA || opcode.value == wk::LCLB || opcode.value == wk::LCLC;
-                    bool branchlike = opcode.value == wk::AIF || opcode.value == wk::AGO || opcode.value == wk::AIFB
-                        || opcode.value == wk::AGOB;
-                    if (var_def)
-                        h.op_rem_body_ca_var_def();
-                    else if (branchlike)
-                        h.op_rem_body_ca_branch();
-                    else
-                        h.op_rem_body_ca_expr();
+                case processing_form::CA_GENERIC:
+                    h.op_rem_body_ca_expr();
                     (void)h.collector.take_literals(); // drop literals
                     break;
-                }
+                case processing_form::CA_VARDEF:
+                    h.op_rem_body_ca_var_def();
+                    (void)h.collector.take_literals(); // drop literals
+                    break;
+                case processing_form::CA_BRANCH:
+                    h.op_rem_body_ca_branch();
+                    (void)h.collector.take_literals(); // drop literals
+                    break;
                 case processing_form::ASM_GENERIC:
                 case processing_form::ASM_ALIAS:
                 case processing_form::ASM_END:

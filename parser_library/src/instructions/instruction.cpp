@@ -120,33 +120,35 @@ constexpr decltype(as_mach_format_name("")) mach_format_text[] = {
 };
 } // namespace
 
-consteval ca_instruction::ca_instruction(std::string_view n, bool opless) noexcept
+consteval ca_instruction::ca_instruction(std::string_view n, bool opless, ca_instruction_subtype subtype) noexcept
     : m_name(n)
     , m_operandless(opless)
+    , m_subtype(subtype)
 {}
 
 namespace {
+using enum ca_instruction_subtype;
 constexpr ca_instruction ca_instructions[] = {
-    { "ACTR", false },
-    { "AEJECT", true },
-    { "AGO", false },
-    { "AIF", false },
-    { "ANOP", true },
-    { "AREAD", false },
-    { "ASPACE", false },
-    { "GBLA", false },
-    { "GBLB", false },
-    { "GBLC", false },
-    { "LCLA", false },
-    { "LCLB", false },
-    { "LCLC", false },
-    { "MACRO", true },
-    { "MEND", true },
-    { "MEXIT", true },
-    { "MHELP", false },
-    { "SETA", false },
-    { "SETB", false },
-    { "SETC", false },
+    { "ACTR", false, GENERIC },
+    { "AEJECT", true, GENERIC },
+    { "AGO", false, BRANCH },
+    { "AIF", false, BRANCH },
+    { "ANOP", true, GENERIC },
+    { "AREAD", false, GENERIC },
+    { "ASPACE", false, GENERIC },
+    { "GBLA", false, VARDEF },
+    { "GBLB", false, VARDEF },
+    { "GBLC", false, VARDEF },
+    { "LCLA", false, VARDEF },
+    { "LCLB", false, VARDEF },
+    { "LCLC", false, VARDEF },
+    { "MACRO", true, GENERIC },
+    { "MEND", true, GENERIC },
+    { "MEXIT", true, GENERIC },
+    { "MHELP", false, GENERIC },
+    { "SETA", false, GENERIC },
+    { "SETB", false, GENERIC },
+    { "SETC", false, GENERIC },
 };
 
 static_assert(std::ranges::is_sorted(ca_instructions, {}, &ca_instruction::name));

@@ -471,7 +471,7 @@ semantics::literal_si ca_symbol_attribute::reparse_substituted_literal(
         var_range,
         0,
         processing::processing_status(processing::processing_format(processing::processing_kind::ORDINARY,
-                                          processing::processing_form::CA,
+                                          processing::processing_form::CA_GENERIC,
                                           processing::operand_occurrence::ABSENT),
             processing::op_code()));
 
