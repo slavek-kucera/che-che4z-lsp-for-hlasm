@@ -26,12 +26,14 @@
 #include "ebcdic_encoding.h"
 #include "expressions/evaluation_context.h"
 #include "expressions/mach_expression.h"
+#include "external_functions.h"
 #include "instructions/instruction.h"
 #include "lexing/tools.h"
 #include "ordinary_assembly/location_counter.h"
 #include "using.h"
 #include "utils/factory.h"
 #include "utils/projectors.h"
+#include "utils/string_operations.h"
 #include "utils/time.h"
 #include "variables/set_symbol.h"
 #include "variables/system_variable.h"
@@ -1216,5 +1218,19 @@ bool test_symbol_for_read(const variable_symbol* var,
 }
 
 std::shared_ptr<id_storage> hlasm_context::make_default_id_storage() { return std::make_shared<id_storage>(); }
+
+bool hlasm_context::add_external_function(std::string_view name, external_function func)
+{
+    auto [_, inserted] = m_external_functions.try_emplace(utils::to_upper_copy(name), std::move(func));
+    return inserted;
+}
+
+const external_function* hlasm_context::find_external_function(std::string_view name) const noexcept
+{
+    const auto it = m_external_functions.find(name);
+    if (it == m_external_functions.end())
+        return nullptr;
+    return &it->second;
+}
 
 } // namespace hlasm_plugin::parser_library::context

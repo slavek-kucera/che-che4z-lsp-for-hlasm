@@ -17,6 +17,9 @@
 
 #include "instruction_processor.h"
 
+namespace hlasm_plugin::parser_library {
+class external_function;
+} // namespace hlasm_plugin::parser_library
 namespace hlasm_plugin::parser_library::context {
 class set_symbol_base;
 } // namespace hlasm_plugin::parser_library::context
@@ -102,6 +105,14 @@ private:
     void process_empty(const processing::resolved_statement&);
 
     void process_MHELP(const processing::resolved_statement& stmt);
+
+    void process_SETAF(const processing::resolved_statement& stmt);
+    void process_SETCF(const processing::resolved_statement& stmt);
+
+    std::pair<const external_function*, std::string> find_external_function(
+        const semantics::operand& op) const noexcept;
+    void process_external_message(
+        const std::pair<uint8_t, std::string>& message, std::string_view func_name, const range& r) const;
 };
 
 } // namespace hlasm_plugin::parser_library::processing

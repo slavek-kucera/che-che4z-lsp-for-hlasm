@@ -147,8 +147,10 @@ constexpr ca_instruction ca_instructions[] = {
     { "MEXIT", true, GENERIC },
     { "MHELP", false, GENERIC },
     { "SETA", false, GENERIC },
+    { "SETAF", false, GENERIC },
     { "SETB", false, GENERIC },
     { "SETC", false, GENERIC },
+    { "SETCF", false, GENERIC },
 };
 
 static_assert(std::ranges::is_sorted(ca_instructions, {}, &ca_instruction::name));

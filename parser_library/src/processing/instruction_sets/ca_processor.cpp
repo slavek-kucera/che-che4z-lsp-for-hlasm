@@ -14,6 +14,7 @@
 
 #include "ca_processor.h"
 
+#include <ranges>
 #include <stdexcept>
 #include <utility>
 
@@ -22,6 +23,7 @@
 #include "context/variables/set_symbol.h"
 #include "context/well_known.h"
 #include "expressions/conditional_assembly/terms/ca_symbol.h"
+#include "external_functions.h"
 #include "processing/branching_provider.h"
 #include "processing/handler_map.h"
 #include "processing/opencode_provider.h"
@@ -29,11 +31,11 @@
 #include "semantics/operand_impls.h"
 #include "semantics/operand_visitor.h"
 #include "utils/projectors.h"
+#include "utils/string_operations.h"
 #include "utils/task.h"
 #include "utils/time.h"
 
-using namespace hlasm_plugin::parser_library;
-using namespace processing;
+namespace hlasm_plugin::parser_library::processing {
 
 namespace {
 template<void (ca_processor::*ptr)(const resolved_statement&)>
@@ -66,6 +68,8 @@ struct ca_processor::handler_table
         { wk::ASPACE, fn<&ca_processor::process_ASPACE> },
         { wk::AEJECT, fn<&ca_processor::process_AEJECT> },
         { wk::MHELP, fn<&ca_processor::process_MHELP> },
+        { wk::SETAF, fn<&ca_processor::process_SETAF> },
+        { wk::SETCF, fn<&ca_processor::process_SETCF> },
     });
 
     static constexpr auto find(context::id_index id) noexcept { return value.find(id); }
@@ -693,3 +697,182 @@ void ca_processor::process_MHELP(const processing::resolved_statement& stmt)
     if (value & 0xff00UL) // rest is considered only when byte 3 is non-zero
         hlasm_ctx.sysndx_limit(std::min((unsigned long)value, context::hlasm_context::sysndx_limit_max()));
 }
+
+std::pair<const external_function*, std::string> ca_processor::find_external_function(
+    const semantics::operand& op) const noexcept
+{
+    const auto* func_name_op = op.access_ca();
+    if (!func_name_op || func_name_op->kind != semantics::ca_kind::EXPR)
+    {
+        add_diagnostic(diagnostic_op::error_E082(op.operand_range));
+        return {};
+    }
+    auto func_name = func_name_op->access_expr()->expression->evaluate(eval_ctx);
+
+    using enum context::SET_t_enum;
+    if (func_name.type() != C_TYPE)
+    {
+        add_diagnostic(diagnostic_op::error_E082(op.operand_range));
+        return {};
+    }
+    const auto* func = ctx.hlasm_ctx->find_external_function(utils::to_upper(func_name.access_c()));
+    if (!func)
+    {
+        add_diagnostic(diagnostic_op::error_E083(op.operand_range, func_name.access_c()));
+        return {};
+    }
+
+    return { func, std::move(func_name.access_c()) };
+}
+
+void ca_processor::process_external_message(
+    const std::pair<uint8_t, std::string>& message, std::string_view func_name, const range& r) const
+{
+    const auto& [level, text] = message;
+
+    std::string sanitized;
+    sanitized.reserve(text.size());
+    utils::append_utf8_sanitized(sanitized, text);
+
+    add_diagnostic(diagnostic_op::ext_diagnostic(level, func_name, sanitized, r));
+
+    hlasm_ctx.update_mnote_max(level);
+}
+
+void ca_processor::process_SETAF(const resolved_statement& stmt)
+{
+    auto [set_symbol, name, index] = get_SET_symbol<context::A_t>(stmt);
+
+    if (!set_symbol)
+        return;
+
+    const auto& ops = stmt.operands_ref().value;
+    if (ops.empty())
+    {
+        add_diagnostic(diagnostic_op::error_E022("SETAF", stmt.instruction_ref().field_range));
+        return;
+    }
+
+    const auto [func, func_name] = find_external_function(*ops.front());
+    if (!func)
+        return;
+
+    std::vector<context::A_t> args;
+    args.reserve(ops.size() - 1);
+    for (const auto& op : ops | std::views::drop(1))
+    {
+        if (op->type == semantics::operand_type::EMPTY)
+        {
+            args.push_back(0);
+            continue;
+        }
+
+        auto ca_op = op->access_ca();
+        assert(ca_op);
+
+        if (ca_op->kind != semantics::ca_kind::VAR && ca_op->kind != semantics::ca_kind::EXPR)
+        {
+            add_diagnostic(diagnostic_op::error_E012("SETAF", ca_op->operand_range));
+            return;
+        }
+
+        auto evaluated = ca_op->access_expr()->expression->evaluate(eval_ctx);
+
+        using enum context::SET_t_enum;
+        if (const auto type = evaluated.type(); type != A_TYPE && type != B_TYPE)
+        {
+            add_diagnostic(diagnostic_op::error_E013("SETAF", ca_op->operand_range));
+            return;
+        }
+        args.push_back(evaluated.access_a());
+    }
+
+    if (ops.back()->type == semantics::operand_type::EMPTY) // last empty operand ignored
+        args.pop_back();
+
+    external_function_args func_args(args);
+    const auto& typed_arg = *func_args.arithmetic();
+
+    (*func)(func_args);
+
+    if (auto& message = func_args.message(); message)
+        process_external_message(*message, func_name, stmt.instruction_ref().field_range);
+
+    auto& val = set_symbol->access_set_symbol<context::A_t>()->reserve_value(index);
+    val = typed_arg.result;
+}
+
+void ca_processor::process_SETCF(const resolved_statement& stmt)
+{
+    auto [set_symbol, name, index] = get_SET_symbol<context::C_t>(stmt);
+
+    if (!set_symbol)
+        return;
+
+    const auto& ops = stmt.operands_ref().value;
+    if (ops.empty())
+    {
+        add_diagnostic(diagnostic_op::error_E022("SETCF", stmt.instruction_ref().field_range));
+        return;
+    }
+
+    const auto [func, func_name] = find_external_function(*ops.front());
+    if (!func)
+        return;
+
+    std::vector<context::C_t> args;
+    args.reserve(ops.size() - 1);
+    for (const auto& op : ops | std::views::drop(1))
+    {
+        if (op->type == semantics::operand_type::EMPTY)
+        {
+            args.emplace_back();
+            continue;
+        }
+
+        auto ca_op = op->access_ca();
+        assert(ca_op);
+
+        if (ca_op->kind != semantics::ca_kind::VAR && ca_op->kind != semantics::ca_kind::EXPR)
+        {
+            add_diagnostic(diagnostic_op::error_E012("SETCF", ca_op->operand_range));
+            return;
+        }
+
+        auto evaluated = ca_op->access_expr()->expression->evaluate(eval_ctx);
+
+        if (const auto type = evaluated.type(); type != context::SET_t_enum::C_TYPE)
+        {
+            add_diagnostic(diagnostic_op::error_E013("SETCF", ca_op->operand_range));
+            return;
+        }
+        args.push_back(std::move(evaluated.access_c()));
+    }
+
+    if (ops.back()->type == semantics::operand_type::EMPTY) // last empty operand ignored
+        args.pop_back();
+
+    const std::vector<std::string_view> views(args.begin(), args.end());
+    external_function_args func_args(views);
+    const auto& typed_arg = *func_args.character();
+
+    (*func)(func_args);
+
+    if (auto& message = func_args.message(); message)
+        process_external_message(*message, func_name, stmt.instruction_ref().field_range);
+
+    auto& val = set_symbol->access_set_symbol<context::C_t>()->reserve_value(index);
+
+    static constexpr size_t external_string_limit = 1024;
+
+    auto res = utils::replace_non_utf8_chars(std::string_view(typed_arg.result).substr(0, 4 * external_string_limit));
+    const auto [truncated, _, __, ___] = utils::utf8_substr(res, 0, external_string_limit);
+    res.erase(truncated.size());
+
+    if (res != typed_arg.result)
+        add_diagnostic(diagnostic_op::warning_W019(stmt.instruction_ref().field_range, func_name));
+
+    val = std::move(res);
+}
+
+} // namespace hlasm_plugin::parser_library::processing

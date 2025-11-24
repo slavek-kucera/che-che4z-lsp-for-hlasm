@@ -35,6 +35,7 @@
 
 namespace hlasm_plugin::parser_library {
 class library_info;
+class external_function;
 } // namespace hlasm_plugin::parser_library
 namespace hlasm_plugin::parser_library::expressions {
 struct evaluation_context;
@@ -80,6 +81,8 @@ private:
     using opcode_map = std::unordered_map<id_index, std::vector<std::pair<opcode_t, opcode_generation>>>;
     using global_variable_storage =
         std::unordered_map<id_index, std::variant<set_symbol<A_t>, set_symbol<B_t>, set_symbol<C_t>>>;
+    using external_functions =
+        std::unordered_map<std::string, external_function, utils::hashers::string_hasher, std::equal_to<>>;
 
     // storage of global variables
     global_variable_storage globals_;
@@ -152,6 +155,8 @@ private:
 
     processing_stack_t processing_stack(processing_stack_t cur, const source_context& source);
     processing_stack_t processing_stack(processing_stack_t cur, const code_scope& scope);
+
+    external_functions m_external_functions;
 
 public:
     static std::shared_ptr<id_storage> make_default_id_storage();
@@ -352,6 +357,9 @@ public:
 
     bool register_psect(id_index symbol, id_index psect);
     void validate_psect_registrations(diagnostic_consumer& diags);
+
+    bool add_external_function(std::string_view name, external_function func);
+    const external_function* find_external_function(std::string_view) const noexcept;
 };
 
 bool test_symbol_for_read(const variable_symbol* var,

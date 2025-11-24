@@ -468,7 +468,7 @@ struct parser2
 
     void lex_line_remark();
 
-    void resolve_expression(expressions::ca_expr_ptr& expr) const;
+    void resolve_expression(expressions::ca_expr_ptr& expr, size_t i) const;
 
     void resolve_concat_chain(const semantics::concat_chain& chain) const;
 
@@ -627,11 +627,11 @@ struct parser2
 
     std::pair<semantics::operand_list, range> macro_ops(bool reparse);
 
-    template<std::pair<bool, semantics::operand_ptr> (parser2::*arg)(parser_position)>
+    template<std::pair<bool, semantics::operand_ptr> (parser2::*arg)(parser_position, size_t)>
     std::pair<semantics::operand_list, range> ca_args();
-    std::pair<bool, semantics::operand_ptr> ca_expr_ops(parser_position start);
-    std::pair<bool, semantics::operand_ptr> ca_branch_ops(parser_position start);
-    std::pair<bool, semantics::operand_ptr> ca_var_def_ops(parser_position start);
+    std::pair<bool, semantics::operand_ptr> ca_expr_ops(parser_position start, size_t i);
+    std::pair<bool, semantics::operand_ptr> ca_branch_ops(parser_position start, size_t i);
+    std::pair<bool, semantics::operand_ptr> ca_var_def_ops(parser_position start, size_t i);
 
     parser_holder::op_data lab_instr();
     void lab_instr_process();
@@ -1026,7 +1026,7 @@ void parser2::lex_line_remark()
     }
 }
 
-void parser2::resolve_expression(expressions::ca_expr_ptr& expr) const
+void parser2::resolve_expression(expressions::ca_expr_ptr& expr, size_t i) const
 {
     diagnostic_consumer_transform diags([collector = holder->diagnostic_collector](diagnostic_op d) {
         if (collector)
@@ -1059,6 +1059,17 @@ void parser2::resolve_expression(expressions::ca_expr_ptr& expr) const
     else if (opcode.value == wk::AREAD)
     {
         // aread operand is just enumeration
+    }
+    else if (opcode.value == wk::SETAF)
+    {
+        if (i == 0)
+            expr->resolve_expression_tree({ C_TYPE, C_TYPE, true }, diags);
+        else
+            expr->resolve_expression_tree({ A_TYPE, A_TYPE, true }, diags);
+    }
+    else if (opcode.value == wk::SETCF)
+    {
+        expr->resolve_expression_tree({ C_TYPE, C_TYPE, true }, diags);
     }
     else
     {
@@ -3005,7 +3016,7 @@ result_t<semantics::vs_ptr> parser2::lex_variable()
     }
 }
 
-template<std::pair<bool, semantics::operand_ptr> (parser2::*arg)(parser_position)>
+template<std::pair<bool, semantics::operand_ptr> (parser2::*arg)(parser_position, size_t)>
 std::pair<semantics::operand_list, range> parser2::ca_args()
 {
     if (const auto input_start = cur_pos_adjusted(); eof())
@@ -3040,7 +3051,7 @@ std::pair<semantics::operand_list, range> parser2::ca_args()
             syntax_error_or_eof();
             break;
         }
-        auto [continue_loop, op] = (this->*arg)(start);
+        auto [continue_loop, op] = (this->*arg)(start, result.size());
         if (op)
             result.push_back(std::move(op));
         else if (continue_loop && (!result.empty() || follows<u8','>()))
@@ -3058,7 +3069,7 @@ std::pair<semantics::operand_list, range> parser2::ca_args()
     return { std::move(result), range_from(line_start) };
 }
 
-std::pair<bool, semantics::operand_ptr> parser2::ca_expr_ops(parser_position start)
+std::pair<bool, semantics::operand_ptr> parser2::ca_expr_ops(parser_position start, size_t i)
 {
     auto [error, expr] = lex_expr_general();
     if (error)
@@ -3070,11 +3081,11 @@ std::pair<bool, semantics::operand_ptr> parser2::ca_expr_ops(parser_position sta
             std::make_unique<semantics::expr_ca_operand>(std::make_unique<expressions::ca_constant>(0, r), r),
         };
     }
-    resolve_expression(expr);
+    resolve_expression(expr, i);
     return { true, std::make_unique<semantics::expr_ca_operand>(std::move(expr), range_from(start)) };
 }
 
-std::pair<bool, semantics::operand_ptr> parser2::ca_branch_ops(parser_position start)
+std::pair<bool, semantics::operand_ptr> parser2::ca_branch_ops(parser_position start, size_t i)
 {
     expressions::ca_expr_ptr first_expr;
     if (follows<u8'('>())
@@ -3083,7 +3094,7 @@ std::pair<bool, semantics::operand_ptr> parser2::ca_branch_ops(parser_position s
         if (error)
             return {};
         first_expr = std::move(e);
-        resolve_expression(first_expr);
+        resolve_expression(first_expr, i);
     }
     auto [error, ss] = lex_seq_symbol();
     if (error)
@@ -3095,7 +3106,7 @@ std::pair<bool, semantics::operand_ptr> parser2::ca_branch_ops(parser_position s
         return { true, std::make_unique<semantics::seq_ca_operand>(std::move(ss), r) };
 }
 
-std::pair<bool, semantics::operand_ptr> parser2::ca_var_def_ops(parser_position start)
+std::pair<bool, semantics::operand_ptr> parser2::ca_var_def_ops(parser_position start, size_t)
 {
     (void)try_consume<u8'&'>();
     auto [error, var_name] = lex_variable_name(start);
@@ -3177,7 +3188,7 @@ semantics::operand_ptr parser_holder::ca_op_expr()
     if (error || *p.input.next != EOF_SYMBOL)
         return nullptr;
 
-    p.resolve_expression(expr);
+    p.resolve_expression(expr, 0);
     return std::make_unique<semantics::expr_ca_operand>(std::move(expr), p.range_from(start));
 }
 

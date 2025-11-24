@@ -26,10 +26,7 @@
 #include "semantics/source_info_processor.h"
 #include "utils/task.h"
 
-using namespace hlasm_plugin::parser_library;
-using namespace hlasm_plugin::parser_library::lexing;
-using namespace hlasm_plugin::parser_library::parsing;
-using namespace hlasm_plugin::utils::resource;
+namespace hlasm_plugin::parser_library {
 
 analyzing_context& analyzer_options::get_context()
 {
@@ -38,6 +35,13 @@ analyzing_context& analyzer_options::get_context()
         auto h_ctx = std::make_shared<context::hlasm_context>(file_loc,
             std::move(std::get<asm_option>(ctx_source)),
             ids_init ? std::move(ids_init) : std::make_shared<context::id_storage>());
+
+        for (auto&& [name, func] : external_functions)
+        {
+            if (!h_ctx->add_external_function(name, std::move(func)))
+                throw std::logic_error("Duplicate external function: " + name);
+        }
+
         ctx_source = analyzing_context {
             h_ctx,
             std::make_unique<lsp::lsp_context>(h_ctx),
@@ -161,7 +165,7 @@ analyzer::analyzer(std::string_view text, analyzer_options opts)
 
 analyzer::~analyzer() = default;
 
-std::vector<std::pair<virtual_file_handle, resource_location>> analyzer::take_vf_handles()
+std::vector<std::pair<virtual_file_handle, utils::resource::resource_location>> analyzer::take_vf_handles()
 {
     return std::move(m_impl->vf_handles);
 }
@@ -191,3 +195,5 @@ void analyzer::register_stmt_analyzer(processing::statement_analyzer* stmt_analy
 {
     m_impl->mngr.register_stmt_analyzer(stmt_analyzer);
 }
+
+} // namespace hlasm_plugin::parser_library

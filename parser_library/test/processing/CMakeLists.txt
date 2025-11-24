@@ -22,6 +22,7 @@ target_sources(library_test PRIVATE
     end_instr_test.cpp
     endevor_preprocessor_test.cpp
     equ_test.cpp
+    external_functions_test.cpp
     label_test.cpp
     loctr_test.cpp
     lookahead_test.cpp

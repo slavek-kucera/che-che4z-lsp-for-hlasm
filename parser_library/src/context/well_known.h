@@ -23,8 +23,10 @@ struct well_known
 {
     static constexpr id_index COPY = id_index("COPY");
     static constexpr id_index SETA = id_index("SETA");
+    static constexpr id_index SETAF = id_index("SETAF");
     static constexpr id_index SETB = id_index("SETB");
     static constexpr id_index SETC = id_index("SETC");
+    static constexpr id_index SETCF = id_index("SETCF");
     static constexpr id_index GBLA = id_index("GBLA");
     static constexpr id_index GBLB = id_index("GBLB");
     static constexpr id_index GBLC = id_index("GBLC");

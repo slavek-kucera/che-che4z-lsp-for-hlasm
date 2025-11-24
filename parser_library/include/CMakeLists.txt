@@ -25,6 +25,7 @@ target_sources(parser_library PUBLIC
     document.h
     document_symbol_item.h
     external_configuration_requests.h
+    external_functions.h
     fade_messages.h
     instruction_set_version.h
     folding_range.h
