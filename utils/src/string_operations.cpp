@@ -101,12 +101,12 @@ std::string& to_upper(std::string& s)
     return s;
 }
 
-std::string to_upper_copy(std::string s)
+std::string to_upper_copy_t::operator()(std::string s) const
 {
     to_upper(s);
     return s;
 }
 
-std::string to_upper_copy(std::string_view s) { return to_upper_copy(std::string(s)); }
+std::string to_upper_copy_t::operator()(std::string_view s) const { return to_upper_copy(std::string(s)); }
 
 } // namespace hlasm_plugin::utils

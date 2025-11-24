@@ -260,6 +260,22 @@ struct json_settings_replacer
 };
 
 const std::regex json_settings_replacer::config_reference(R"(\$\{([^}]+)\})");
+
+bool external_function_names_are_unique(std::span<const config::external_function> l)
+{
+    std::vector<std::string> names;
+    names.reserve(l.size());
+    std::ranges::transform(l, std::back_inserter(names), utils::to_upper_copy, &config::external_function::name);
+    std::ranges::sort(names);
+    return std::ranges::unique(names).begin() == names.end();
+}
+
+std::span<const config::external_function> as_span(const std::optional<std::vector<config::external_function>>& o)
+{
+    if (!o)
+        return {};
+    return { *o };
+}
 } // namespace
 
 workspace_configuration::workspace_configuration(file_manager& fm,
@@ -289,7 +305,6 @@ workspace_configuration::workspace_configuration(file_manager& fm,
     const shared_json& global_settings,
     const lib_config& global_config,
     std::shared_ptr<library> the_library)
-
     : m_file_manager(fm)
     , m_global_settings(global_settings)
     , m_global_config(global_config)
@@ -299,7 +314,10 @@ workspace_configuration::workspace_configuration(file_manager& fm,
     static const std::string test_group = "test_group";
     auto [it, _] = m_proc_grps.try_emplace(basic_conf { test_group },
         std::piecewise_construct,
-        std::forward_as_tuple(test_group, config::assembler_options(), std::vector<config::preprocessor_options>()),
+        std::forward_as_tuple(test_group,
+            config::assembler_options(),
+            std::vector<config::preprocessor_options>(),
+            std::span<const config::external_function>()),
         std::forward_as_tuple());
     it->second.first.add_library(std::move(the_library));
     m_pgm_conf_store->add_regex_conf(
@@ -360,7 +378,7 @@ utils::task workspace_configuration::process_processor_group(const config::proce
     const utils::resource::resource_location& alternative_root,
     std::vector<diagnostic>& diags)
 {
-    processor_group prc_grp(pg.name, pg.asm_options, pg.preprocessors);
+    processor_group prc_grp(pg.name, pg.asm_options, pg.preprocessors, as_span(pg.external_functions));
 
     for (auto& lib_or_dataset : pg.libs)
     {
@@ -670,10 +688,16 @@ workspace_configuration::load_proc_config(
         co_return { parse_config_file_result::error, config_source };
     }
 
+    if (!external_function_names_are_unique(as_span(proc_groups.external_functions)))
+    {
+        diags.push_back(error_W0009(config_source, ""));
+        proc_groups.external_functions.reset();
+    }
+
     for (const auto& var : json_visitor.unavailable)
         diags.push_back(warn_W0007(config_source, var));
 
-    for (const auto& pg : proc_groups.pgroups)
+    for (auto& pg : proc_groups.pgroups)
     {
         if (!pg.asm_options.valid())
             diags.push_back(error_W0005(config_source, pg.name, "processor group"));
@@ -681,6 +705,13 @@ workspace_configuration::load_proc_config(
         {
             if (!p.valid())
                 diags.push_back(error_W0006(config_source, pg.name, p.type()));
+        }
+        if (!pg.external_functions && proc_groups.external_functions)
+            pg.external_functions = proc_groups.external_functions;
+        else if (!external_function_names_are_unique(as_span(pg.external_functions)))
+        {
+            diags.push_back(error_W0009(config_source, pg.name));
+            pg.external_functions.reset();
         }
     }
 
@@ -1079,7 +1110,7 @@ workspace_configuration::make_external_proc_group(
             diags.push_back(error_W0006(normalized_location, pg.name, p.type()));
     }
 
-    processor_group prc_grp("", pg.asm_options, pg.preprocessors);
+    processor_group prc_grp("", pg.asm_options, pg.preprocessors, as_span(pg.external_functions));
 
     for (auto& lib_or_dataset : pg.libs)
     {
@@ -1197,6 +1228,7 @@ workspace_configuration::get_analyzer_configuration(utils::resource::resource_lo
             .pp_opts = proc_grp ? proc_grp->preprocessors() : std::vector<preprocessor_options>(),
             .alternative_config_url = std::move(alt_config),
             .dig_suppress_limit = m_local_config.fill_missing_settings(m_global_config).diag_supress_limit.value(),
+            .external_functions = proc_grp ? proc_grp->external_functions() : external_functions_list(),
         },
         group_id,
     };

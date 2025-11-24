@@ -883,6 +883,8 @@ diagnostic warn_W0007(const utils::resource::resource_location&, std::string_vie
 
 diagnostic warn_W0008(const utils::resource::resource_location&, std::string_view pgroup);
 
+diagnostic error_W0009(const utils::resource::resource_location&, std::string_view proc_group);
+
 diagnostic error_B4G001(const utils::resource::resource_location&);
 
 diagnostic error_B4G002(const utils::resource::resource_location&, std::string_view grp_name);

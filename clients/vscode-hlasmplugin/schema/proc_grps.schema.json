@@ -14,6 +14,9 @@
             "items": {
                 "type": "string"
             }
+        },
+        "external_functions": {
+            "$ref": "external_functions.schema.json"
         }
     },
     "required": [

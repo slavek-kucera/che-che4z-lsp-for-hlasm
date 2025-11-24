@@ -127,6 +127,36 @@ TEST(proc_grps, endevor_write)
     EXPECT_EQ(nlohmann::json(l), expected);
 }
 
+TEST(proc_grps, external_function_read)
+{
+    const std::initializer_list<std::pair<nlohmann::json, std::vector<external_function>>> cases = {
+        { R"({})"_json, {} },
+        { R"({"A":1})"_json, { { .name = "A", .value = 1 } } },
+        { R"({"C":"X"})"_json, { { .name = "C", .value = "X" } } },
+        { R"({"A":2,"C":"X"})"_json, { { .name = "A", .value = 2 }, { .name = "C", .value = "X" } } },
+    };
+
+    for (const auto& [input, expected] : cases)
+    {
+        EXPECT_EQ(input.get<std::vector<external_function>>(), expected);
+    }
+}
+
+TEST(proc_grps, external_function_write)
+{
+    const std::initializer_list<std::pair<nlohmann::json, std::vector<external_function>>> cases = {
+        { R"({})"_json, {} },
+        { R"({"A":1})"_json, { { .name = "A", .value = 1 } } },
+        { R"({"C":"X"})"_json, { { .name = "C", .value = "X" } } },
+        { R"({"A":2,"C":"X"})"_json, { { .name = "A", .value = 2 }, { .name = "C", .value = "X" } } },
+    };
+
+    for (const auto& [expected, input] : cases)
+    {
+        EXPECT_EQ(nlohmann::json(input), expected);
+    }
+}
+
 TEST(proc_grps, full_content_read)
 {
     const auto cases = {
@@ -188,11 +218,17 @@ TEST(proc_grps, full_content_read)
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":[{"dataset": "ds.name", "optional":true, "profile":"P"}]}]})"_json,
             proc_grps { { { "P1", { endevor_dataset { "P", "ds.name", true } } } } }),
+        std::make_pair(R"({"pgroups":[],"external_functions":{"A":1}})"_json,
+            proc_grps { {}, {}, { { { .name = "A", .value = 1 } } } }),
+        std::make_pair(R"({"pgroups":[{"name":"P1","libs":[],"external_functions":{"A":1}}]})"_json,
+            proc_grps { { { "P1", {}, {}, {}, { { { .name = "A", .value = 1 } } } } } }),
     };
 
     for (const auto& [input, expected] : cases)
     {
         const auto& pg = input.get<proc_grps>();
+        EXPECT_EQ(pg.macro_extensions, expected.macro_extensions);
+        EXPECT_EQ(pg.external_functions, expected.external_functions);
         ASSERT_EQ(pg.pgroups.size(), expected.pgroups.size());
         for (size_t i = 0; i < pg.pgroups.size(); ++i)
         {
@@ -201,6 +237,7 @@ TEST(proc_grps, full_content_read)
             EXPECT_EQ(pg.pgroups[i].asm_options.sysparm, expected.pgroups[i].asm_options.sysparm);
             EXPECT_EQ(pg.pgroups[i].preprocessors, expected.pgroups[i].preprocessors);
             EXPECT_EQ(pg.pgroups[i].libs, expected.pgroups[i].libs);
+            EXPECT_EQ(pg.pgroups[i].external_functions, expected.pgroups[i].external_functions);
         }
     }
 }
@@ -260,6 +297,10 @@ TEST(proc_grps, full_content_write)
         std::make_pair(
             R"({"pgroups":[{"name":"P1", "libs":[{"dataset": "ds.name", "optional":true, "profile":"P"}]}]})"_json,
             proc_grps { { { "P1", { endevor_dataset { "P", "ds.name", true } } } } }),
+        std::make_pair(R"({"pgroups":[],"external_functions":{"A":1}})"_json,
+            proc_grps { {}, {}, { { { .name = "A", .value = 1 } } } }),
+        std::make_pair(R"({"pgroups":[{"name":"P1","libs":[],"external_functions":{"A":1}}]})"_json,
+            proc_grps { { { "P1", {}, {}, {}, { { { .name = "A", .value = 1 } } } } } }),
     };
 
     for (const auto& [expected, input] : cases)
@@ -288,6 +329,7 @@ TEST(proc_grps, invalid)
         R"({"pgroups":[{"libs":[{"dataset":false}]}]})"_json,
         R"({"pgroups":[{"libs":[{"environment":"E"}]}]})"_json,
         R"({"pgroups":[{"libs":[{"subsystem":"SUB"}]}]})"_json,
+        R"({"pgroups":[],"external_functions":{"A":{}}})"_json,
     };
 
     for (const auto& input : cases)

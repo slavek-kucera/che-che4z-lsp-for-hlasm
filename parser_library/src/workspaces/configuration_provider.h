@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "compiler_options.h"
+#include "external_functions.h"
 #include "preprocessor_options.h"
 #include "tagged_index.h"
 #include "utils/resource_location.h"
@@ -37,6 +38,7 @@ struct analyzer_configuration
     std::vector<preprocessor_options> pp_opts;
     utils::resource::resource_location alternative_config_url;
     std::int64_t dig_suppress_limit;
+    std::vector<std::pair<std::string, external_function>> external_functions;
 };
 
 struct opcode_suggestion_data

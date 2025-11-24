@@ -792,3 +792,90 @@ TEST_F(refresh_needed_test, refreshed)
         resource_location("test://workspace/externals/library3"),
     }));
 }
+
+TEST(workspace_configuration, external_functions)
+{
+    NiceMock<file_manager_mock> fm;
+    shared_json global_settings = make_empty_shared_json();
+    lib_config global_config;
+    NiceMock<external_configuration_requests_mock> ext_confg;
+
+    EXPECT_CALL(fm, get_file_content(resource_location("test://workspace/.hlasmplugin/proc_grps.json")))
+        .WillOnce(Invoke([]() {
+            return value_task<std::optional<std::string>>::from_value(R"(
+{
+  "pgroups": [
+    {
+      "name": "GRP1",
+      "libs": []
+    },
+    {
+      "name": "GRP2",
+      "libs": [],
+      "external_functions": {
+        "B": 2
+      }
+    }
+  ],
+  "external_functions": {
+    "A": 1
+  }
+}
+)");
+        }));
+    EXPECT_CALL(fm, get_file_content(resource_location("test://workspace/.hlasmplugin/pgm_conf.json")))
+        .WillOnce(Invoke([]() { return value_task<std::optional<std::string>>::from_value(std::nullopt); }));
+
+    workspace_configuration cfg(
+        fm, resource_location("test://workspace"), global_settings, global_config, &ext_confg, nullptr);
+    cfg.parse_configuration_file().run();
+
+    EXPECT_THAT(cfg.get_proc_grp(basic_conf { .name = "GRP1" }).external_functions(), ElementsAre(Key(Eq("A"))));
+    EXPECT_THAT(cfg.get_proc_grp(basic_conf { .name = "GRP2" }).external_functions(), ElementsAre(Key(Eq("B"))));
+}
+
+TEST(workspace_configuration, external_functions_invalid)
+{
+    NiceMock<file_manager_mock> fm;
+    shared_json global_settings = make_empty_shared_json();
+    lib_config global_config;
+    NiceMock<external_configuration_requests_mock> ext_confg;
+
+    EXPECT_CALL(fm, get_file_content(resource_location("test://workspace/.hlasmplugin/proc_grps.json")))
+        .WillOnce(Invoke([]() {
+            return value_task<std::optional<std::string>>::from_value(R"(
+{
+  "pgroups": [
+    {
+      "name": "GRP",
+      "libs": [],
+      "external_functions": {
+        "b": 2,
+        "B": 2
+      }
+    }
+  ],
+  "external_functions": {
+    "a": 1,
+    "A": 1
+  }
+}
+)");
+        }));
+    EXPECT_CALL(fm, get_file_content(resource_location("test://workspace/.hlasmplugin/pgm_conf.json")))
+        .WillOnce(Invoke([]() { return value_task<std::optional<std::string>>::from_value(std::nullopt); }));
+
+    workspace_configuration cfg(
+        fm, resource_location("test://workspace"), global_settings, global_config, &ext_confg, nullptr);
+    cfg.parse_configuration_file().run();
+
+    std::vector<diagnostic> diags;
+    cfg.produce_diagnostics(diags, {}, false);
+
+    EXPECT_TRUE(matches_message_codes(diags, { "W0009", "W0009" }));
+    EXPECT_TRUE(matches_message_text(diags,
+        {
+            "External functions list contains duplicates",
+            "External functions list for group 'GRP' contains duplicates",
+        }));
+}

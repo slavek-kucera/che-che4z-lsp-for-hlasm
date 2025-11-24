@@ -19,6 +19,7 @@
 #include <variant>
 
 #include "diagnostic.h"
+#include "utils/string_operations.h"
 
 namespace hlasm_plugin::parser_library::workspaces {
 
@@ -47,14 +48,51 @@ std::vector<preprocessor_options> translate_pp_configs(const std::vector<config:
         pp, std::back_inserter(result), [](const auto& p) { return std::visit(translate_pp_options {}, p.options); });
     return result;
 }
+
+auto translate_ef(std::span<const config::external_function> ef)
+{
+    struct
+    {
+        external_function operator()(int32_t v) const
+        {
+            return [v](external_function_args& arg) {
+                if (auto* aarg = arg.arithmetic(); aarg)
+                    aarg->result = v;
+                else
+                    arg.message().emplace(8, "SETAF call expected");
+            };
+        }
+
+        external_function operator()(std::string v) const
+        {
+            return [v = std::move(v)](external_function_args& arg) {
+                if (auto* carg = arg.character(); carg)
+                    carg->result = v;
+                else
+                    arg.message().emplace(8, "SETCF call expected");
+            };
+        }
+    } static constexpr translator;
+
+    std::vector<std::pair<std::string, external_function>> result;
+    result.reserve(ef.size());
+
+    std::ranges::transform(ef, std::back_inserter(result), [](const auto& v) {
+        return std::pair { utils::to_upper_copy(v.name), std::visit(translator, v.value) };
+    });
+
+    return result;
+}
 } // namespace
 
 processor_group::processor_group(const std::string& pg_name,
     const config::assembler_options& asm_options,
-    const std::vector<config::preprocessor_options>& pp)
+    const std::vector<config::preprocessor_options>& pp,
+    std::span<const config::external_function> ef)
     : m_pg_name(pg_name)
     , m_asm_opts(asm_options)
     , m_prep_opts(translate_pp_configs(pp))
+    , m_external_functions(translate_ef(ef))
 {}
 
 void processor_group::apply_options_to(asm_option& opts) const { m_asm_opts.apply_options_to(opts); }

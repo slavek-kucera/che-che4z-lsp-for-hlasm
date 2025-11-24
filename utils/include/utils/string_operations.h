@@ -85,8 +85,11 @@ constexpr auto upper_cased = []() {
 }();
 
 std::string& to_upper(std::string& s);
-std::string to_upper_copy(std::string s);
-std::string to_upper_copy(std::string_view s);
+struct to_upper_copy_t
+{
+    std::string operator()(std::string s) const;
+    std::string operator()(std::string_view s) const;
+} constexpr to_upper_copy;
 
 } // namespace hlasm_plugin::utils
 

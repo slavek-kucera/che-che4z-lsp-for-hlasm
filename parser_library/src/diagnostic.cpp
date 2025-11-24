@@ -129,6 +129,18 @@ diagnostic warn_W0008(const utils::resource::resource_location& file_name, std::
         diagnostic_tag::none);
 }
 
+diagnostic error_W0009(const utils::resource::resource_location& file_name, std::string_view proc_group)
+{
+    return diagnostic(std::string(file_name.get_uri()),
+        {},
+        diagnostic_severity::error,
+        "W0009",
+        proc_group.empty() ? "External functions list contains duplicates"
+                           : concat("External functions list for group '", proc_group, "' contains duplicates"),
+        {},
+        diagnostic_tag::none);
+}
+
 diagnostic error_B4G001(const utils::resource::resource_location& file_name)
 {
     return diagnostic(std::string(file_name.get_uri()),

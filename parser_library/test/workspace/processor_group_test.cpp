@@ -12,10 +12,13 @@
  *   Broadcom, Inc. - initial API and implementation
  */
 
+#include <ranges>
+
 #include "gtest/gtest.h"
 
 #include "../common_testing.h"
 #include "config/proc_grps.h"
+#include "external_functions.h"
 #include "library_mock.h"
 #include "workspaces/library.h"
 #include "workspaces/processor_group.h"
@@ -29,7 +32,7 @@ using hlasm_plugin::utils::resource::resource_location;
 auto asm_options(config::assembler_options o)
 {
     asm_option result;
-    processor_group("", std::move(o), {}).apply_options_to(result);
+    processor_group("", std::move(o), {}, {}).apply_options_to(result);
     return result;
 }
 
@@ -39,7 +42,8 @@ auto pp_options(Opts... o)
     return processor_group("",
         {},
         { config::preprocessor_options {
-            .options = decltype(config::preprocessor_options::options)(std::move(o)) }... })
+            .options = decltype(config::preprocessor_options::options)(std::move(o)) }... },
+        {})
         .preprocessors();
 }
 
@@ -245,7 +249,7 @@ TEST(processor_group, opcode_suggestions)
         });
     EXPECT_CALL(*lib, get_location).WillOnce(ReturnRef(lib_loc));
 
-    processor_group grp("", {}, {});
+    processor_group grp("", {}, {}, {});
     grp.add_library(lib);
 
     auto mac_false = grp.suggest("MAC", false);
@@ -278,7 +282,7 @@ TEST(processor_group, refresh_needed)
     resource_location lib3_res_loc("test://workspace/externals/library3/");
     auto lib3 = make_expectations(lib3_res_loc, false);
 
-    processor_group grp("", {}, {});
+    processor_group grp("", {}, {}, {});
     grp.add_library(lib1);
     grp.add_library(lib2);
     grp.add_library(lib3);
@@ -297,4 +301,38 @@ TEST(processor_group, refresh_needed)
     EXPECT_FALSE(should_be_refreshed(grp, resource_location("test://workspace/externals/library3")));
     // not used
     EXPECT_FALSE(should_be_refreshed(grp, resource_location("test://workspace/externals/library4")));
+}
+
+TEST(processor_group, external_functions)
+{
+    const config::external_function functions[] = {
+        { .name = "A", .value = 1 },
+        { .name = "C", .value = "X" },
+    };
+    processor_group p("", {}, {}, functions);
+
+    const auto& A = std::views::filter(p.external_functions(), [](const auto& x) { return x.first == "A"; }).front();
+    const auto& C = std::views::filter(p.external_functions(), [](const auto& x) { return x.first == "C"; }).front();
+
+    {
+        external_function_args aargs((std::span<const int32_t>()));
+
+        A.second(aargs);
+        EXPECT_EQ(aargs.arithmetic()->result, 1);
+        EXPECT_FALSE(aargs.message());
+
+        C.second(aargs);
+        EXPECT_EQ(aargs.message(), std::pair(8, std::string("SETCF call expected")));
+    }
+
+    {
+        external_function_args cargs((std::span<const std::string_view>()));
+
+        C.second(cargs);
+        EXPECT_EQ(cargs.character()->result, "X");
+        EXPECT_FALSE(cargs.message());
+
+        A.second(cargs);
+        EXPECT_EQ(cargs.message(), std::pair(8, std::string("SETAF call expected")));
+    }
 }

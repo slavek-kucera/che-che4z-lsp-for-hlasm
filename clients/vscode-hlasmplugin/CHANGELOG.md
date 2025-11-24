@@ -4,6 +4,7 @@
 
 #### Added
 - SETAF and SETCF instruction support
+- Introduce configuration options allowing to define constant external functions
 
 ## [1.20.0](https://github.com/eclipse-che4z/che-che4z-lsp-for-hlasm/compare/1.19.0...1.20.0) (2025-11-12)
 

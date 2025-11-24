@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -25,6 +26,7 @@
 #include <vector>
 
 #include "config/proc_grps.h"
+#include "external_functions.h"
 #include "library.h"
 #include "preprocessor_options.h"
 #include "utils/bk_tree.h"
@@ -44,7 +46,8 @@ class processor_group
 public:
     processor_group(const std::string& pg_name,
         const config::assembler_options& asm_options,
-        const std::vector<config::preprocessor_options>& pp);
+        const std::vector<config::preprocessor_options>& pp,
+        std::span<const config::external_function> ef);
 
     void copy_diagnostics(std::vector<diagnostic>&) const;
 
@@ -57,6 +60,7 @@ public:
     void apply_options_to(asm_option& opts) const;
 
     const std::vector<preprocessor_options>& preprocessors() const { return m_prep_opts; }
+    const auto& external_functions() const noexcept { return m_external_functions; }
 
     void generate_suggestions(bool force = true);
     void invalidate_suggestions();
@@ -74,6 +78,7 @@ private:
     std::string m_pg_name;
     config::assembler_options m_asm_opts;
     std::vector<preprocessor_options> m_prep_opts;
+    std::vector<std::pair<std::string, external_function>> m_external_functions;
 
     static constexpr size_t suggestion_limit = 32;
 

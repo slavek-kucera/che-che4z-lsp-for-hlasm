@@ -107,6 +107,7 @@ struct parsing_results
     parse_lib_provider& lib_provider,
     asm_option asm_opts,
     std::vector<preprocessor_options> pp,
+    external_functions_list ef,
     virtual_file_monitor* vfm)
 {
     struct output_t final : output_handler
@@ -130,6 +131,7 @@ struct parsing_results
             file_is_opencode::yes,
             std::move(ids),
             std::move(pp),
+            std::move(ef),
             vfm,
             fms,
             &outputs,
@@ -618,6 +620,7 @@ utils::value_task<parse_file_result> workspace::parse_file(resource_location* se
             ws_lib,
             std::move(config.opts),
             std::move(config.pp_opts),
+            std::move(config.external_functions),
             &self.fm_vfm_);
         results.hc_macro_map = std::move(comp.m_last_results->hc_macro_map); // save macro stuff
         results.macro_diagnostics = std::move(comp.m_last_results->macro_diagnostics);

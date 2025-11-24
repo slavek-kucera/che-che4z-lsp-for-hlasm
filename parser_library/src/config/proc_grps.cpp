@@ -20,6 +20,7 @@
 #include "instruction_set_version.h"
 #include "nlohmann/json.hpp"
 #include "utils/projectors.h"
+#include "utils/string_operations.h"
 
 namespace hlasm_plugin::parser_library::config {
 
@@ -296,6 +297,27 @@ void from_json(const nlohmann::json& j, std::variant<library, dataset, endevor, 
         v = j.get<library>();
 }
 
+void to_json(nlohmann::json& j, const std::vector<external_function>& p)
+{
+    j = nlohmann::json::object();
+    for (const auto& [name, value] : p)
+        j[name] = std::visit([](const auto& v) { return nlohmann::json(v); }, value);
+}
+void from_json(const nlohmann::json& j, std::vector<external_function>& p)
+{
+    if (!j.is_object())
+        throw nlohmann::json::other_error::create(501, "Object of function definitions expected", &j);
+    for (const auto& [key, value] : j.items())
+    {
+        if (value.is_number_integer())
+            p.emplace_back(key, value.get<int32_t>());
+        else if (value.is_string())
+            p.emplace_back(key, value.get<std::string>());
+        else
+            throw nlohmann::json::other_error::create(501, "Only constant external functions are supported", &j);
+    }
+}
+
 void to_json(nlohmann::json& j, const processor_group& p)
 {
     j = nlohmann::json { { "name", p.name }, { "libs", p.libs } };
@@ -316,6 +338,9 @@ void to_json(nlohmann::json& j, const processor_group& p)
         for (const auto& pp : p.preprocessors)
             std::visit(preprocessor_visitor { pp_array.emplace_back() }, pp.options);
     }
+
+    if (p.external_functions.has_value())
+        j["external_functions"] = *p.external_functions;
 }
 
 namespace {
@@ -365,6 +390,17 @@ void add_single_preprocessor(std::vector<preprocessor_options>& preprocessors, c
         throw nlohmann::json::other_error::create(501, "Unable to identify requested preprocessor.", &j);
 }
 
+void external_functions_from_json(const nlohmann::json& j, std::optional<std::vector<external_function>>& target)
+{
+    if (auto it = j.find("external_functions"); it != j.end())
+    {
+        if (!it->is_object())
+            throw nlohmann::json::other_error::create(501, "External functions object expected", &j);
+
+        target.emplace(it.value().get<std::vector<external_function>>());
+    }
+}
+
 } // namespace
 
 void from_json(const nlohmann::json& j, processor_group& p)
@@ -384,6 +420,8 @@ void from_json(const nlohmann::json& j, processor_group& p)
         else
             add_single_preprocessor(p.preprocessors, *it);
     }
+
+    external_functions_from_json(j, p.external_functions);
 }
 
 void to_json(nlohmann::json& j, const proc_grps& p)
@@ -391,12 +429,17 @@ void to_json(nlohmann::json& j, const proc_grps& p)
     j = nlohmann::json { { "pgroups", p.pgroups } };
     if (auto m = nlohmann::json(p.macro_extensions); !m.empty())
         j["macro_extensions"] = std::move(m);
+
+    if (p.external_functions.has_value())
+        j["external_functions"] = *p.external_functions;
 }
 void from_json(const nlohmann::json& j, proc_grps& p)
 {
     j.at("pgroups").get_to(p.pgroups);
     if (auto it = j.find("macro_extensions"); it != j.end())
         it->get_to(p.macro_extensions);
+
+    external_functions_from_json(j, p.external_functions);
 }
 
 } // namespace hlasm_plugin::parser_library::config
