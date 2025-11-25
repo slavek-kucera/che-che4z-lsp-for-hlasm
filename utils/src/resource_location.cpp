@@ -446,15 +446,21 @@ resource_location resource_location::replace_filename(resource_location rl, std:
     return resource_location(utils::path::reconstruct_uri(*dis_uri, other));
 }
 
-std::string resource_location::filename() const
+std::string resource_location::filename(bool prefer_path) const
 {
     const auto uri = get_uri();
     const auto dis_uri = utils::path::dissect_uri(uri);
 
     if (!dis_uri)
-        return std::string(uri.substr(uri.find_last_of("/\\") + 1));
+    {
+        const auto fn = uri.substr(uri.find_last_of("/\\") + 1);
+        if (prefer_path)
+            return std::string(fn);
+        else
+            return encoding::percent_decode(fn);
+    }
 
-    return std::string(dis_uri->path.substr(dis_uri->path.rfind('/') + 1));
+    return encoding::percent_decode(dis_uri->path.substr(dis_uri->path.rfind('/') + 1));
 }
 
 resource_location resource_location::parent() const

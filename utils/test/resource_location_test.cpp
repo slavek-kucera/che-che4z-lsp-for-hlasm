@@ -928,6 +928,8 @@ TEST(resource_location, filename)
     EXPECT_EQ(resource_location("schema://h/a/x/").filename(), "");
     EXPECT_EQ(resource_location("schema://h/a").filename(), "a");
     EXPECT_EQ(resource_location("schema://h/a/x/f?zzz").filename(), "f");
+    EXPECT_EQ(resource_location("schema://h/a/x/%40%23%24%25").filename(), "@#$%");
+    EXPECT_EQ(resource_location("%40%23%24%25").filename(true), "%40%23%24%25");
 }
 
 TEST(resource_location, parent)

@@ -911,7 +911,6 @@ class workspace_manager_impl final : public workspace_manager,
                         auto filename = url.filename();
                         if (subdir)
                             url.join("");
-                        filename = utils::encoding::percent_decode(filename);
                         if (filename.empty())
                         {
                             result = { {}, other_failure };

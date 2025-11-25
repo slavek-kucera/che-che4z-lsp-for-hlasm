@@ -62,7 +62,7 @@ nlohmann::json progress_notification::make_progress_notification(long token, pro
     if (!uri.empty())
     {
         const utils::resource::resource_location loc(uri);
-        value["message"] = utils::encoding::percent_decode(loc.filename());
+        value["message"] = loc.filename();
     }
 
     return result;
