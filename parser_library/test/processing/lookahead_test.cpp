@@ -1522,3 +1522,18 @@ LD      DS   LD
 
     EXPECT_EQ(get_var_value<A_t>(a.hlasm_ctx(), "RES"), 28);
 }
+
+TEST(lookahead, skip_nonexistent_copy)
+{
+    std::string input = R"(
+         AIF   (L'A GT 0).SKIP
+         COPY  A
+.SKIP    ANOP
+A        DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(a.diags().empty());
+}

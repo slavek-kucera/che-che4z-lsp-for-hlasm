@@ -8,6 +8,7 @@
 
 #### Fixed
 - Incorrect `SYSIN_MEMBER` variable value
+- Missing copybook reported in inactive code
 
 ## [1.20.0](https://github.com/eclipse-che4z/che-che4z-lsp-for-hlasm/compare/1.19.0...1.20.0) (2025-11-12)
 
