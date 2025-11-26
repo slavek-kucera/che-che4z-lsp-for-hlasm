@@ -109,8 +109,7 @@ private:
     void process_SETAF(const processing::resolved_statement& stmt);
     void process_SETCF(const processing::resolved_statement& stmt);
 
-    std::pair<const external_function*, std::string> find_external_function(
-        const semantics::operand& op) const noexcept;
+    std::pair<const external_function*, std::string> find_external_function(const semantics::operand& op) const;
     void process_external_message(
         const std::pair<uint8_t, std::string>& message, std::string_view func_name, const range& r) const;
 };

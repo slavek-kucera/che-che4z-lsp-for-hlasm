@@ -699,7 +699,7 @@ void ca_processor::process_MHELP(const processing::resolved_statement& stmt)
 }
 
 std::pair<const external_function*, std::string> ca_processor::find_external_function(
-    const semantics::operand& op) const noexcept
+    const semantics::operand& op) const
 {
     const auto* func_name_op = op.access_ca();
     if (!func_name_op || func_name_op->kind != semantics::ca_kind::EXPR)
