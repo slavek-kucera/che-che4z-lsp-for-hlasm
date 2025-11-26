@@ -382,8 +382,6 @@ context::SET_t ca_symbol_attribute::evaluate_varsym(
             if (var_value.empty())
                 return "O";
 
-            var_value = expressions::ca_symbol_attribute::try_extract_leading_symbol(var_value);
-
             if (auto res = expressions::ca_constant::try_self_defining_term(var_value))
                 return "N";
 

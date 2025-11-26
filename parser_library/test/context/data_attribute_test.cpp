@@ -361,6 +361,65 @@ TEST(data_attributes, T_macro_params)
     EXPECT_TRUE(a.diags().empty());
 }
 
+TEST(data_attributes, T_macro_direct)
+{
+    std::string base = R"(
+    MACRO
+    MAC  &P
+    GBLC R
+&R  SETC T'&P
+    MEND
+
+&X  SETC '(1)'
+    GBLC R
+    MAC  )";
+
+    for (const auto [param, expected] : {
+             std::pair { "A", "U" },
+             std::pair { "1", "N" },
+             std::pair { "(1)", "N" },
+             std::pair { "(1,1)", "N" },
+             std::pair { "(1,A)", "N" },
+             std::pair { "(A,1)", "U" },
+             std::pair { "((1),A)", "N" },
+             // FIXME: std::pair { "(&X,A)", "U" },
+         })
+    {
+        const auto input = base + param;
+        analyzer a(input);
+        a.analyze();
+
+        EXPECT_TRUE(a.diags().empty());
+
+        EXPECT_EQ(get_var_value<C_t>(a.hlasm_ctx(), "R"), expected) << param << ":" << expected;
+    }
+}
+
+TEST(data_attributes, T_macro_stringified)
+{
+    std::string base = R"(
+    MACRO
+    MAC  &P
+    GBLC R
+&S  SETC '&P'
+&R  SETC T'&S
+    MEND
+
+    GBLC R
+    MAC  )";
+
+    for (const auto [param, expected] : { std::pair { "A", "U" }, std::pair { "1", "N" }, std::pair { "(1)", "U" } })
+    {
+        const auto input = base + param;
+        analyzer a(input);
+        a.analyze();
+
+        EXPECT_TRUE(a.diags().empty());
+
+        EXPECT_EQ(get_var_value<C_t>(a.hlasm_ctx(), "R"), expected) << param << ":" << expected;
+    }
+}
+
 TEST(data_attributes, T_var_to_ord_syms)
 {
     std::string input = R"(
