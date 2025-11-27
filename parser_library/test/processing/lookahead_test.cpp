@@ -1537,3 +1537,21 @@ A        DS    F
 
     EXPECT_TRUE(a.diags().empty());
 }
+
+TEST(lookahead, false_redefinition)
+{
+    std::string input = R"(
+         AIF   (L'A GT 0).SKIP
+.SKIP    ANOP
+         AGO   .OLD
+.SKIP    ANOP
+.OLD     ANOP
+A        DS    F
+         END
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(a.diags().empty());
+}

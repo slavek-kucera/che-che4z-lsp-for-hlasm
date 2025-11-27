@@ -270,15 +270,6 @@ void processing_manager::start_lookahead(lookahead_start_data start)
 
 void processing_manager::finish_lookahead(lookahead_processing_result result)
 {
-    for (auto it : m_pending_seq_redifinitions)
-    {
-        auto& [state, diags] = it->second;
-        if (state == pending_seq_redifinition_state::lookahead_pending)
-            state = diags.empty() ? pending_seq_redifinition_state::lookahead_done
-                                  : pending_seq_redifinition_state::diagnostics;
-    }
-    m_pending_seq_redifinitions.clear();
-
     lookahead_stop_ = hlasm_ctx_.current_source().create_snapshot();
     lookahead_stop_ainsert_id = hlasm_ctx_.current_ainsert_id();
 
@@ -395,18 +386,7 @@ void processing_manager::jump_in_statements(context::id_index target, range symb
             return;
         }
 
-        if (auto it = m_lookahead_seq_redifinitions.find(target); it != m_lookahead_seq_redifinitions.end()
-            && it->second.first != pending_seq_redifinition_state::lookahead_done)
-        {
-            for (auto& d : it->second.second)
-                diag_ctx.add_raw_diagnostic(std::move(d));
-            it->second.second.clear();
-            // TODO: Should we decrement the branch counter in the situation?
-        }
-        else
-        {
-            perform_opencode_jump(label->second.statement_position, label->second.snapshot);
-        }
+        perform_opencode_jump(label->second.statement_position, label->second.snapshot);
     }
 
     hlasm_ctx_.decrement_branch_counter();
@@ -423,24 +403,12 @@ void processing_manager::register_sequence_symbol(context::id_index target, rang
     switch (result)
     {
         case created:
-            if (lookahead_active())
-                m_pending_seq_redifinitions.emplace_back(m_lookahead_seq_redifinitions.try_emplace(target).first);
             break;
         case compatible:
             break;
         case conflict:
             if (!lookahead_active())
                 diag_ctx.add_diagnostic(diagnostic_op::error_E045(target.to_string_view(), symbol_range));
-            else if (auto it = m_lookahead_seq_redifinitions.find(target); it == m_lookahead_seq_redifinitions.end()
-                     || it->second.first != pending_seq_redifinition_state::lookahead_pending)
-            {
-                // already defined either in normal processing or previous lookahead, so silently ignore
-            }
-            else
-            {
-                it->second.second.push_back(add_stack_details(
-                    diagnostic_op::error_E045(target.to_string_view(), symbol_range), hlasm_ctx_.processing_stack()));
-            }
             break;
     }
 }

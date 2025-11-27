@@ -95,15 +95,6 @@ private:
 
     context::source_snapshot lookahead_stop_;
     size_t lookahead_stop_ainsert_id = 0;
-    enum class pending_seq_redifinition_state
-    {
-        lookahead_pending,
-        lookahead_done,
-        diagnostics,
-    };
-    std::unordered_map<context::id_index, std::pair<pending_seq_redifinition_state, std::vector<diagnostic>>>
-        m_lookahead_seq_redifinitions;
-    std::vector<decltype(m_lookahead_seq_redifinitions)::iterator> m_pending_seq_redifinitions;
 
     std::shared_ptr<std::vector<fade_message>> m_fade_msgs;
 
