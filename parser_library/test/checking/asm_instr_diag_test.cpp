@@ -947,7 +947,7 @@ TEST(diagnostics, mnote_first_op_format)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A300", "MNOTE" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "A300" }));
 }
 
 TEST(diagnostics, mnote_long_message)
@@ -1197,7 +1197,7 @@ TEST(mnote, missing_quotes)
     analyzer a(input);
     a.analyze();
 
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "MNOTE", "A300" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "A300" }));
 }
 
 TEST(mnote, nonprintable_characters)

@@ -148,8 +148,6 @@ public:
 
     void apply_mach_visitor(expressions::mach_expr_visitor&) const override;
 
-    const std::string& get_value() const { return value_; }
-
 private:
     std::unique_ptr<checking::operand> get_operand_value_inner(
         context::dependency_solver& info, bool can_have_ordsym, diagnostic_op_consumer& diags) const;

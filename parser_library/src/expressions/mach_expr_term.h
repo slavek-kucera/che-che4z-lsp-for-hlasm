@@ -46,6 +46,8 @@ public:
     mach_expr_ptr clone() const override;
 
     std::int32_t derive_length(std::int32_t mi_length, context::dependency_solver& solver) const override;
+
+    [[nodiscard]] auto get_value() const noexcept { return value_; }
 };
 
 // Represents a literal expression (e.g. =C'text')

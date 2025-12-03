@@ -81,14 +81,18 @@ std::optional<context::A_t> try_get_abs_value(const semantics::operand* op, cont
     return try_get_abs_value(asm_op, dep_solver);
 }
 
-std::optional<int> try_get_number(std::string_view s)
+context::assembler_type assembler_type_from_op(const semantics::operand* op)
 {
-    int v = 0;
-    const char* b = s.data();
-    const char* e = b + s.size();
-    if (auto ec = std::from_chars(b, e, v); ec.ec == std::errc {} && ec.ptr == e)
-        return v;
-    return std::nullopt;
+    const auto* asm_op = op->access_asm();
+    if (!asm_op)
+        return {};
+    const auto* expr = asm_op->access_expr();
+    if (!expr)
+        return {};
+    const auto* sym = dynamic_cast<const expressions::mach_expr_symbol*>(expr->expression.get());
+    if (!sym)
+        return {};
+    return context::assembler_type_from_string(sym->value.to_string_view());
 }
 
 template<auto ptr, auto... others>
@@ -254,11 +258,7 @@ void asm_processor::process_EQU(rebuilt_statement&& stmt)
     symbol_attributes::assembler_type a_attr = symbol_attributes::assembler_type::NONE;
     if (asm_type)
     {
-        std::string_view a_value;
-        if (const auto* expr = asm_type->access_expr())
-            a_value = expr->get_value();
-        // relies on to_upper_case in the parser
-        a_attr = context::assembler_type_from_string(a_value);
+        a_attr = assembler_type_from_op(asm_type);
         if (a_attr == symbol_attributes::assembler_type::NONE)
             add_diagnostic(diagnostic_op::error_A135_EQU_asm_type_val_format(asm_type->operand_range));
     }
@@ -1271,7 +1271,10 @@ bool asm_expr_quals(const semantics::operand_ptr& op, std::string_view value)
     if (!asm_op)
         return false;
     auto expr = asm_op->access_expr();
-    return expr && expr->get_value() == value;
+    if (!expr)
+        return false;
+    const auto* sym = dynamic_cast<const expressions::mach_expr_symbol*>(expr->expression.get());
+    return sym && sym->value.to_string_view() == value;
 }
 } // namespace
 
@@ -1329,11 +1332,11 @@ void asm_processor::process_MNOTE(rebuilt_statement&& stmt)
                         level = 0;
                         first_op_len = 1;
                     }
-                    else
+                    else if (auto num = dynamic_cast<const expressions::mach_expr_constant*>(expr->expression.get()))
                     {
-                        const auto& val = expr->get_value();
-                        first_op_len = val.size();
-                        level = try_get_number(val);
+                        const auto l = num->get_value();
+                        first_op_len = l < 10 ? 1 : l < 100 ? 2 : 3;
+                        level = l;
                     }
                     break;
 
@@ -1367,11 +1370,8 @@ void asm_processor::process_MNOTE(rebuilt_statement&& stmt)
         }
         else
         {
-            if (string_op->kind == semantics::asm_kind::EXPR)
-            {
-                text = string_op->access_expr()->get_value();
-            }
             add_diagnostic(diagnostic_op::warning_A300_op_apostrophes_missing(MNOTE, r));
+            return;
         }
     }
 
