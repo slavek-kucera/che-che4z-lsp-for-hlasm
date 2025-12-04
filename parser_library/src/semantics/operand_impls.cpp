@@ -166,8 +166,11 @@ std::unique_ptr<checking::operand> expr_assembler_operand::get_operand_value(
 std::unique_ptr<checking::operand> expr_assembler_operand::get_operand_value_inner(
     context::dependency_solver& info, bool can_have_ordsym, diagnostic_op_consumer& diags) const
 {
-    if (!can_have_ordsym && dynamic_cast<expressions::mach_expr_symbol*>(expression.get()))
-        return std::make_unique<checking::one_operand>(value_);
+    if (!can_have_ordsym)
+    {
+        if (const auto* sym = dynamic_cast<const expressions::mach_expr_symbol*>(expression.get()))
+            return std::make_unique<checking::one_operand>(sym->value.to_string());
+    }
 
     auto res = expression->evaluate(info, diags);
     switch (res.value_kind())
