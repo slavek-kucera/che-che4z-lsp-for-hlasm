@@ -50,6 +50,8 @@ mach_expr_constant::value_t mach_expr_constant::evaluate(context::dependency_sol
     return value_;
 }
 
+mach_expr_constant::value_t mach_expr_constant::equ_evaluate(context::dependency_solver&) const { return value_; }
+
 const mach_expression* mach_expr_constant::leftmost_term() const { return this; }
 
 void mach_expr_constant::apply(mach_expr_visitor& visitor) const { visitor.visit(*this); }
@@ -97,37 +99,52 @@ mach_expr_constant::value_t mach_expr_symbol::evaluate(
 {
     auto symbol = solver.get_symbol(value);
 
-    if (symbol == nullptr || symbol->kind() == context::symbol_value_kind::UNDEF)
+    if (symbol == nullptr)
         return context::symbol_value();
 
-    if (symbol->kind() == context::symbol_value_kind::ABS)
+    auto result = symbol->value().normalized();
+    using enum context::symbol_value_kind;
+    switch (result.value_kind())
     {
-        if (!qualifier.empty())
-        {
-            diags.add_diagnostic(diagnostic_op::error_ME004(get_range()));
-        }
-        return symbol->value();
-    }
-    else if (symbol->kind() == context::symbol_value_kind::RELOC)
-    {
-        if (qualifier.empty())
-            return symbol->value();
-        auto reloc_value = symbol->value().get_reloc();
-        if (reloc_value.is_simple())
-        {
-            auto bp = std::make_shared<context::address::base_entry>(reloc_value.bases().front());
-            bp->qualifier = qualifier;
-            return std::move(reloc_value).with_base_list(context::address::base_list(std::move(bp)));
-        }
-        else
-        {
-            diags.add_diagnostic(diagnostic_op::error_ME006(get_range()));
-        }
-        return std::move(reloc_value);
-    }
+        case UNDEF:
+            break;
 
-    assert(false);
-    return context::symbol_value();
+        case ABS:
+            if (!qualifier.empty())
+                diags.add_diagnostic(diagnostic_op::error_ME004(get_range()));
+            break;
+
+        case RELOC:
+            if (!qualifier.empty())
+            {
+                if (const auto& reloc_value = result.get_reloc(); reloc_value.is_simple())
+                {
+                    auto bp = std::make_shared<context::address::base_entry>(reloc_value.bases().front());
+                    bp->qualifier = qualifier;
+                    return std::move(result).get_reloc().with_base_list(context::address::base_list(std::move(bp)));
+                }
+                diags.add_diagnostic(diagnostic_op::error_ME006(get_range()));
+            }
+            break;
+
+        default:
+            assert(false);
+            break;
+    }
+    return result;
+}
+
+mach_expr_constant::value_t mach_expr_symbol::equ_evaluate(context::dependency_solver& solver) const
+{
+    if (!qualifier.empty())
+        return context::symbol_value();
+
+    const auto* symbol = solver.get_symbol(value);
+
+    if (!symbol)
+        return context::symbol_value();
+
+    return symbol->value().normalized();
 }
 
 const mach_expression* mach_expr_symbol::leftmost_term() const { return this; }
@@ -171,6 +188,15 @@ mach_expression::value_t mach_expr_location_counter::evaluate(
     if (!location_counter.has_value())
         return context::address();
     else
+        return std::move(*location_counter).normalized();
+}
+
+mach_expression::value_t mach_expr_location_counter::equ_evaluate(context::dependency_solver& mi) const
+{
+    auto location_counter = mi.get_loctr();
+    if (!location_counter.has_value())
+        return context::symbol_value();
+    else
         return std::move(*location_counter);
 }
 
@@ -200,6 +226,8 @@ mach_expression::value_t mach_expr_default::evaluate(context::dependency_solver&
 {
     return value_t();
 }
+
+mach_expression::value_t mach_expr_default::equ_evaluate(context::dependency_solver&) const { return value_t(); }
 
 const mach_expression* mach_expr_default::leftmost_term() const { return this; }
 
@@ -306,6 +334,46 @@ mach_expression::value_t mach_expr_data_attr::evaluate(
         return context::symbol_attributes::default_value(attribute);
 }
 
+mach_expression::value_t mach_expr_data_attr::equ_evaluate(context::dependency_solver& solver) const
+{
+    using enum context::data_attr_kind;
+    if (attribute == O)
+    {
+        auto result = solver.get_opcode_attr(value);
+        assert(result.size() == 1);
+        return ebcdic_encoding::to_ebcdic(result.front());
+    }
+
+    const context::symbol* symbol = nullptr;
+    if (auto symbol_ext = solver.get_symbol_candidate(value);
+        std::holds_alternative<context::symbol_candidate>(symbol_ext))
+    {
+        if (attribute == T)
+            return std::get<context::symbol_candidate>(symbol_ext).mentioned ? 'M'_ebcdic : 'U'_ebcdic;
+    }
+    else
+        symbol = std::get<const context::symbol*>(symbol_ext);
+
+    if (symbol == nullptr)
+        return context::symbol_value();
+
+    if ((attribute == S || attribute == I) && !symbol->attributes().can_have_SI_attr())
+        return context::symbol_value();
+
+    if (attribute == I)
+    {
+        if (!symbol->attributes().is_defined(L))
+            return context::symbol_value();
+        if (!symbol->attributes().is_defined(S))
+            return context::symbol_value();
+    }
+
+    if (symbol->attributes().is_defined(attribute))
+        return symbol->attributes().get_attribute_value(attribute);
+
+    return context::symbol_value();
+}
+
 const mach_expression* mach_expr_data_attr::leftmost_term() const { return this; }
 
 void mach_expr_data_attr::apply(mach_expr_visitor& visitor) const { visitor.visit(*this); }
@@ -354,6 +422,25 @@ mach_expression::value_t mach_expr_data_attr_literal::evaluate(
         diags.add_diagnostic(diagnostic_op::warning_W011(get_range()));
         return 0;
     }
+    return attrs.get_attribute_value(attribute);
+}
+
+mach_expression::value_t mach_expr_data_attr_literal::equ_evaluate(context::dependency_solver& solver) const
+{
+    if (get_dependencies(solver).contains_dependencies())
+        return context::symbol_value();
+
+    bool failed = false;
+    diagnostic_consumer_transform a([&failed](diagnostic_op) { failed = true; });
+    context::symbol_attributes attrs = lit->get_data_definition().get_symbol_attributes(solver, a);
+
+    if (failed)
+        return context::symbol_value();
+
+    if ((attribute == context::data_attr_kind::S || attribute == context::data_attr_kind::I)
+        && !attrs.can_have_SI_attr())
+        return 0;
+
     return attrs.get_attribute_value(attribute);
 }
 
@@ -411,6 +498,16 @@ context::dependency_collector mach_expr_literal::get_dependencies(context::depen
 }
 
 mach_expression::value_t mach_expr_literal::evaluate(context::dependency_solver& solver, diagnostic_op_consumer&) const
+{
+    auto symbol = solver.get_symbol(get_literal_id(solver));
+
+    if (symbol == nullptr || symbol->kind() == context::symbol_value_kind::UNDEF)
+        return context::symbol_value();
+
+    return symbol->value();
+}
+
+mach_expression::value_t mach_expr_literal::equ_evaluate(context::dependency_solver& solver) const
 {
     auto symbol = solver.get_symbol(get_literal_id(solver));
 

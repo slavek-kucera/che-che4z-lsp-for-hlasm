@@ -330,10 +330,9 @@ void asm_processor::process_EQU(rebuilt_statement&& stmt)
 
     const symbol_attributes attrs(context::symbol_origin::EQU, t_attr, l_attr, s_attr, i_attr, p_attr, a_attr);
 
-    if (auto holder = expr_op->expression->get_dependencies(dep_solver); !holder.contains_dependencies())
-        create_symbol(symbol_name, expr_op->expression->evaluate(dep_solver, diag_ctx), attrs);
-    else if (holder.is_address() && holder.unresolved_spaces.empty())
-        create_symbol(symbol_name, std::move(*holder.unresolved_address), attrs);
+    if (auto result = expr_op->expression->equ_evaluate(dep_solver);
+        result.value_kind() != context::symbol_value_kind::UNDEF)
+        create_symbol(symbol_name, std::move(result), attrs);
     else
     {
         const auto stmt_range = stmt.stmt_range_ref();
@@ -412,7 +411,7 @@ void asm_processor::process_data_instruction(rebuilt_statement&& stmt)
             else // TODO: HLASM does not seem to be tracking the attribute dependency correctly
                 s_dep = data_op->value->scale.get();
 
-            hlasm_ctx.ord_ctx.symbol_dependencies().add_defined(label, nullptr, lib_info);
+            hlasm_ctx.ord_ctx.symbol_dependencies().add_defined(label, lib_info);
         }
         else
             add_diagnostic(diagnostic_op::error_E031("symbol", stmt.label_ref().field_range));
@@ -490,9 +489,9 @@ void asm_processor::process_data_instruction(rebuilt_statement&& stmt)
     bool cycle_ok = true;
 
     if (l_dep)
-        cycle_ok &= adder.add_dependency(label, context::data_attr_kind::L, l_dep);
+        cycle_ok &= adder.add_dependency(label, context::data_attr_kind::L, l_dep, context::delay_eval_t::yes);
     if (s_dep)
-        cycle_ok &= adder.add_dependency(label, context::data_attr_kind::S, s_dep);
+        cycle_ok &= adder.add_dependency(label, context::data_attr_kind::S, s_dep, context::delay_eval_t::no);
 
     if (!cycle_ok)
         add_diagnostic(diagnostic_op::error_E033(first_op->operand_range));

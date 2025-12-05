@@ -66,17 +66,28 @@ symbol& ordinary_assembly_context::create_symbol(id_index name, symbol_value val
 {
     assert(symbol_can_be_assigned(symbols_, name));
 
+    const auto unresolved = value.value_kind() == symbol_value_kind::RELOC && value.get_reloc().has_unresolved_space();
+
     const auto [it, _] =
         symbols_.insert_or_assign(name, symbol(name, std::move(value), attributes, hlasm_ctx_.processing_stack()));
 
+    if (unresolved)
+        regenerate_symbols.emplace_back(&std::get<symbol>(it->second));
+
     return std::get<symbol>(it->second);
 }
+
+void ordinary_assembly_context::regenerate_addresses()
+{
+    std::ranges::for_each(regenerate_symbols, &symbol::regenerate_reloc);
+}
+
 
 void ordinary_assembly_context::add_symbol_reference(
     id_index name, symbol_attributes attributes, const library_info& li)
 {
     auto [it, _] = symbol_refs_.try_emplace(name, name, symbol_value(), attributes, processing_stack_t());
-    m_symbol_dependencies->add_defined(it->first, nullptr, li);
+    m_symbol_dependencies->add_defined(it->first, li);
 }
 
 const symbol* ordinary_assembly_context::get_symbol_reference(context::id_index name) const
@@ -135,7 +146,7 @@ section* ordinary_assembly_context::set_section(id_index name, section_kind kind
                     s->current_location_counter().current_address(),
                     symbol_attributes::make_section_attrs(),
                     hlasm_ctx_.processing_stack()));
-            m_symbol_dependencies->add_defined(name, nullptr, li);
+            m_symbol_dependencies->add_defined(name, li);
         }
     }
 
@@ -160,7 +171,7 @@ section* ordinary_assembly_context::create_and_set_class(
             s->current_location_counter().current_address(),
             symbol_attributes::make_section_attrs(),
             hlasm_ctx_.processing_stack()));
-    m_symbol_dependencies->add_defined(name, nullptr, li);
+    m_symbol_dependencies->add_defined(name, li);
 
     return s;
 }
@@ -228,7 +239,7 @@ void ordinary_assembly_context::set_location_counter(id_index name, const librar
         symbols_.insert_or_assign(name,
             symbol(name, l.current_address(), symbol_attributes::make_section_attrs(), hlasm_ctx_.processing_stack()));
 
-        m_symbol_dependencies->add_defined(name, nullptr, li);
+        m_symbol_dependencies->add_defined(name, li);
     }
 }
 

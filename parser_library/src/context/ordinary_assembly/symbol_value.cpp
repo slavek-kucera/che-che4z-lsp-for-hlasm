@@ -18,8 +18,7 @@
 
 #include "symbol.h"
 
-using namespace hlasm_plugin::parser_library;
-using namespace hlasm_plugin::parser_library::context;
+namespace hlasm_plugin::parser_library::context {
 
 symbol_value::symbol_value(abs_value_t value)
     : value_(value)
@@ -194,3 +193,16 @@ symbol_value symbol_value::ignore_qualification() const
     else
         return std::move(result).with_base_list(address::base_list(std::move(bases)));
 }
+
+symbol_value symbol_value::normalized() const
+{
+    if (value_kind() != symbol_value_kind::RELOC)
+        return *this;
+
+    auto result = get_reloc().normalized();
+    if (!result.has_spaces() && result.bases().empty())
+        return result.offset();
+    else
+        return result;
+}
+} // namespace hlasm_plugin::parser_library::context

@@ -62,6 +62,8 @@ class ordinary_assembly_context
     std::unordered_map<id_index, std::variant<symbol, using_label_tag, macro_label_tag>> symbols_;
     // list of lookaheaded symbols
     std::unordered_map<id_index, symbol> symbol_refs_;
+    // regenerate symbol addresses
+    std::vector<symbol*> regenerate_symbols;
 
     // ids that were mentioned as macro labels and could have been symbols
     bool reporting_candidates = false;
@@ -154,6 +156,7 @@ public:
 
     // creates layout of every section
     void finish_module_layout(diagnostic_consumer* diag_consumer, const library_info& li);
+    void regenerate_addresses();
 
     size_t current_literal_pool_generation() const;
     size_t next_unique_id() { return ++m_statement_unique_id; }

@@ -172,11 +172,13 @@ void ordinary_processor::end_processing()
     if (!hlasm_ctx.ord_ctx.symbol_dependencies().check_loctr_cycle(lib_info))
         add_diagnostic(diagnostic_op::error_E033(range())); // TODO: at least we say something
 
-    hlasm_ctx.ord_ctx.symbol_dependencies().add_defined(context::id_index(), &diag_ctx, lib_info);
+    hlasm_ctx.ord_ctx.symbol_dependencies().all_defined(&diag_ctx, lib_info);
 
     hlasm_ctx.ord_ctx.finish_module_layout(&diag_ctx, lib_info);
 
     hlasm_ctx.ord_ctx.symbol_dependencies().resolve_all_as_default();
+
+    hlasm_ctx.ord_ctx.regenerate_addresses();
 
     // do not replace stack trace in the messages - it is already provided
     diagnostic_consumer_transform raw_diags([this](diagnostic d) { diag_ctx.add_raw_diagnostic(std::move(d)); });

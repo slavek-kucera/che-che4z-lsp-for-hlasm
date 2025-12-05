@@ -307,8 +307,7 @@ class symbol_dependency_tables::dep_reference
         swap(self.m_dependencies_iterators[l.idx]->second.m_last_dependencies,
             self.m_dependencies_iterators[r.idx]->second.m_last_dependencies);
         swap(self.m_dependencies_iterators[l.idx], self.m_dependencies_iterators[r.idx]);
-        swap(self.m_dependencies_has_t_attr[l.idx], self.m_dependencies_has_t_attr[r.idx]);
-        swap(self.m_dependencies_space_ptr_type[l.idx], self.m_dependencies_space_ptr_type[r.idx]);
+        swap(self.m_dependencies_attributes[l.idx], self.m_dependencies_attributes[r.idx]);
         self.m_dependencies_filters.swap(l.idx, r.idx);
     }
 
@@ -319,8 +318,11 @@ public:
     {}
 
     auto iterator() const noexcept { return self.m_dependencies_iterators[idx]; }
-    bool is_space_ptr() const noexcept { return self.m_dependencies_space_ptr_type[idx]; }
-    bool has_t_attr() const noexcept { return self.m_dependencies_has_t_attr[idx]; }
+    bool any_attr() const noexcept
+    {
+        const auto v = self.m_dependencies_attributes[idx];
+        return v.has_t_attr | v.space_ptr_type | v.delay_eval;
+    }
     bool any() const noexcept { return self.m_dependencies_filters.any(idx); }
 
     dep_reference(const dep_reference&) noexcept = default;
@@ -433,9 +435,9 @@ void symbol_dependency_tables::resolve_loop(diagnostic_consumer* diags, const li
 
     const auto db = dep_begin();
     auto e = dep_end();
-    const auto b = diags ? db : std::partition(dependency_iterator(m_dependencies_skip_index), e, [](auto dref) {
-        return dref.is_space_ptr() || dref.has_t_attr();
-    });
+    const auto b = diags
+        ? db
+        : std::partition(dependency_iterator(m_dependencies_skip_index), e, [](auto dref) { return dref.any_attr(); });
     m_dependencies_skip_index = b - db;
 
     while (true)
@@ -529,12 +531,12 @@ bool symbol_dependency_tables::update_dependencies(const dependency_value& d, co
     auto deps = d.m_resolvable->get_dependencies(dep_solver);
 
     m_dependencies_filters.reset(d.m_last_dependencies);
-    m_dependencies_has_t_attr[d.m_last_dependencies] = false;
+    m_dependencies_attributes[d.m_last_dependencies].has_t_attr = false;
 
     for (const auto& ref : deps.undefined_symbolics)
     {
         if (ref.get(context::data_attr_kind::T))
-            m_dependencies_has_t_attr[d.m_last_dependencies] = true;
+            m_dependencies_attributes[d.m_last_dependencies].has_t_attr = true;
 
         if (ref.has_only(context::data_attr_kind::T))
             continue;
@@ -542,7 +544,8 @@ bool symbol_dependency_tables::update_dependencies(const dependency_value& d, co
         m_dependencies_filters.set(dependant_hasher(ref.name), d.m_last_dependencies);
     }
 
-    if (m_dependencies_filters.any(d.m_last_dependencies) || m_dependencies_has_t_attr[d.m_last_dependencies])
+    if (m_dependencies_filters.any(d.m_last_dependencies)
+        || m_dependencies_attributes[d.m_last_dependencies].has_t_attr)
         return true;
 
     auto addr_spaces = deps.unresolved_address ? std::move(deps.unresolved_address)->normalized_spaces().first
@@ -610,7 +613,8 @@ symbol_dependency_tables::symbol_dependency_tables(ordinary_assembly_context& sy
 symbol_dependency_tables::dependency_value* symbol_dependency_tables::add_dependency_with_cycle_check(id_index target,
     const resolvable* dependency_source,
     const dependency_evaluation_context& dep_ctx,
-    const library_info& li)
+    const library_info& li,
+    delay_eval_t delay_eval)
 {
     if (has_cycle(target, extract_dependencies(dependency_source, dep_ctx, li), li))
     {
@@ -620,13 +624,14 @@ symbol_dependency_tables::dependency_value* symbol_dependency_tables::add_depend
         return nullptr;
     }
 
-    return &insert_depenency(std::move(target), dependency_source, dep_ctx);
+    return &insert_dependency(std::move(target), dependency_source, dep_ctx, delay_eval);
 }
 
 symbol_dependency_tables::dependency_value* symbol_dependency_tables::add_dependency_with_cycle_check(attr_ref target,
     const resolvable* dependency_source,
     const dependency_evaluation_context& dep_ctx,
-    const library_info& li)
+    const library_info& li,
+    delay_eval_t delay_eval)
 {
     if (has_cycle(target, extract_dependencies(dependency_source, dep_ctx, li), li))
     {
@@ -636,19 +641,24 @@ symbol_dependency_tables::dependency_value* symbol_dependency_tables::add_depend
         return nullptr;
     }
 
-    return &insert_depenency(std::move(target), dependency_source, dep_ctx);
+    return &insert_dependency(std::move(target), dependency_source, dep_ctx, delay_eval);
 }
 
-symbol_dependency_tables::dependency_value& symbol_dependency_tables::insert_depenency(
-    dependant target, const resolvable* dependency_source, const dependency_evaluation_context& dep_ctx)
+symbol_dependency_tables::dependency_value& symbol_dependency_tables::insert_dependency(dependant target,
+    const resolvable* dependency_source,
+    const dependency_evaluation_context& dep_ctx,
+    delay_eval_t delay_eval)
 {
     const bool is_space_ptr = std::holds_alternative<space_ptr>(target);
     auto [it, inserted] =
         m_dependencies.try_emplace(std::move(target), dependency_source, dep_ctx, m_dependencies_iterators.size());
     m_dependencies_iterators.emplace_back(it);
     m_dependencies_filters.emplace_back();
-    m_dependencies_has_t_attr.emplace_back(false);
-    m_dependencies_space_ptr_type.emplace_back(is_space_ptr);
+    m_dependencies_attributes.push_back({
+        .has_t_attr = false,
+        .space_ptr_type = is_space_ptr,
+        .delay_eval = delay_eval == delay_eval_t::yes,
+    });
 
     assert(inserted);
 
@@ -664,8 +674,7 @@ void symbol_dependency_tables::delete_dependency(std::unordered_map<dependant, d
     swap(dep_reference { me_idx, *this }, dep_reference { m_dependencies_iterators.size() - 1, *this });
 
     m_dependencies_iterators.pop_back();
-    m_dependencies_has_t_attr.pop_back();
-    m_dependencies_space_ptr_type.pop_back();
+    m_dependencies_attributes.pop_back();
     m_dependencies_filters.pop_back();
 
     m_dependencies.erase(it);
@@ -676,7 +685,7 @@ void symbol_dependency_tables::add_dependency(space_ptr target,
     const dependency_evaluation_context& dep_ctx,
     post_stmt_ptr dependency_source_stmt)
 {
-    auto& dep = insert_depenency(std::move(target), dependency_source.get(), dep_ctx);
+    auto& dep = insert_dependency(std::move(target), dependency_source.get(), dep_ctx, delay_eval_t::no);
 
     dep.related_source_addr = std::move(dependency_source);
 
@@ -702,12 +711,21 @@ dependency_adder symbol_dependency_tables::add_dependencies(
     return dependency_adder(*this, id, li);
 }
 
-void symbol_dependency_tables::add_defined(
-    id_index what_changed, diagnostic_consumer* diag_consumer, const library_info& li)
+void symbol_dependency_tables::all_defined(diagnostic_consumer* diag_consumer, const library_info& li)
+{
+    resolve_loop(diag_consumer, li);
+}
+
+void symbol_dependency_tables::add_defined(id_index what_changed)
+{
+    m_dependencies_filters.reset_global(dependant_hasher(what_changed));
+}
+
+void symbol_dependency_tables::add_defined(id_index what_changed, const library_info& li)
 {
     m_dependencies_filters.reset_global(dependant_hasher(what_changed));
 
-    resolve_loop(diag_consumer, li);
+    resolve_loop(nullptr, li);
 }
 
 void symbol_dependency_tables::add_defined(
@@ -811,8 +829,7 @@ postponed_statements_t symbol_dependency_tables::collect_postponed()
     m_dependencies.clear();
     m_dependencies_iterators.clear();
     m_dependencies_filters.clear();
-    m_dependencies_has_t_attr.clear();
-    m_dependencies_space_ptr_type.clear();
+    m_dependencies_attributes.clear();
 
     return result;
 }
@@ -831,9 +848,11 @@ const dependency_evaluation_context& dependency_adder::get_context() const noexc
 }
 
 template<typename T>
-bool dependency_adder::add_dependency_with_cycle_check(T target, const resolvable* dependency_source) const
+bool dependency_adder::add_dependency_with_cycle_check(
+    T target, const resolvable* dependency_source, delay_eval_t delay_eval) const
 {
-    if (auto* dep = m_owner.add_dependency_with_cycle_check(std::move(target), dependency_source, get_context(), m_li))
+    if (auto* dep = m_owner.add_dependency_with_cycle_check(
+            std::move(target), dependency_source, get_context(), m_li, delay_eval))
     {
         m_owner.establish_statement_dependency(*dep, m_id);
         return true;
@@ -844,17 +863,18 @@ bool dependency_adder::add_dependency_with_cycle_check(T target, const resolvabl
 
 bool dependency_adder::add_dependency(id_index target, const resolvable* dependency_source) const
 {
-    return add_dependency_with_cycle_check(std::move(target), dependency_source);
+    return add_dependency_with_cycle_check(std::move(target), dependency_source, delay_eval_t::no);
 }
 
-bool dependency_adder::add_dependency(id_index target, data_attr_kind attr, const resolvable* dependency_source) const
+bool dependency_adder::add_dependency(
+    id_index target, data_attr_kind attr, const resolvable* dependency_source, delay_eval_t delay_eval) const
 {
-    return add_dependency_with_cycle_check(attr_ref { attr, target }, dependency_source);
+    return add_dependency_with_cycle_check(attr_ref { attr, target }, dependency_source, delay_eval);
 }
 
 void dependency_adder::add_dependency(space_ptr target, const resolvable* dependency_source) const
 {
-    auto& dep = m_owner.insert_depenency(std::move(target), dependency_source, get_context());
+    auto& dep = m_owner.insert_dependency(std::move(target), dependency_source, get_context(), delay_eval_t::no);
     m_owner.establish_statement_dependency(dep, m_id);
 }
 

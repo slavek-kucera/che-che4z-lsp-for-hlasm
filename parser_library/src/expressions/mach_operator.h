@@ -46,6 +46,8 @@ public:
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
 
+    value_t equ_evaluate(context::dependency_solver& info) const override;
+
     void apply(mach_expr_visitor& visitor) const override
     {
         left_->apply(visitor);
@@ -92,6 +94,8 @@ public:
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
 
+    value_t equ_evaluate(context::dependency_solver& info) const override;
+
     void apply(mach_expr_visitor& visitor) const override { child_->apply(visitor); }
 
     const mach_expression* leftmost_term() const override { return child_->leftmost_term(); }
@@ -120,6 +124,7 @@ struct sub
     static std::string sign_char_end() { return ""; }
 };
 
+// TODO: rel_addr needs to go...
 struct rel_addr
 {
     static std::string sign_char() { return "-"; }

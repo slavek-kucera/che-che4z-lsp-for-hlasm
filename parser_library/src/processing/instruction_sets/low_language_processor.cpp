@@ -84,7 +84,7 @@ context::symbol& low_language_processor::create_symbol(
     auto& symbol = hlasm_ctx.ord_ctx.create_symbol(symbol_name, std::move(value), std::move(attributes));
 
     if (defined)
-        hlasm_ctx.ord_ctx.symbol_dependencies().add_defined(symbol_name, nullptr, lib_info);
+        hlasm_ctx.ord_ctx.symbol_dependencies().add_defined(symbol_name, lib_info);
 
     return symbol;
 }

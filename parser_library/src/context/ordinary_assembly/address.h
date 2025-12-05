@@ -129,6 +129,8 @@ public:
     address with_base_list(base_list bl) const&;
     address with_base_list(base_list bl) &&;
 
+    address normalized() const;
+
 private:
     address(base_list bases, int offset, space_list spaces);
 

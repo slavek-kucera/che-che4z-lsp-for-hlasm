@@ -67,6 +67,12 @@ struct dependency_evaluation_context
 
 using postponed_statements_t = std::vector<std::pair<post_stmt_ptr, dependency_evaluation_context>>;
 
+enum class delay_eval_t : bool
+{
+    no,
+    yes,
+};
+
 class dependency_adder;
 // class holding data about dependencies between symbols
 class symbol_dependency_tables
@@ -88,16 +94,24 @@ class symbol_dependency_tables
         {}
     };
 
+    struct dependency_attributes
+    {
+        bool has_t_attr : 1;
+        bool space_ptr_type : 1;
+        bool delay_eval : 1;
+    };
+
     // actual dependecies of symbol or space
     std::unordered_map<dependant, dependency_value> m_dependencies;
 
     std::vector<std::unordered_map<dependant, dependency_value>::iterator> m_dependencies_iterators;
     utils::filter_vector<uint32_t> m_dependencies_filters;
-    std::vector<bool> m_dependencies_has_t_attr;
-    std::vector<bool> m_dependencies_space_ptr_type;
+    std::vector<dependency_attributes> m_dependencies_attributes;
 
-    dependency_value& insert_depenency(
-        dependant target, const resolvable* dependency_source, const dependency_evaluation_context& dep_ctx);
+    dependency_value& insert_dependency(dependant target,
+        const resolvable* dependency_source,
+        const dependency_evaluation_context& dep_ctx,
+        delay_eval_t delay_eval);
 
     void delete_dependency(std::unordered_map<dependant, dependency_value>::iterator it);
 
@@ -141,11 +155,13 @@ class symbol_dependency_tables
     dependency_value* add_dependency_with_cycle_check(id_index target,
         const resolvable* dependency_source,
         const dependency_evaluation_context& dep_ctx,
-        const library_info& li);
+        const library_info& li,
+        delay_eval_t delay_eval);
     dependency_value* add_dependency_with_cycle_check(attr_ref target,
         const resolvable* dependency_source,
         const dependency_evaluation_context& dep_ctx,
-        const library_info& li);
+        const library_info& li,
+        delay_eval_t delay_eval);
 
     void establish_statement_dependency(dependency_value& val, index_t<postponed_statements_t> id);
 
@@ -168,7 +184,9 @@ public:
 
     // registers that some symbol has been defined
     // if resolver is present, location counter dependencies are checked as well (not just symbol deps)
-    void add_defined(id_index what_changed, diagnostic_consumer* diag_consumer, const library_info& li);
+    void all_defined(diagnostic_consumer* diag_consumer, const library_info& li);
+    void add_defined(id_index what_changed);
+    void add_defined(id_index what_changed, const library_info& li);
     void add_defined(space_ptr what_changed, diagnostic_consumer* diag_consumer, const library_info& li);
 
     // checks for cycle in location counter value
@@ -201,14 +219,16 @@ class dependency_adder
     [[nodiscard]] const dependency_evaluation_context& get_context() const noexcept;
 
     template<typename T>
-    [[nodiscard]] bool add_dependency_with_cycle_check(T target, const resolvable* dependency_source) const;
+    [[nodiscard]] bool add_dependency_with_cycle_check(
+        T target, const resolvable* dependency_source, delay_eval_t delay_eval) const;
 
 public:
     // add symbol dependency on statement
     [[nodiscard]] bool add_dependency(id_index target, const resolvable* dependency_source) const;
 
     // add symbol attribute dependency on statement
-    [[nodiscard]] bool add_dependency(id_index target, data_attr_kind attr, const resolvable* dependency_source) const;
+    [[nodiscard]] bool add_dependency(
+        id_index target, data_attr_kind attr, const resolvable* dependency_source, delay_eval_t delay_eval) const;
 
     // add space dependency
     void add_dependency(space_ptr target, const resolvable* dependency_source) const;

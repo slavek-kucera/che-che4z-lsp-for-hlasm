@@ -35,6 +35,8 @@ public:
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
 
+    value_t equ_evaluate(context::dependency_solver& info) const override;
+
     const mach_expression* leftmost_term() const override;
 
     void apply(mach_expr_visitor& visitor) const override;
@@ -59,6 +61,8 @@ public:
     context::dependency_collector get_dependencies(context::dependency_solver& solver) const override;
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
+
+    value_t equ_evaluate(context::dependency_solver& info) const override;
 
     const mach_expression* leftmost_term() const override;
 
@@ -98,6 +102,8 @@ public:
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
 
+    value_t equ_evaluate(context::dependency_solver& info) const override;
+
     const mach_expression* leftmost_term() const override;
 
     void apply(mach_expr_visitor& visitor) const override;
@@ -126,6 +132,8 @@ public:
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
 
+    value_t equ_evaluate(context::dependency_solver& info) const override;
+
     const mach_expression* leftmost_term() const override;
 
     void apply(mach_expr_visitor& visitor) const override;
@@ -152,6 +160,8 @@ public:
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
 
+    value_t equ_evaluate(context::dependency_solver& info) const override;
+
     const mach_expression* leftmost_term() const override;
 
     void apply(mach_expr_visitor& visitor) const override;
@@ -174,6 +184,8 @@ public:
     context::dependency_collector get_dependencies(context::dependency_solver& solver) const override;
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
+
+    value_t equ_evaluate(context::dependency_solver& info) const override;
 
     const mach_expression* leftmost_term() const override;
 
@@ -198,6 +210,8 @@ public:
     context::dependency_collector get_dependencies(context::dependency_solver& solver) const override;
 
     value_t evaluate(context::dependency_solver& info, diagnostic_op_consumer& diags) const override;
+
+    value_t equ_evaluate(context::dependency_solver& info) const override;
 
     const mach_expression* leftmost_term() const override;
 

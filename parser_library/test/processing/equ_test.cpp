@@ -326,3 +326,120 @@ P   EQU 0,,,,X
 
     EXPECT_TRUE(matches_message_codes(a.diags(), { "A135" }));
 }
+
+TEST(EQU, deferred)
+{
+    std::string input = R"(
+D   DSECT
+    DS  XL(X)
+A   DC  CL32' '
+B   EQU A+8
+X   EQU 8
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(a.diags().empty());
+
+    EXPECT_EQ(get_symbol_address(a.hlasm_ctx(), "B"), std::pair(16, "D"));
+}
+
+TEST(EQU, evaluation_time_1)
+{
+    std::string input = R"(
+E        EQU   A+L'X
+&E1      SETA  E
+A        EQU   5
+&E2      SETA  E
+X        DS    CL(XL)
+&E3      SETA  E
+XL       EQU   5
+&E4      SETA  E
+Y        EQU   E
+&E5      SETA  Y
+         MNOTE '&E1 &E2 &E3 &E4 &E5'
+         END
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(contains_message_text(a.diags(), { "0 0 0 0 0" }));
+}
+
+TEST(EQU, evaluation_time_2)
+{
+    std::string input = R"(
+D1       DSECT
+         DS    XL8
+L        EQU   *-DX
+DX       EQU   D1,*-D1
+&A       SETA  L
+         MNOTE '&A'
+*
+D2       DSECT
+X        DS    XL(L)
+DL       EQU   D2,*-D2
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_text(a.diags(), { "8" }));
+}
+
+TEST(EQU, evaluation_time_3)
+{
+    std::string input = R"(
+C   CSECT
+    DS    F
+Y   DS    F
+U   USING C,1
+X   EQU   U.Y-C
+&X  SETA  X
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "CE012" })); // TODO: EQU should reject the expression
+    EXPECT_EQ(get_var_value<A_t>(a.hlasm_ctx(), "X"), 0);
+}
+
+TEST(EQU, test_evaluation)
+{
+    std::string input = R"(
+A        EQU   1
+B        EQU   2
+C        EQU   4
+R        EQU   (+A+(-B)-(-C))*8/4
+         END
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(a.diags().empty());
+
+    EXPECT_EQ(get_symbol_abs(a.hlasm_ctx(), "R"), 6);
+}
+
+TEST(EQU, literal)
+{
+    std::string input = R"(
+C        CSECT
+         DS     X
+L        EQU    =F'0'
+LL       EQU    L'=F'0'
+         END
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(a.diags().empty());
+
+    EXPECT_EQ(get_symbol_address(a.hlasm_ctx(), "L"), std::pair(8, "C"));
+    EXPECT_EQ(get_symbol_abs(a.hlasm_ctx(), "LL"), 4);
+}

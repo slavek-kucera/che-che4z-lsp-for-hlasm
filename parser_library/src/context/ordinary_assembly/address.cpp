@@ -419,4 +419,16 @@ address address::with_base_list(base_list bl) const& { return address(std::move(
 
 address address::with_base_list(base_list bl) && { return address(std::move(bl), offset_, std::move(spaces_)); }
 
+address address::normalized() const
+{
+    if (!has_spaces())
+        return *this;
+
+    auto [spaces, off] = normalized_spaces();
+
+    if (spaces.empty())
+        return address(bases_, offset_ + off, space_list());
+
+    return address(bases_, offset_ + off, space_list(std::make_shared<std::vector<space_entry>>(std::move(spaces))));
+}
 } // namespace hlasm_plugin::parser_library::context

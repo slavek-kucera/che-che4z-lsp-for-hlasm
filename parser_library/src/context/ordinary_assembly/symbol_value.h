@@ -53,6 +53,8 @@ struct symbol_value
 
     symbol_value ignore_qualification() const;
 
+    symbol_value normalized() const;
+
 private:
     std::variant<std::monostate, abs_value_t, reloc_value_t> value_;
 };

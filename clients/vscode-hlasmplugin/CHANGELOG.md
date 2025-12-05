@@ -10,6 +10,7 @@
 - Incorrect `SYSIN_MEMBER` variable value
 - Missing copybook reported in inactive code
 - Sequence symbol redefinition reported in the lookahead mode
+- Improve accuracy of EQU evaluation in conditional assembly
 
 ## [1.20.0](https://github.com/eclipse-che4z/che-che4z-lsp-for-hlasm/compare/1.19.0...1.20.0) (2025-11-12)
 

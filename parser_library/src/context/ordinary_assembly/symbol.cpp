@@ -67,4 +67,15 @@ location symbol::symbol_location() const
 
 const processing_stack_t& symbol::proc_stack() const { return stack_; }
 
+void symbol::regenerate_reloc()
+{
+    assert(value_.value_kind() == symbol_value_kind::RELOC);
+
+    auto new_value = value_.get_reloc().normalized();
+    if (new_value.bases().empty() && !new_value.has_spaces())
+        value_ = new_value.offset();
+    else
+        value_ = std::move(new_value);
+}
+
 } // namespace hlasm_plugin::parser_library::context

@@ -48,6 +48,8 @@ public:
     location symbol_location() const;
     const processing_stack_t& proc_stack() const;
 
+    void regenerate_reloc();
+
 private:
     id_index name_;
     symbol_value value_;

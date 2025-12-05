@@ -201,6 +201,9 @@ void literal_pool::generate_pool(diagnosable_ctx& diags, index_t<using_collectio
                 lit->get_scale_attribute(solver, diags),
                 lit->get_integer_attribute()));
 
+        // just clear dep filter, we shouldn't need to run the resolve loop
+        ord_ctx.symbol_dependencies().add_defined(id_index(&lit_val.text));
+
         if (size == 0)
         {
             diags.add_diagnostic(diagnostic_op::error_D031(it->second.r));

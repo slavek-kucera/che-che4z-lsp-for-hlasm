@@ -105,6 +105,18 @@ mach_expression::value_t mach_expr_binary<sub>::evaluate(
 }
 
 template<>
+mach_expression::value_t mach_expr_binary<add>::equ_evaluate(context::dependency_solver& info) const
+{
+    return left_->equ_evaluate(info) + right_->equ_evaluate(info);
+}
+
+template<>
+mach_expression::value_t mach_expr_binary<sub>::equ_evaluate(context::dependency_solver& info) const
+{
+    return left_->equ_evaluate(info) - right_->equ_evaluate(info);
+}
+
+template<>
 mach_expression::value_t mach_expr_binary<rel_addr>::evaluate(
     context::dependency_solver& info, diagnostic_op_consumer& diags) const
 {
@@ -141,6 +153,13 @@ mach_expression::value_t mach_expr_binary<rel_addr>::evaluate(
 }
 
 template<>
+mach_expression::value_t mach_expr_binary<rel_addr>::equ_evaluate(context::dependency_solver&) const
+{
+    assert(false); // this should never be called
+    return context::symbol_value();
+}
+
+template<>
 mach_expression::value_t mach_expr_binary<mul>::evaluate(
     context::dependency_solver& info, diagnostic_op_consumer& diags) const
 {
@@ -158,6 +177,15 @@ mach_expression::value_t mach_expr_binary<mul>::evaluate(
 }
 
 template<>
+mach_expression::value_t mach_expr_binary<mul>::equ_evaluate(context::dependency_solver& info) const
+{
+    auto left_res = left_->equ_evaluate(info);
+    auto right_res = right_->equ_evaluate(info);
+
+    return left_res * right_res;
+}
+
+template<>
 mach_expression::value_t mach_expr_binary<div>::evaluate(
     context::dependency_solver& info, diagnostic_op_consumer& diags) const
 {
@@ -169,6 +197,15 @@ mach_expression::value_t mach_expr_binary<div>::evaluate(
         && left_res.value_kind() != context::symbol_value_kind::UNDEF
         && right_res.value_kind() != context::symbol_value_kind::UNDEF)
         diags.add_diagnostic(diagnostic_op::error_ME002(get_range()));
+
+    return left_res / right_res;
+}
+
+template<>
+mach_expression::value_t mach_expr_binary<div>::equ_evaluate(context::dependency_solver& info) const
+{
+    auto left_res = left_->equ_evaluate(info);
+    auto right_res = right_->equ_evaluate(info);
 
     return left_res / right_res;
 }
@@ -192,6 +229,24 @@ mach_expression::value_t mach_expr_unary<par>::evaluate(
     context::dependency_solver& info, diagnostic_op_consumer& diags) const
 {
     return child_->evaluate(info, diags);
+}
+
+template<>
+mach_expression::value_t mach_expr_unary<add>::equ_evaluate(context::dependency_solver& info) const
+{
+    return child_->equ_evaluate(info);
+}
+
+template<>
+mach_expression::value_t mach_expr_unary<sub>::equ_evaluate(context::dependency_solver& info) const
+{
+    return -child_->equ_evaluate(info);
+}
+
+template<>
+mach_expression::value_t mach_expr_unary<par>::equ_evaluate(context::dependency_solver& info) const
+{
+    return child_->equ_evaluate(info);
 }
 
 template<>
