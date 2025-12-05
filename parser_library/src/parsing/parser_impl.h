@@ -104,7 +104,7 @@ public:
 
     void op_rem_body_noop();
     void op_rem_body_deferred();
-    void lookahead_operands_and_remarks_asm();
+    void lookahead_operands_and_remarks_asm(bool ord);
     void lookahead_operands_and_remarks_dat();
 
     semantics::operand_list macro_ops(bool reparse);

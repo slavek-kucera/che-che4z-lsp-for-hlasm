@@ -449,16 +449,6 @@ bool opsyn::check(std::span<const asm_operand* const> to_check,
         return false;
     if (has_one_comma(to_check))
         return true;
-    if (to_check.size() == 1)
-    {
-        if (is_operand_complex(to_check[0]))
-        {
-            add_diagnostic(diagnostic_op::error_A246_OPSYN(to_check[0]->operand_range));
-            return false;
-        }
-        // TO DO - check operation code parameter
-        return true;
-    }
     return true;
 }
 
@@ -710,11 +700,17 @@ bool exitctl::check(std::span<const asm_operand* const> to_check,
                 name_of_instruction, to_check[i]->operand_range));
             return false;
         }
-        if (operand->is_default)
+        if (!operand->is_default)
+            continue;
+
+        if (std::string_view op = operand->operand_identifier; op.starts_with("*+") || op.starts_with("*-"))
         {
-            add_diagnostic(diagnostic_op::error_A131_EXITCTL_control_value_format(to_check[i]->operand_range));
-            return false;
+            op.remove_prefix(2);
+            if (as_int(op).has_value())
+                continue;
         }
+        add_diagnostic(diagnostic_op::error_A131_EXITCTL_control_value_format(to_check[i]->operand_range));
+        return false;
     }
     return true;
 }
@@ -737,15 +733,6 @@ bool entry::check(std::span<const asm_operand* const> to_check,
     {
         add_diagnostic(diagnostic_op::error_A014_lower_than(name_of_instruction, ENTRY_max_operands, stmt_range));
         return false;
-    }
-    for (const auto& operand : to_check)
-    {
-        auto simple = get_simple_operand(operand);
-        if (simple == nullptr || simple->operand_identifier == "")
-        {
-            add_diagnostic(diagnostic_op::error_A136_ENTRY_op_format(operand->operand_range));
-            return false;
-        }
     }
     return true;
 }
@@ -1253,10 +1240,8 @@ bool adata::check(std::span<const asm_operand* const> to_check,
         return true;
     auto last_op = get_simple_operand(to_check.back());
     if (last_op == nullptr)
-    {
-        add_diagnostic(diagnostic_op::error_A239_ADATA_char_string_format(to_check.back()->operand_range));
         return false;
-    }
+
     if (last_op->operand_identifier.size() == 1
         || (last_op->operand_identifier.size() > 1
             && (last_op->operand_identifier.front() != '\'' || last_op->operand_identifier.back() != '\'')))

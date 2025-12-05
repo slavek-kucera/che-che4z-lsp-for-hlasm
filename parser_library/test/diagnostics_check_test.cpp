@@ -275,8 +275,6 @@ A XATTR ATTR(lab),REFERENCE(DIRECT,DATA),LINK(XPLINK),SCOPE(SECTION)
     analyzer a(input, analyzer_options(asm_option { .sysopt_xobject = true }));
     a.analyze();
 
-
-
     EXPECT_TRUE(matches_message_codes(a.diags(), { "MNOTE" }));
 }
 

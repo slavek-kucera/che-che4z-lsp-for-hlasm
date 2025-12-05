@@ -21,6 +21,7 @@
 
 #include "checker_helper.h"
 #include "diagnostic_collector.h"
+#include "utils/string_operations.h"
 
 namespace hlasm_plugin::parser_library::checking {
 

@@ -28,7 +28,7 @@ TEST(diagnostics, org_incorrect_second_op)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A115" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "A116", "S0002" }));
 }
 
 TEST(diagnostics, exitctl_op_incorrect_format)
@@ -161,7 +161,7 @@ TEST(diagnostics, end_incorrect_first_op_format)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A243" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "E010" }));
 }
 
 TEST(diagnostics, end_incorrect_second_op_format)
@@ -218,7 +218,7 @@ TEST(diagnostics, drop_incorrect_op_format)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A141" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "U003" }));
 }
 
 TEST(diagnostics, cnop_incorrect_first_op_format)
@@ -229,7 +229,7 @@ TEST(diagnostics, cnop_incorrect_first_op_format)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A143" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "E010" }));
 }
 
 TEST(diagnostics, cnop_incorrect_second_op_format)
@@ -240,7 +240,7 @@ TEST(diagnostics, cnop_incorrect_second_op_format)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A143" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "E010" }));
 }
 
 TEST(diagnostics, cnop_incorrect_boundary)
@@ -273,7 +273,7 @@ TEST(diagnostics, ccw_incorrect_first_op)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A143" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "E010" }));
 }
 
 TEST(diagnostics, ccw_incorrect_second_op)
@@ -284,7 +284,7 @@ TEST(diagnostics, ccw_incorrect_second_op)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A247" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "E010" }));
 }
 
 TEST(diagnostics, space_incorrect_op_format)
@@ -295,7 +295,7 @@ TEST(diagnostics, space_incorrect_op_format)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A240" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "E010" }));
 }
 
 TEST(diagnostics, space_incorrect_op_value)
@@ -609,7 +609,7 @@ TEST(diagnostics, adata_incorrect_op_format)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A158" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "E010" }));
 }
 
 TEST(diagnostics, adata_incorrect_last_op_format)
@@ -620,7 +620,7 @@ TEST(diagnostics, adata_incorrect_last_op_format)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A239" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "A239", "E010" }));
 }
 
 TEST(diagnostics, adata_string_not_enclosed)
@@ -631,7 +631,7 @@ TEST(diagnostics, adata_string_not_enclosed)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A300" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "A239", "E010" }));
 }
 
 TEST(diagnostics, adata_string_too_long)
@@ -1075,7 +1075,7 @@ TEST(diagnostics, org_incorrect_first_op)
 )");
     analyzer a(input);
     a.analyze();
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "A245" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "S0002", "E010" }));
 }
 
 struct mnote_test
