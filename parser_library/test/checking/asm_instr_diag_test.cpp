@@ -53,6 +53,18 @@ TEST(diagnostics, exitctl_op_incorrect_value)
     EXPECT_TRUE(matches_message_codes(a.diags(), { "A131" }));
 }
 
+TEST(diagnostics, exitctl_overflow)
+{
+    std::string input(
+        R"(
+ EXITCTL LISTING,*+2147483648
+ EXITCTL LISTING,2147483648
+)");
+    analyzer a(input);
+    a.analyze();
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "A131", "A131" }));
+}
+
 TEST(diagnostics, extrn_incorrect_part_operand)
 {
     std::string input(

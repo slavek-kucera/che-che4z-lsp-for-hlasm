@@ -672,6 +672,20 @@ bool external::check(std::span<const asm_operand* const> to_check,
 exitctl::exitctl(const std::vector<label_types>& allowed_types, std::string_view name_of_instruction)
     : assembler_instruction(allowed_types, name_of_instruction, 2, 5) {};
 
+std::string_view strip_exitctl_loctr_prefix(std::string_view s)
+{
+    if (s.starts_with("*"))
+        s.remove_prefix(1);
+
+    auto not_sign = s.find_first_not_of("+-");
+    if (not_sign == std::string_view::npos)
+        not_sign = s.size();
+    const auto last_double_minus = s.substr(0, not_sign).ends_with("--");
+    s.remove_prefix(not_sign - last_double_minus);
+
+    return s;
+}
+
 bool exitctl::check(std::span<const asm_operand* const> to_check,
     const range& stmt_range,
     const diagnostic_collector& add_diagnostic) const
@@ -703,12 +717,10 @@ bool exitctl::check(std::span<const asm_operand* const> to_check,
         if (!operand->is_default)
             continue;
 
-        if (std::string_view op = operand->operand_identifier; op.starts_with("*+") || op.starts_with("*-"))
-        {
-            op.remove_prefix(2);
-            if (as_int(op).has_value())
-                continue;
-        }
+        const auto op = strip_exitctl_loctr_prefix(operand->operand_identifier);
+        if (op.empty() || as_int(op).has_value())
+            continue;
+
         add_diagnostic(diagnostic_op::error_A131_EXITCTL_control_value_format(to_check[i]->operand_range));
         return false;
     }
