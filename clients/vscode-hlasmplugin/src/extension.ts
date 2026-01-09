@@ -216,6 +216,7 @@ async function startLanguageServer(opts: LangStartOptions): Promise<vscodelc.Bas
     }
     catch (e) {
         const err = asError(e);
+        console.log('start failed', err);
         disposables.reverse().forEach(x => x.dispose());
         opts.clientErrorHandler.defaultHandler = undefined;
         return err;

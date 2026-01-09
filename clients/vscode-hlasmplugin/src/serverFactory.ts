@@ -37,7 +37,9 @@ export async function createLanguageServer(serverVariant: ServerVariant, clientO
 }
 
 function makeServerPath(extUri: vscode.Uri, dir: string, suffix?: string) {
-    return vscode.Uri.joinPath(extUri, 'bin', dir, 'hlasm_language_server' + (suffix ?? '')).fsPath;
+    const path = vscode.Uri.joinPath(extUri, 'bin', dir, 'hlasm_language_server' + (suffix ?? '')).fsPath;
+    console.log('makeServerPath', path);
+    return path;
 }
 
 async function generateServerOption(method: ServerVariant, extUri: vscode.Uri): Promise<vscodelc.ServerOptions> {
@@ -69,6 +71,7 @@ async function generateServerOption(method: ServerVariant, extUri: vscode.Uri): 
             command: makeServerPath(extUri, langServerInfo.dir, langServerInfo.suffix),
             args: decorateArgs(getConfig<string[]>('arguments', []))
         };
+        console.log('generateServerOption#native', server);
         return server;
     }
     else if (method === 'wasm') {
@@ -77,6 +80,7 @@ async function generateServerOption(method: ServerVariant, extUri: vscode.Uri): 
             args: decorateArgs(getConfig<string[]>('arguments', [])),
             options: { execArgv: getWasmRuntimeArgs() }
         };
+        console.log('generateServerOption#wasm', server);
         return server;
     }
     else {
