@@ -20,25 +20,29 @@ import * as path from 'path';
 import { getConfig } from './eventsHandler';
 import { decorateArgs, ServerVariant } from './serverFactory.common';
 
-const supportedNativePlatforms: Readonly<{ [key: string]: string }> = Object.freeze({
-    'win32.x64': 'win32_x64',
-    'win32.arm64': 'win32_arm64',
-    'linux.x64': 'linux_x64',
-    'linux.arm64': 'linux_arm64',
-    'linux.s390x': 'linux_s390x',
-    'darwin.x64': 'darwin_x64',
-    'darwin.arm64': 'darwin_arm64',
+const supportedNativePlatforms: Readonly<{ [key: string]: { dir: string, suffix?: string } }> = Object.freeze({
+    'win32.x64': { dir: 'win32_x64', suffix: '.exe' },
+    'win32.arm64': { dir: 'win32_arm64', suffix: '.exe' },
+    'linux.x64': { dir: 'linux_x64' },
+    'linux.arm64': { dir: 'linux_arm64' },
+    'linux.s390x': { dir: 'linux_s390x' },
+    'darwin.x64': { dir: 'darwin_x64' },
+    'darwin.arm64': { dir: 'darwin_arm64' },
 });
 
 export async function createLanguageServer(serverVariant: ServerVariant, clientOptions: vscodelc.LanguageClientOptions, extUri: vscode.Uri): Promise<vscodelc.BaseLanguageClient> {
-    const serverOptions = await generateServerOption(serverVariant);
+    const serverOptions = await generateServerOption(serverVariant, extUri);
 
     return new vscodelc.LanguageClient('HLASM extension Language Server', serverOptions, clientOptions);
 }
 
-async function generateServerOption(method: ServerVariant): Promise<vscodelc.ServerOptions> {
-    const langServerFolder = supportedNativePlatforms[process.platform + '.' + process.arch];
-    if (!langServerFolder) {
+function makeServerPath(extUri: vscode.Uri, dir: string, suffix?: string) {
+    return vscode.Uri.joinPath(extUri, 'bin', dir, 'hlasm_language_server' + (suffix ?? '')).fsPath;
+}
+
+async function generateServerOption(method: ServerVariant, extUri: vscode.Uri): Promise<vscodelc.ServerOptions> {
+    const langServerInfo = supportedNativePlatforms[process.platform + '.' + process.arch];
+    if (!langServerInfo) {
         if (method !== 'wasm')
             console.log('Unsupported platform detected, switching to wasm');
         method = 'wasm';
@@ -48,7 +52,7 @@ async function generateServerOption(method: ServerVariant): Promise<vscodelc.Ser
 
         //spawn the server
         cp.execFile(
-            path.join(__dirname, '..', 'bin', langServerFolder, 'hlasm_language_server'),
+            makeServerPath(extUri, langServerInfo.dir, langServerInfo.suffix),
             decorateArgs([`--lsp-port=${lspPort.toString()}`]));
 
         return () => {
@@ -62,14 +66,14 @@ async function generateServerOption(method: ServerVariant): Promise<vscodelc.Ser
     }
     else if (method === 'native') {
         const server: vscodelc.Executable = {
-            command: path.join(__dirname, '..', 'bin', langServerFolder, 'hlasm_language_server'),
+            command: makeServerPath(extUri, langServerInfo.dir, langServerInfo.suffix),
             args: decorateArgs(getConfig<string[]>('arguments', []))
         };
         return server;
     }
     else if (method === 'wasm') {
         const server: vscodelc.NodeModule = {
-            module: path.join(__dirname, '..', 'bin', 'wasm', 'hlasm_language_server'),
+            module: makeServerPath(extUri, 'wasm'),
             args: decorateArgs(getConfig<string[]>('arguments', [])),
             options: { execArgv: getWasmRuntimeArgs() }
         };
