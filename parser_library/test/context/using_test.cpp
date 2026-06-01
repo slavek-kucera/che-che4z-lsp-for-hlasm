@@ -95,6 +95,7 @@ struct test_context : public dependency_solver
     std::string get_opcode_attr(id_index name) const override { return hlasm_ctx.get_opcode_attr(name); }
     const asm_option& get_options() const noexcept override { return hlasm_ctx.options(); }
     const section* get_section(id_index name) const noexcept override { return asm_ctx.get_section(name); }
+    auto& get_using_collection() { return hlasm_ctx.internal_usings(); }
 };
 
 std::unique_ptr<mach_expression> operator+(std::unique_ptr<mach_expression> l, std::unique_ptr<mach_expression> r)
@@ -124,7 +125,7 @@ TEST(using, basic)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -155,7 +156,7 @@ TEST(using, multiple_registers)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -188,7 +189,7 @@ TEST(using, with_offset)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -217,7 +218,7 @@ TEST(using, with_negative_offset)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -251,7 +252,7 @@ TEST(using, dependent_using)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -299,7 +300,7 @@ TEST(using, labeled)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -332,7 +333,7 @@ TEST(using, drop_one)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -368,7 +369,7 @@ TEST(using, drop_dependent)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -410,7 +411,7 @@ TEST(using, override_label)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -452,7 +453,7 @@ TEST(using, drop_reg_with_labeled_dependent)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -499,7 +500,7 @@ TEST(using, no_drop_warning)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -515,7 +516,7 @@ TEST(using, use_reg_16)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -538,7 +539,7 @@ TEST(using, use_non_simple_reloc)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -559,7 +560,7 @@ TEST(using, drop_qualified_label)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -587,7 +588,7 @@ TEST(using, drop_reg_16)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -603,7 +604,7 @@ TEST(using, drop_reloc)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -622,7 +623,7 @@ TEST(using, dependent_no_active_using)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -646,7 +647,7 @@ TEST(using, dependent_no_active_matching_using)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -682,7 +683,7 @@ TEST(using, using_undefined_begin)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -703,7 +704,7 @@ TEST(using, using_qualified_begin)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -719,14 +720,14 @@ TEST(using, using_qualified_begin)
 
     coll.resolve_all(c.asm_ctx, d_s, library_info_transitional::empty);
 
-    EXPECT_TRUE(matches_message_codes(d_s.diags, { "U007" }));
+    EXPECT_TRUE(matches_message_codes(d_s.diags, { "ME005" }));
 }
 
 TEST(using, using_undefined_end)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -749,7 +750,7 @@ TEST(using, using_qualified_end)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -765,14 +766,14 @@ TEST(using, using_qualified_end)
 
     coll.resolve_all(c.asm_ctx, d_s, library_info_transitional::empty);
 
-    EXPECT_TRUE(matches_message_codes(d_s.diags, { "U002" }));
+    EXPECT_TRUE(matches_message_codes(d_s.diags, { "ME005" }));
 }
 
 TEST(using, using_bad_range)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -804,7 +805,7 @@ TEST(using, use_complex_reloc)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -829,7 +830,7 @@ TEST(using, drop_invalid)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -845,7 +846,7 @@ TEST(using, drop_inactive)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -863,7 +864,7 @@ TEST(using, basic_with_limit)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -890,7 +891,7 @@ TEST(using, duplicate_base)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -913,7 +914,7 @@ TEST(using, absolute)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -940,7 +941,7 @@ TEST(using, smaller_offset_but_invalid)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -972,7 +973,7 @@ TEST(using, describe)
 {
     test_context c;
 
-    using_collection coll;
+    auto& coll = c.get_using_collection();
     index_t<using_collection> current;
     diagnostic_consumer_container<diagnostic> d_s;
 
@@ -1648,7 +1649,7 @@ F   DS    F
     analyzer a(input);
     a.analyze();
 
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "U007" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "ME005" }));
 }
 
 TEST(using, nonexistent_label_in_base)
@@ -1664,7 +1665,7 @@ F   DS    F
     analyzer a(input);
     a.analyze();
 
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "U007" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "ME005" }));
 }
 
 TEST(using, dropped_label_in_base)
@@ -1681,5 +1682,5 @@ F   DS    F
     analyzer a(input);
     a.analyze();
 
-    EXPECT_TRUE(matches_message_codes(a.diags(), { "U007" }));
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "ME005" }));
 }

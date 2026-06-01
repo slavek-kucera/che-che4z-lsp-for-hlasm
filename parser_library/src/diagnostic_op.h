@@ -807,8 +807,6 @@ struct diagnostic_op
 
     static diagnostic_op error_U006_duplicate_base_specified(const range& range);
 
-    static diagnostic_op error_U007_invalid_label(const range& range);
-
     static diagnostic_op mnote_diagnostic(unsigned level, std::string_view message, const range& range);
 
     static diagnostic_op ext_diagnostic(
