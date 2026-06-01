@@ -1684,3 +1684,91 @@ F   DS    F
 
     EXPECT_TRUE(matches_message_codes(a.diags(), { "ME005" }));
 }
+
+TEST(using, matched_labels)
+{
+    std::string input = R"(
+P1  USING D,13
+P2  USING D,13
+    USING P1.D+P2.D-P2.D,1
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(a.diags().empty());
+}
+
+TEST(using, matched_labels_only_within_expression)
+{
+    std::string input = R"(
+P1  USING D,13
+P2  USING D,13
+    USING (P1.D+P2.D-P2.D,P2.D+100),1
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(a.diags().empty());
+}
+
+TEST(using, mismatched_labels_1)
+{
+    std::string input = R"(
+P1  USING D,13
+P2  USING D,13
+P3  USING D,13
+    USING P1.D+P2.D-P3.D,1
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "M113" }));
+}
+
+TEST(using, mismatched_labels_2)
+{
+    std::string input = R"(
+P1  USING D,13
+P2  USING D,13
+P3  USING D,13
+    USING (P1.D,P1.D+10+P2.D-P3.D),1
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "M113" }));
+}
+
+TEST(using, mismatched_labels_3)
+{
+    std::string input = R"(
+P1  USING D,13
+P2  USING D,13
+P3  USING D,13
+    USING D,P1.D+5-P2.D
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "M120" }));
+}
