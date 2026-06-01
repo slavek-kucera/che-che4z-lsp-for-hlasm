@@ -2593,6 +2593,11 @@ diagnostic_op diagnostic_op::error_U006_duplicate_base_specified(const range& ra
     return diagnostic_op(diagnostic_severity::error, "U006", "Base registers must be distinct.", range);
 }
 
+diagnostic_op diagnostic_op::error_U007_invalid_label(const range& range)
+{
+    return diagnostic_op(diagnostic_severity::error, "U007", "Qualifier is not a valid USING label", range);
+}
+
 diagnostic_op diagnostic_op::mnote_diagnostic(unsigned level, std::string_view message, const range& range)
 {
     const auto lvl = level >= 8 ? diagnostic_severity::error

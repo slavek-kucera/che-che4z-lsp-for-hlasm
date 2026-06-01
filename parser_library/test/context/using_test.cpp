@@ -719,7 +719,7 @@ TEST(using, using_qualified_begin)
 
     coll.resolve_all(c.asm_ctx, d_s, library_info_transitional::empty);
 
-    EXPECT_TRUE(matches_message_codes(d_s.diags, { "U002" }));
+    EXPECT_TRUE(matches_message_codes(d_s.diags, { "U007" }));
 }
 
 TEST(using, using_undefined_end)
@@ -1617,4 +1617,69 @@ F   DS    F
     a.analyze();
 
     EXPECT_TRUE(matches_message_codes(a.diags(), { "M113" }));
+}
+
+TEST(using, valid_using_label_as_base)
+{
+    std::string input = R"(
+P   USING D,13
+    USING P.D,1
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(a.diags().empty());
+}
+
+TEST(using, invalid_using_label_as_base)
+{
+    std::string input = R"(
+P   USING D,13
+    USING Q.D,1
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "U007" }));
+}
+
+TEST(using, nonexistent_label_in_base)
+{
+    std::string input = R"(
+    USING P.D,1
+P   USING D,13
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "U007" }));
+}
+
+TEST(using, dropped_label_in_base)
+{
+    std::string input = R"(
+P   USING D,13
+    DROP
+    USING P.D,1
+
+D   DSECT
+F   DS    F
+)";
+
+    analyzer a(input);
+    a.analyze();
+
+    EXPECT_TRUE(matches_message_codes(a.diags(), { "U007" }));
 }

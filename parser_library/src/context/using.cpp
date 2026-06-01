@@ -199,8 +199,18 @@ using_collection::resolved_entry using_collection::using_drop_definition::resolv
     }
     if (!b->qualifier.empty())
     {
-        // diagnose and ignore
-        diag.add_diagnostic(diagnostic_op::error_U002_label_not_allowed(b_rng));
+        if (!m_parent)
+        {
+            // diagnose and ignore
+            diag.add_diagnostic(diagnostic_op::error_U007_invalid_label(b_rng));
+        }
+        else if (const auto& state = coll.get(m_parent).context.m_state;
+                 std::ranges::find(state, b->qualifier, &using_context::entry::label)
+                 == std::ranges::end(state)) // C++23 contains
+        {
+            // diagnose and ignore
+            diag.add_diagnostic(diagnostic_op::error_U007_invalid_label(b_rng));
+        }
     }
     auto [e, e_rng] = abs_or_reloc(coll, m_end, false);
 
