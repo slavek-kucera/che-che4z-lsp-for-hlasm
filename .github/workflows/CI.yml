@@ -321,7 +321,7 @@ jobs:
         if: ${{ hashFiles(format('scripts/emulation.{0}.sh', matrix.native)) != '' }}
         run: ../../scripts/emulation.${{ matrix.native }}.sh
       - name: NPM CI
-        run: npm ci
+        run: npm ci --verbose
       - name: Extension Test
         run: ${{ env.XVFB }} npm run test
       - name: Extension Test WASM
