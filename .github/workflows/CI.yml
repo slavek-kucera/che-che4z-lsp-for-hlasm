@@ -71,6 +71,8 @@ jobs:
       - name: NPM CI
         run: npm ci
         working-directory: ${{ env.CLIENT_DIR }}
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: true
       - name: Get release context
         if: ${{ !(github.ref == 'refs/heads/master' || github.ref == 'refs/heads/release-next') }}
         run: |
@@ -134,6 +136,8 @@ jobs:
           npm ci
           xvfb-run -a npm run test
         working-directory: ${{ env.CLIENT_DIR }}
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: true
 
   toolchain:
     name: Build GCC toolchain
@@ -323,7 +327,7 @@ jobs:
       - name: NPM CI
         run: npm ci --verbose
         env:
-          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: true
       - name: Extension Test
         run: ${{ env.XVFB }} npm run test
       - name: Extension Test WASM
@@ -349,6 +353,8 @@ jobs:
       - name: NPM CI
         run: npm ci
         working-directory: ${{ env.CLIENT_DIR }}
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: true
       - name: NPM Compile
         run: npm run compile:web
         working-directory: ${{ env.CLIENT_DIR }}
@@ -427,6 +433,8 @@ jobs:
       - name: NPM CI
         run: npm ci
         working-directory: ${{ env.CLIENT_DIR }}
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: true
       - name: NPM Compile
         run: npm run compile
         working-directory: ${{ env.CLIENT_DIR }}
@@ -520,6 +528,8 @@ jobs:
       - name: NPM CI
         run: npm ci
         working-directory: ${{ env.CLIENT_DIR }}
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: true
       - name: Release new version
         run: npm exec semantic-release
         working-directory: ${{ env.CLIENT_DIR }}
