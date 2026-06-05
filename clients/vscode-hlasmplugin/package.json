@@ -55,7 +55,7 @@
     "dts-bundle-generator": "^9.5.1",
     "esbuild": "^0.25.9",
     "mocha": "^11.7.5",
-    "puppeteer": "^25.1.0",
+    "puppeteer": "^24.29.1",
     "semantic-release": "^24.2.7",
     "typescript": "^5.9.2",
     "vscode-tmgrammar-test": "^0.1.3"
