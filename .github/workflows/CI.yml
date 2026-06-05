@@ -322,6 +322,8 @@ jobs:
         run: ../../scripts/emulation.${{ matrix.native }}.sh
       - name: NPM CI
         run: npm ci --verbose
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
       - name: Extension Test
         run: ${{ env.XVFB }} npm run test
       - name: Extension Test WASM
