@@ -110,7 +110,7 @@
       {
           "name": "ci-win32_x64",
           "inherits": "ci",
-          "generator": "Visual Studio 18 2026",
+          "generator": "Visual Studio 17 2022",
           "cacheVariables": {
               "CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE": "${sourceDir}/build/bin",
               "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded"
@@ -119,7 +119,7 @@
       {
           "name": "ci-win32_arm64",
           "inherits": "ci",
-          "generator": "Visual Studio 18 2026",
+          "generator": "Visual Studio 17 2022",
           "architecture": "ARM64",
           "cacheVariables": {
               "CMAKE_SYSTEM_NAME": "Windows",
