@@ -41,4 +41,4 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: NPM CI
-        run: npx ci --verbose
+        run: npm ci --verbose
