@@ -186,18 +186,18 @@ jobs:
             toolchain: true
           - os: ubuntu-24.04
             native: wasm
-            container: emscripten/emsdk:4.0.10
+            container: emscripten/emsdk:5.0.7
             artifacts-ext: .*
-          - os: windows-2025
+          - os: windows-2025-vs2026
             native: win32_x64
             artifacts-ext: .exe
-          - os: windows-2025
+          - os: windows-2025-vs2026
             native: win32_arm64
             artifacts-ext: .exe
             skip-test: true
-          - os: macos-15-intel
+          - os: macos-26-intel
             native: darwin_x64
-          - os: macos-15
+          - os: macos-26
             native: darwin_arm64
     container: ${{ matrix.container }}
     steps:
@@ -265,7 +265,7 @@ jobs:
           - os: ubuntu-24.04
             native: linux_x64
             chmod: true
-          - os: ubuntu-24.04
+          - os: ubuntu-24.04-arm64
             native: linux_arm64
             chmod: true
           - os: ubuntu-24.04
@@ -277,6 +277,9 @@ jobs:
           - os: windows-2025
             native: win32_x64
             chmod: false
+          - os: windows-11-arm
+            native: win32_arm64
+            chmod: false
           - os: macos-14
             native: darwin_arm64
             chmod: true
@@ -284,6 +287,12 @@ jobs:
             native: darwin_arm64
             chmod: true
           - os: macos-15-intel
+            native: darwin_x64
+            chmod: true
+          - os: macos-26
+            native: darwin_arm64
+            chmod: true
+          - os: macos-26-intel
             native: darwin_x64
             chmod: true
 
