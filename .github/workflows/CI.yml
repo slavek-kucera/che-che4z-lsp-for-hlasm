@@ -37,7 +37,7 @@ jobs:
     runs-on: macos-26
     defaults:
       run:
-        working-directory: ${{ env.CLIENT_DIR }}
+        working-directory: clients/vscode-hlasmplugin
     steps:
       - uses: actions/checkout@v6
       - name: NPM CI
