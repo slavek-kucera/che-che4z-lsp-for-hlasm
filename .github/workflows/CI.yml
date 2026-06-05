@@ -354,7 +354,7 @@ jobs:
         run: npm ci
         working-directory: ${{ env.CLIENT_DIR }}
         env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: true
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: false
       - name: NPM Compile
         run: npm run compile:web
         working-directory: ${{ env.CLIENT_DIR }}
