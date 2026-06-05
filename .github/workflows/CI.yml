@@ -266,7 +266,7 @@ jobs:
           - os: ubuntu-24.04
             native: linux_x64
             chmod: true
-          - os: ubuntu-24.04-arm64
+          - os: ubuntu-24.04
             native: linux_arm64
             chmod: true
           - os: ubuntu-24.04
