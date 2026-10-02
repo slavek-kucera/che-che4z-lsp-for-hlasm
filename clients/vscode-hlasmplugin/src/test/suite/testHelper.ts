@@ -187,6 +187,7 @@ export async function waitForDiagnostics(file: string | vscode.Uri, nonEmptyOnly
         const file_promise = typeof file === 'string' ? getWorkspaceFile(file).then(uri => uri.toString()) : Promise.resolve(file.toString());
 
         let listener: vscode.Disposable | null = vscode.languages.onDidChangeDiagnostics((e) => {
+            console.log('waitForDiagnostics - event' + JSON.stringify(e));
             file_promise.then((file) => {
                 console.log('waitForDiagnostics - handler');
                 if (!listener)
