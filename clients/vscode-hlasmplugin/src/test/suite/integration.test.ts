@@ -205,9 +205,12 @@ suite('Integration Test Suite', () => {
 
     test('Verify remote files', async () => {
         const diagsChange = helper.waitForDiagnostics('remote.hlasm', true);
+        console.log('waiting started');
         const uri = (await helper.showDocument('remote.hlasm')).document.uri.toString();
+        console.log('doc shown');
 
         const diags = await diagsChange;
+        console.log('diags awaited');
 
         assert.ok(diags);
 
