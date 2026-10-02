@@ -121,6 +121,12 @@ jobs:
           ./library_test
           ./hlasm_utils_test
         working-directory: build/bin
+      - name: Upload Release Info
+        uses: actions/upload-artifact@v7
+        with:
+          name: sanitized-${{ matrix.type }}
+          path: |
+            build/bind/hlasm_language_server
       - name: Prepare UI tests
         run: |
           mkdir -p ${{ env.CLIENT_DIR }}/bin/linux_x64
