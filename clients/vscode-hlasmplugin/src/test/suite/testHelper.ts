@@ -182,30 +182,23 @@ export function timeout(ms: number, error_message: string | undefined = undefine
  * @deprecated Use `waitForDiagnosticsChange()` instead
  */
 export async function waitForDiagnostics(file: string | vscode.Uri, nonEmptyOnly: boolean = false, source: string | undefined = undefined) {
-    console.log('waitForDiagnostics - start');
     const result = new Promise<vscode.Diagnostic[]>((resolve) => {
         const file_promise = typeof file === 'string' ? getWorkspaceFile(file).then(uri => uri.toString()) : Promise.resolve(file.toString());
 
         let listener: vscode.Disposable | null = vscode.languages.onDidChangeDiagnostics((e) => {
-            console.log('waitForDiagnostics - event' + JSON.stringify(e));
             file_promise.then((file) => {
-                console.log('waitForDiagnostics - handler');
                 if (!listener)
                     return;
-                console.log('waitForDiagnostics - uris' + JSON.stringify(e.uris));
                 const forFile = e.uris.find(v => v.toString() === file);
                 if (!forFile)
                     return;
-                console.log('waitForDiagnostics - found');
                 const diags = vscode.languages.getDiagnostics(forFile);
-                console.log('waitForDiagnostics - diags' + JSON.stringify(diags));
                 if (nonEmptyOnly && diags.length === 0)
                     return;
                 if (source && !diags.find(x => x.source === source))
                     return;
                 listener.dispose();
                 listener = null;
-                console.log('waitForDiagnostics - done');
                 resolve(diags);
             });
         });

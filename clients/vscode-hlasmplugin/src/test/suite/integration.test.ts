@@ -205,12 +205,9 @@ suite('Integration Test Suite', () => {
 
     test('Verify remote files', async () => {
         const diagsChange = helper.waitForDiagnostics('remote.hlasm', true);
-        console.log('waiting started');
         const uri = (await helper.showDocument('remote.hlasm')).document.uri.toString();
-        console.log('doc shown');
 
         const diags = await diagsChange;
-        console.log('diags awaited');
 
         assert.ok(diags);
 
@@ -219,7 +216,7 @@ suite('Integration Test Suite', () => {
 
         assert.deepStrictEqual(uniqueMacros, ['MACD', 'MACE']);
 
-    }).timeout(30000).slow(2500);
+    }).timeout(10000).slow(2500);
 
     test('Open remote file', async () => {
         const doc = await vscode.workspace.openTextDocument(vscode.Uri.parse('hlasm-external:/TEST/something/MACA.hlasm'));
@@ -244,7 +241,7 @@ suite('Integration Test Suite', () => {
 
         assert.ok(diags2);
         assert.strictEqual(diags2.length, 0);
-    }).timeout(30000).slow(2500);
+    }).timeout(10000).slow(2500);
 
     test('External configuration', async () => {
         const testFile = (s: string) => helper.waitForDiagnosticsChange(s, async () => { await helper.showDocument(s); })
